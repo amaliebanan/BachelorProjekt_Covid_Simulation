@@ -11,33 +11,28 @@ class covid_Agent(Agent):
         self.infection_period = 9
         self.id = id
 
-    #Go through neighbors
+    #Go through neighbors and find one to infect.
     def infectNewAgent(self):
         for neighbor in self.model.grid.neighbor_iter(self.pos):
             if isinstance(neighbor,covid_Agent):
                 if neighbor.recovered == 1:
-                    print("Mødt en immun")
                     continue
                 if neighbor.infected == 0:
                     neighbor.infected = 1
                     return
 
     def move(self):
-        possible_steps = self.model.grid.get_neighborhood(
-            self.pos,
-            moore=True,
-            include_center=False
-        )
-        new_position = self.random.choice(possible_steps)
+        possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
+        for position in possible_steps:
+            if self.model.grid.is_cell_empty(position):
+                self.model.grid.move_agent(self, position)
+                return
 
-        self.model.grid.move_agent(self, new_position)
 
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
         self.move()
 
-        #whatever the agent does when activated
-        #print("ID",self.id, "Status:", self.infected)
         #Infect another agent random
         if self.infected == 0:
             return
