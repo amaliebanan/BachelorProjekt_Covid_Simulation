@@ -53,8 +53,10 @@ class covid_Agent(Agent):
         self.infection_period -= 1
         if self.infection_period == 0:
             self.infected = 0
-            self.recovered = 1
-            self.infection_period = 9
+            if np.random.poisson(1/100) == 0:
+                self.recovered = 1
+            else:
+                self.infection_period = 9
         else: self.infected = 1
 
 
