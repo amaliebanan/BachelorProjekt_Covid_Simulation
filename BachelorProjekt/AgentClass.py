@@ -12,10 +12,16 @@ class covid_Agent(Agent):
 
     # If other_agent is already infected, find a new one
     def infectNewAgent(self):
-        other_agent = self.random.choice(self.model.schedule.agents)
-        while other_agent.infected == 1:
-            other_agent = self.random.choice(self.model.schedule.agents)
-        other_agent.infected = 1
+
+        for neighbor in self.model.grid.neighbor_iter(self.pos):
+            if isinstance(neighbor,covid_Agent):
+                if neighbor.infected == 0:
+                    neighbor.infected = 1
+                    return
+       # other_agent = self.random.choice(self.model.schedule.agents)
+       # while other_agent.infected == 1:
+       #     other_agent = self.random.choice(self.model.schedule.agents)
+       # other_agent.infected = 1
 
     def move(self):
         possible_steps = self.model.grid.get_neighborhood(
@@ -34,7 +40,6 @@ class covid_Agent(Agent):
         #Infect another agent random
         if self.infected == 0:
             return
-
 
         #Generate random int and infect a new agent if int = 1.
         #

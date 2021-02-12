@@ -17,13 +17,12 @@ class covid_Model(Model):
             #Add agent to scheduler
             self.schedule.add(newAgent)
 
-            #Place agent randomly on grid
-            x = self.random.randrange(self.grid.width)
-            y = self.random.randrange(self.grid.height)
-            self.grid.place_agent(newAgent, (x, y))
+            #Place agent randomly in empty cell on grid
+            x,y = self.grid.find_empty()
+            self.grid.place_agent(newAgent, (x,y))
 
         #Tilføj en positiv agenter (fjern fra oprindelig liste af agenter, for at ændre infected-status)
-        for i in range(0,7):
+        for i in range(0,20):
             randomAgents = self.random.choice(self.schedule.agents)
             self.schedule.remove(randomAgents)
             postive_agent = randomAgents
@@ -36,7 +35,9 @@ class covid_Model(Model):
 all_agents = []
 timesteps = []
 
-myModel = covid_Model(60,10,10)
+# Create our model with N=agents, width and height on grid
+myModel = covid_Model(200,15,20)
+#How many timesteps?
 for j in range(50):
     counter = 0
     myModel.step()
@@ -49,17 +50,17 @@ for j in range(50):
 agents_status = [agent.infected for agent in myModel.schedule.agents]
 print(timesteps)
 
-#plt.hist(all_agents)
-#plt.show()
 
-agents_status = np.zeros((myModel.grid.width, myModel.grid.height))
+#Final status , plot picture after last time step
+final_status = np.zeros((myModel.grid.width, myModel.grid.height))
 for cell in myModel.grid.coord_iter():
     cell_content, x, y = cell
-    if type(cell_content) == ac.covid_Agent:
+    if len(cell_content)>0:
         status = cell_content[0].infected
-    else: status = 2
-    agents_status[x][y] = status
+    else:
+        status = 2
+    final_status[x][y] = status
 
-plt.imshow(agents_status)
+plt.imshow(final_status)
 plt.colorbar()
-#plt.show()
+plt.show()
