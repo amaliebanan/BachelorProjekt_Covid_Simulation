@@ -29,22 +29,22 @@ class covid_Model(Model):
 
 
 all_agents = []
-tidskridt = []
+timesteps = []
 #for i in range(1):
 
 
 myModel = covid_Model(100)
-for j in range(40):
+for j in range(50):
     counter = 0
     myModel.step()
     for agent in myModel.schedule.agents:
         status = agent.infected
         if status == 1:
             counter += 1
-    tidskridt.append(counter)
+    timesteps.append(counter)
 
 agents_status = [agent.infected for agent in myModel.schedule.agents]
-print(tidskridt)
+print(timesteps)
 
 #plt.hist(all_agents)
 #plt.show()
