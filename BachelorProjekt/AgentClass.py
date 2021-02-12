@@ -29,7 +29,7 @@ class covid_Agent(Agent):
             include_center=False
         )
         new_position = self.random.choice(possible_steps)
-    
+
         self.model.grid.move_agent(self, new_position)
 
     #The step method is the action the agent takes when it is activated by the model schedule.
