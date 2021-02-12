@@ -1,7 +1,7 @@
 import AgentClass as ac
 from mesa.time import RandomActivation
 from mesa.space import MultiGrid
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from mesa import Agent, Model
 
 class covid_Model(Model):
@@ -28,3 +28,4 @@ class covid_Model(Model):
 
 myModel = covid_Model(10)
 myModel.step()
+print('fedpik')
