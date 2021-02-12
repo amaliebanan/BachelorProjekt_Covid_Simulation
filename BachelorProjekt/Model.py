@@ -1,7 +1,7 @@
 import AgentClass as ac
 from mesa.time import RandomActivation
 from mesa.space import MultiGrid
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from mesa import Agent, Model
 
 class covid_Model(Model):
@@ -16,16 +16,35 @@ class covid_Model(Model):
             self.schedule.add(newAgent)
 
         #Tilføj en positiv agenter (fjern fra oprindelig liste af agenter, for at ændre infected-status)
-        randomAgent = self.random.choice(self.schedule.agents)
-        self.schedule.remove(randomAgent)
-
-        postive_agent = randomAgent
-        postive_agent.infected = 1
-        self.schedule.add(postive_agent)
+        for i in range(0,7):
+            randomAgents = self.random.choice(self.schedule.agents)
+            self.schedule.remove(randomAgents)
+            postive_agent = randomAgents
+            postive_agent.infected = 1
+            self.schedule.add(postive_agent)
 
     def step(self):
         self.schedule.step()
 
-myModel = covid_Model(10)
-myModel.step()
-print('Ok')
+
+
+all_agents = []
+tidskridt = []
+#for i in range(1):
+
+
+myModel = covid_Model(100)
+for j in range(40):
+    counter = 0
+    myModel.step()
+    for agent in myModel.schedule.agents:
+        status = agent.infected
+        if status == 1:
+            counter += 1
+    tidskridt.append(counter)
+
+agents_status = [agent.infected for agent in myModel.schedule.agents]
+print(tidskridt)
+
+#plt.hist(all_agents)
+#plt.show()
