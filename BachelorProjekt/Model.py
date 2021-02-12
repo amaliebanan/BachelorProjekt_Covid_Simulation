@@ -4,6 +4,7 @@ from mesa.space import MultiGrid
 import matplotlib.pyplot as plt
 from mesa import Agent, Model
 import numpy as np
+import matplotlib
 
 class covid_Model(Model):
     def __init__(self,N,height, width):
@@ -48,7 +49,7 @@ for j in range(50):
     timesteps.append(counter)
 
 agents_status = [agent.infected for agent in myModel.schedule.agents]
-print(timesteps)
+#print(timesteps)
 
 
 #Final status , plot picture after last time step
@@ -60,7 +61,9 @@ for cell in myModel.grid.coord_iter():
     else:
         status = 2
     final_status[x][y] = status
-
-plt.imshow(final_status)
+#print(final_status)
+colors = 'green red white'.split()
+cmap = matplotlib.colors.ListedColormap(colors, name='colors', N=None)
+plt.imshow(final_status, cmap=cmap)
 plt.colorbar()
 plt.show()
