@@ -4,7 +4,12 @@ from mesa.space import MultiGrid
 import matplotlib.pyplot as plt
 from mesa import Agent, Model
 import numpy as np
+from mesa.datacollection import DataCollector
 import matplotlib
+
+def find_status(model):
+    agents_status = [agent.infected for agent in model.schedule.agents]
+    return agents_status
 
 class covid_Model(Model):
     def __init__(self,N,height, width):
@@ -30,7 +35,13 @@ class covid_Model(Model):
             postive_agent.infected = 1
             self.schedule.add(postive_agent)
 
+        self.datacollector = DataCollector(
+            model_reporters={"Status":find_status(self)},
+            agent_reporters= {"Infected":"infected"}
+        )
+
     def step(self):
+        #self.datacollector.collect(self)
         self.schedule.step()
 
 all_agents = []
@@ -47,7 +58,7 @@ for j in range(50):
         if status == 1:
             counter += 1
     timesteps.append(counter)
-
+print(timesteps)
 agents_status = [agent.infected for agent in myModel.schedule.agents]
 #print(timesteps)
 
