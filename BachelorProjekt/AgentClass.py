@@ -29,8 +29,10 @@ class covid_Agent(Agent):
             if self.model.grid.is_cell_empty(position):
                 possible_empty_steps.append(position)
         next_move = self.random.choice(possible_empty_steps)
-        self.model.grid.move_agent(self, next_move)
-    #from wolf_sheep RandomWalker
+        if len(possible_empty_steps) != 0:
+            self.model.grid.move_agent(self, next_move)
+        else:
+            self.model.grid.move_agent(self, self.pos)
 
 
     #The step method is the action the agent takes when it is activated by the model schedule.

@@ -14,7 +14,7 @@ def find_status(model):
 class covid_Model(Model):
     def __init__(self, N, height, width):
         self.n_agents = N
-        self.grid = MultiGrid(width, height, True)
+        self.grid = MultiGrid(width, height, torus=False) #torus wraps edges
         self.schedule = SimultaneousActivation(self)#The scheduler is a special model component which controls the order in which agents are activated
 
 
@@ -25,7 +25,7 @@ class covid_Model(Model):
             self.grid.place_agent(newAgent, (x,y))
 
         #Tilføj en positiv agenter (fjern fra oprindelig liste af agenter, for at ændre infected-status)
-        for i in range(0,1):
+        for i in range(0,2):
             randomAgents = self.random.choice(self.schedule.agents)
             self.schedule.remove(randomAgents)
             postive_agent = randomAgents
