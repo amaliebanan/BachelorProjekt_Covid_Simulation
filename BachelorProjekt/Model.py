@@ -12,43 +12,44 @@ def find_status(model):
     return agents_status
 
 class covid_Model(Model):
-    def __init__(self,N,height, width):
+    def __init__(self, N, height, width):
         self.n_agents = N
-        self.grid = MultiGrid(width,height,True)
-        self.schedule = RandomActivation(self)
+        self.grid = MultiGrid(width, height, True)
+        self.schedule = RandomActivation(self)#The scheduler is a special model component which controls the order in which agents are activated
 
-        #The scheduler is a special model component which controls the order in which agents are activated
-        for i in range(1,self.n_agents+1):
-            newAgent = ac.covid_Agent(i,self)
-            #Add agent to scheduler
-            self.schedule.add(newAgent)
 
-            #Place agent randomly in empty cell on grid
-            x,y = self.grid.find_empty()
+        for i in range(1, self.n_agents+1): #adds agents
+            newAgent = ac.covid_Agent(i, self)
+            self.schedule.add(newAgent) #Add agent to scheduler
+            x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
             self.grid.place_agent(newAgent, (x,y))
 
         #Tilføj en positiv agenter (fjern fra oprindelig liste af agenter, for at ændre infected-status)
-        for i in range(0,20):
+        for i in range(0,2):
             randomAgents = self.random.choice(self.schedule.agents)
             self.schedule.remove(randomAgents)
             postive_agent = randomAgents
             postive_agent.infected = 1
             self.schedule.add(postive_agent)
 
-        self.datacollector = DataCollector(
-            model_reporters={"Status":find_status(self)},
-            agent_reporters= {"Infected":"infected"}
-        )
+
+        #self.datacollector = DataCollector(
+         #   {"Infected": lambda m: self.},
+          #   {"x": lambda a: a.pos[0], "y": lambda a: a.pos[1]})
+
+        self.running = True
 
     def step(self):
         #self.datacollector.collect(self)
         self.schedule.step()
 
+
+
 all_agents = []
 timesteps = []
 
 # Create our model with N=agents, width and height on grid
-myModel = covid_Model(200,15,20)
+myModel = covid_Model(30,10,10)
 #How many timesteps?
 for j in range(50):
     counter = 0
@@ -77,4 +78,4 @@ colors = 'green red white'.split()
 cmap = matplotlib.colors.ListedColormap(colors, name='colors', N=None)
 plt.imshow(final_status, cmap=cmap)
 plt.colorbar()
-plt.show()
+#plt.show()
