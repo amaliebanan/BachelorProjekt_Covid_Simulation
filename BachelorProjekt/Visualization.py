@@ -21,9 +21,9 @@ def covid_draw(agent):
         portrayal["Color"] = "Red"
     return portrayal
 
-grid = CanvasGrid(covid_draw, 30, 30, 500, 500)
+grid = CanvasGrid(covid_draw, 4, 4, 500, 500)
 server = ModularServer(covid_Model,
                        [grid],
                        "Covid Model",
-                       {"N":120, "width":30, "height":30})
+                       {"N":5, "width":4, "height":4})
 server.port = 8521 # The default

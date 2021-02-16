@@ -24,24 +24,18 @@ class covid_Agent(Agent):
 
     def move(self):
         possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
+        possible_empty_steps = []
         for position in possible_steps:
             if self.model.grid.is_cell_empty(position):
-                self.model.grid.move_agent(self, position)
-                return
-
-    #from wolf_sheep RandomWalker
-    def random_move(self):
-        """
-        Step one cell in any allowable direction.
-        """
-        # Pick the next cell from the adjacent cells.
-        next_moves = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
-        next_move = self.random.choice(next_moves)
-        # Now move:
+                possible_empty_steps.append(position)
+        next_move = self.random.choice(possible_empty_steps)
         self.model.grid.move_agent(self, next_move)
+    #from wolf_sheep RandomWalker
+
+
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
-        self.random_move()
+        self.move()
 
         #Infect another agent random
         if self.infected == 0:
