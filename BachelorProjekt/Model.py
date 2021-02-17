@@ -50,7 +50,7 @@ class covid_Model(Model):
         self.schedule = SimultaneousActivation(self)
         self.setUpType = setUpType
         self.status = find_status(self)
-        self.datacollector = DataCollector(model_reporters={"infected":lambda m:m.status})
+        self.datacollector = DataCollector(model_reporters={"infected": lambda m:find_status(self)})
         #The scheduler is a special model component which controls the order in which agents are activated
 
 
@@ -68,12 +68,13 @@ class covid_Model(Model):
 
 
 
+        self.datacollector.collect(self)
         self.running = True
 
     def step(self):
         self.recovered = 0
-        self.datacollector.collect(self)
         self.schedule.step()
+        self.datacollector.collect(self)
 
         if find_status(self) == 0:
            self.running = False

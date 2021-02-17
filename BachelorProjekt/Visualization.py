@@ -4,7 +4,7 @@ from mesa.visualization.ModularVisualization import ModularServer
 from Model import covid_Model
 
 
-class infected_Element(TextElement):
+class infected_Element(TextElement,covid_Model):
     '''
     Display a text count of how many happy agents there are.
     '''
