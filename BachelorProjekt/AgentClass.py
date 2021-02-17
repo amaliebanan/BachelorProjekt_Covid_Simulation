@@ -73,7 +73,7 @@ class covid_Agent(Agent):
     def step(self):
         if self.model.setUpType == 1:
             self.move()
-        elif self.model.setUpType == 2 and self.id == 1000:
+        elif not self.model.setUpType == 2 and self.id == 1000:
              self.move()
 
         #Infect another agent random
