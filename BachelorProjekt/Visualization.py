@@ -1,10 +1,10 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement
 from mesa.visualization.ModularVisualization import ModularServer
 
-from Model import covid_Model
+from Model import covid_Model, find_status
 
 
-class infected_Element(TextElement,covid_Model):
+class infected_Element(TextElement):
     '''
     Display a text count of how many happy agents there are.
     '''
@@ -12,7 +12,7 @@ class infected_Element(TextElement,covid_Model):
         pass
 
     def render(self, model):
-        return "Infected agents: " + str(model.status)
+        return "Infected agents: " + str(find_status(model))
 
 def agent_portrayal(agent):
     portrayal = {"Shape": "circle",
