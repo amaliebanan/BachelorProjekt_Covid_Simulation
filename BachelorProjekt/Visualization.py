@@ -18,12 +18,12 @@ def covid_draw(agent):
     if agent.infected == 0:
         portrayal["Color"] = "Green"
     else:
-        portrayal["Shape"] = "BachelorProjekt/resources/corona.png"
+        portrayal["Shape"] = "resources/corona.png"
         portrayal["scale"] = 0.9
     return portrayal
 
-agentsN = 500
-width, height = 30, 30
+agentsN = 25
+width, height = 8,10
 
 grid = CanvasGrid(covid_draw, width, height, 500, 500)
 server = ModularServer(covid_Model,
