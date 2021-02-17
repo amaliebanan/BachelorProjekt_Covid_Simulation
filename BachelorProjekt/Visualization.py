@@ -1,8 +1,18 @@
-from mesa.visualization.modules import CanvasGrid, ChartModule
+from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement
 from mesa.visualization.ModularVisualization import ModularServer
 
 from Model import covid_Model
 
+
+class infected_Element(TextElement):
+    '''
+    Display a text count of how many happy agents there are.
+    '''
+    def __init__(self):
+        pass
+
+    def render(self, model):
+        return "Infected agents: " + str(model.status)
 
 def agent_portrayal(agent):
     portrayal = {"Shape": "circle",
@@ -31,12 +41,13 @@ def covid_draw(agent):
 agentsN = 25
 width, height = 8,10
 
+infected_element = infected_Element()
 grid = CanvasGrid(covid_draw, width, height, 500, 500)
 
 infected_chart = ChartModule([{"Label":"infected","Color":"Black"}],data_collector_name="datacollector")
 
 server = ModularServer(covid_Model,
-                       [grid,infected_chart],
+                       [grid,infected_element, infected_chart],
                        "Covid Model",
                        {"N":agentsN, "width":width, "height":height, "setUpType":2})
 server.port = 8521 # The default
