@@ -46,7 +46,7 @@ class covid_Agent(Agent):
             'Agent kan ikke blive smittet'
             if agent_recovered_status == 1 or agent_status == 1:
                 continue
-            elif distance<= 1.0:
+            elif distance <= 1.0:
                 if r68 == 1:
                     agent[0].infected = 1
             elif distance > 1.0 and distance <= 1.7:
@@ -69,11 +69,12 @@ class covid_Agent(Agent):
             next_move = self.random.choice(possible_empty_steps)
             self.model.grid.move_agent(self, next_move)
 
-
-
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
-        self.move()
+        if self.model.setUpType == 1:
+            self.move()
+        elif self.model.setUpType == 2 and self.id == 1000:
+             self.move()
 
         #Infect another agent random
         if self.infected == 0:
