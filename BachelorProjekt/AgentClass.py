@@ -19,8 +19,12 @@ class covid_Agent(Agent):
         super().__init__(id, model)
         self.infected = 0 #0 for False, 1 for True
         self.recovered = 0 #0 for False, 1 for True
+        self.mask = 0 #0 for False, 1 for True
         self.infection_period = 9
         self.id = id
+
+        #Relevant for classroom only
+        self.hasQuestion = 0
 
 
     #Go through neighbors and find one to infect.
@@ -58,30 +62,61 @@ class covid_Agent(Agent):
             elif r2 == 1:
                 agent[0].infected = 1
 
-    def move(self):
-        possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
-        possible_empty_steps = []
-        for position in possible_steps:
-            if self.model.grid.is_cell_empty(position):
-                possible_empty_steps.append(position)
+    def move(self,student=None):
+        print("TIDEN ER NU",self.model.timeToTeach)
+        if student is not None:
+            x,y = student.pos
+            if self.model.timeToTeach == 0:           #Student has recieved help for 5 minutes
+                student.hasQuestion = 0             #Student does not have question anymore
+                self.model.timeToTeach = 5          #Reset timer
 
-        if len(possible_empty_steps) != 0:
-            next_move = self.random.choice(possible_empty_steps)
-            self.model.grid.move_agent(self, next_move)
+            elif self.model.timeToTeach == 4:   #Student has not recieved help yet, go to that student
+                TA = self
+
+                self.model.schedule.remove(TA)
+                self.model.grid.remove_agent(TA)
+                newTA = covid_Agent(1000,self.model)
+                self.model.schedule.add(newTA)
+                self.model.grid.place_agent(newTA,(x,y))
+                self.model.timeToTeach -= 1
+            else:                               #Student is still recieving help, subtract one minut and stay put
+                self.model.timeToTeach -= 1
+
+
+        elif self.model.timeToTeach == 5:           #No one is recieving help or asking for help
+            possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
+            possible_empty_steps = []
+            for position in possible_steps:
+                if self.model.grid.is_cell_empty(position):
+                    possible_empty_steps.append(position)
+
+            if len(possible_empty_steps) != 0:
+                next_move = self.random.choice(possible_empty_steps)
+                self.model.grid.move_agent(self, next_move)
+
+
+
 
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
+          ##MOVE###
         if self.model.setUpType == 1:
             self.move()
-        elif not self.model.setUpType == 2 and self.id == 1000:
-             self.move()
+        elif not self.model.setUpType == 1 and self.id == 1000: #Move only TA
+            listOfStudents = self.model.schedule.agents
+            for student in listOfStudents:
+                if student.hasQuestion == 1:
+                    self.move(student)
 
-        #Infect another agent random
+            else: self.move()
+
+
+          #Infect another agent random
         if self.infected == 0:
             return
 
         #Generate random int and infect a new agent if int = 1.
-        randomInt = np.random.poisson(1/8)
+        randomInt = np.random.poisson(1/2)
         if randomInt == 1:
             self.infectNewAgent()
 
@@ -96,6 +131,10 @@ class covid_Agent(Agent):
             else:
                 self.recovered = 1
         else: self.infected = 1
+
+
+
+
 
 
 

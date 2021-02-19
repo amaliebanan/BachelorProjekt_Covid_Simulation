@@ -27,12 +27,15 @@ def covid_draw(agent):
         return
     portrayal = {"Shape": "circle", "r": 0.8, "Filled": "true", "Layer": 0}
     if agent.infected == 0:
-        #portrayal["Shape"] = "resources/healthy.png"
-        #portrayal["scale"] = 0.9
         portrayal["Color"] = "green"
-    else:
+    if agent.infected == 1:
+        if agent.id == 1000:
+            portrayal["Color"] = "Pink"
+            portrayal["scale"] = 0.9
         portrayal["Shape"] = "resources/corona.png"
         portrayal["scale"] = 0.9
+    if agent.hasQuestion == 1:
+        portrayal["Color"] = "blue"
     if agent.id == 1000:
         portrayal["Color"] = "Orange"
         portrayal["scale"] = 0.9
@@ -49,5 +52,5 @@ infected_chart = ChartModule([{"Label":"infected","Color":"Black"}],data_collect
 server = ModularServer(covid_Model,
                        [grid,infected_element, infected_chart],
                        "Covid Model",
-                       {"N":agentsN, "width":width, "height":height, "setUpType":4})
+                       {"N":agentsN, "width":width, "height":height, "setUpType":2})
 server.port = 8521 # The default
