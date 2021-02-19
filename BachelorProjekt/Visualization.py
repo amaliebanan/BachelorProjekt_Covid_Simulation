@@ -14,6 +14,16 @@ class infected_Element(TextElement):
     def render(self, model):
         return "Infected agents: " + str(find_status(model))
 
+class count_Days(TextElement):
+    '''
+    Display a text count of how many happy agents there are.
+    '''
+    def __init__(self):
+        pass
+
+    def render(self, model):
+        return "Day #: " + str(model.day_count)
+
 def agent_portrayal(agent):
     portrayal = {"Shape": "circle",
                  "Color": "red",
@@ -45,9 +55,9 @@ infected_element = infected_Element()
 grid = CanvasGrid(covid_draw, width, height, 500, 500)
 
 infected_chart = ChartModule([{"Label":"infected","Color":"Black"}],data_collector_name="datacollector")
-
+days_chart = count_Days()
 server = ModularServer(covid_Model,
-                       [grid,infected_element, infected_chart],
+                       [grid,infected_element, infected_chart, days_chart],
                        "Covid Model",
-                       {"N":agentsN, "width":width, "height":height, "setUpType":4})
+                       {"N":agentsN, "width":width, "height":height, "setUpType":2})
 server.port = 8521 # The default

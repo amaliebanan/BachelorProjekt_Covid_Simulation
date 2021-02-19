@@ -19,24 +19,24 @@ class covid_Agent(Agent):
         super().__init__(id, model)
         self.infected = 0 #0 for False, 1 for True
         self.recovered = 0 #0 for False, 1 for True
-        self.infection_period = 9
+        self.infection_period = 960
         self.id = id
 
 
     #Go through neighbors and find one to infect.
     def infectNewAgent(self):
 
-        all_neighbors_within_radius = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False,radius=2)
+        all_neighbors_within_radius = self.model.grid.get_neighborhood(self.pos, moore=True,include_center=False,radius=2)
 
         closest_neighbors = []
         for position in all_neighbors_within_radius:
             if not self.model.grid.is_cell_empty(position):
                 closest_neighbors.append(position)
 
-        r68 = np.random.poisson(68/100)
-        r30 = np.random.poisson(30/100)
-        r10 = np.random.poisson(10/100)
-        r2 = np.random.poisson(2/100)
+        r68 = np.random.poisson(2/120)
+        r30 = np.random.poisson(1/120)
+        r10 = np.random.poisson(0.5/120)
+        r2 = np.random.poisson(0.1/120)
         for position in closest_neighbors:
             distance = getDistance(self.pos,position)
             agent = self.model.grid[position[0]][position[1]]
@@ -90,9 +90,9 @@ class covid_Agent(Agent):
         self.infection_period -= 1
         if self.infection_period == 0:
             self.infected = 0
-            if np.random.poisson(1/100) == 0:
+            if np.random.poisson(1/100) == 0 and self.recovered != 0:
                 self.recovered = 0
-                self.infection_period = 9
+                self.infection_period = 960
             else:
                 self.recovered = 1
         else: self.infected = 1
