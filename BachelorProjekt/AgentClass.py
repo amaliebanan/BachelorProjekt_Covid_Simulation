@@ -29,41 +29,54 @@ class covid_Agent(Agent):
 
     #Go through neighbors and find one to infect.
     def infectNewAgent(self):
-
-        all_neighbors_within_radius = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False,radius=2)
-
+        all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=True,radius=2)
         closest_neighbors = []
-        for position in all_neighbors_within_radius:
-            if not self.model.grid.is_cell_empty(position):
-                closest_neighbors.append(position)
 
+        cells = self.model.grid.get_cell_list_contents([self.pos]) #get cell content on specific position
+        if len(cells)>1: # TA +student is present on this cell
+            for cell in cells:
+                if cell.id == 1000:
+                    closest_neighbors.append(cell)
+
+        for neigbor in all_neighbors_within_radius:
+            if not self.model.grid.is_cell_empty(neigbor.pos):
+                closest_neighbors.append(neigbor)
+        closest_neighbors
+
+
+
+        r90 = 1
         r68 = np.random.poisson(68/100)
         r30 = np.random.poisson(30/100)
         r10 = np.random.poisson(10/100)
         r2 = np.random.poisson(2/100)
-        for position in closest_neighbors:
-            distance = getDistance(self.pos,position)
-            agent = self.model.grid[position[0]][position[1]]
-            agent_status = agent[0].infected
-            agent_recovered_status = agent[0].recovered
+
+
+        for agent in closest_neighbors:
+            distance = getDistance(self.pos,agent.pos)
+
+            agent_status = agent.infected
+            agent_recovered_status = agent.recovered
 
             'Agent kan ikke blive smittet'
             if agent_recovered_status == 1 or agent_status == 1:
                 continue
-            elif distance <= 1.0:
+            elif distance <= 0.1:
+                if r90 == 1:
+                    agent.infected = 1
+            elif distance > 0.5 and distance <= 1.0:
                 if r68 == 1:
-                    agent[0].infected = 1
+                    agent.infected = 1
             elif distance > 1.0 and distance <= 1.7:
                 if r30 == 1:
-                    agent[0].infected = 1
+                    agent.infected = 1
             elif distance > 1.7 and distance <= 2.0:
                 if r10 == 1:
-                    agent[0].infected = 1
+                    agent.infected = 1
             elif r2 == 1:
-                agent[0].infected = 1
+                agent.infected = 1
 
     def move(self,student=None):
-        print("TIDEN ER NU",self.model.timeToTeach)
         if student is not None:
             x,y = student.pos
             if self.model.timeToTeach == 0:           #Student has recieved help for 5 minutes
@@ -76,6 +89,7 @@ class covid_Agent(Agent):
                 self.model.schedule.remove(TA)
                 self.model.grid.remove_agent(TA)
                 newTA = covid_Agent(1000,self.model)
+                newTA.mask = 1
                 self.model.schedule.add(newTA)
                 self.model.grid.place_agent(newTA,(x,y))
                 self.model.timeToTeach -= 1
@@ -94,17 +108,12 @@ class covid_Agent(Agent):
                 next_move = self.random.choice(possible_empty_steps)
                 self.model.grid.move_agent(self, next_move)
 
-
-
-
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
 
-          #Infect another agent random
-        if self.infected == 0:
-            pass
-        else:
-            #Generate random int and infect a new agent if int = 1.
+        #Infect if you are infected otherwise pass
+        if self.infected == 1:
+
             randomInt = np.random.poisson(1/2)
             if randomInt == 1:
                 self.infectNewAgent()
@@ -114,12 +123,12 @@ class covid_Agent(Agent):
             self.infection_period -= 1
             if self.infection_period == 0:
                 self.infected = 0
-                if np.random.poisson(1/100) == 0:
+                if np.random.poisson(1/100) == 1:
                     self.recovered = 0
                     self.infection_period = 9
                 else:
                     self.recovered = 1
-            else: self.infected = 1
+        else: pass  #If infected=0, dont do anything
 
           ##MOVE###
         if self.model.setUpType == 1:
@@ -131,14 +140,6 @@ class covid_Agent(Agent):
                     self.move(student)
 
             else: self.move()
-
-
-
-
-
-
-
-
 
 class Table(Agent):
     def __init__(self,id,model):

@@ -31,10 +31,11 @@ def setUp(N,model,setUpType):
             model.schedule.add(newAgent) #Add agent to scheduler
             x,y = listOfPositions.pop()
             model.grid.place_agent(newAgent,(x,y))
-        instruktor_agent = ac.covid_Agent(1000,model)
-        model.schedule.add(instruktor_agent)
+        TA = ac.covid_Agent(1000,model)
+        TA.mask = 1
+        model.schedule.add(TA)
         x,y = random.choice([(7,5),(7,4)])
-        model.grid.place_agent(instruktor_agent,(x,y))
+        model.grid.place_agent(TA,(x,y))
 
     elif setUpType == 3: #Rows
         listOfPositions = [(1,5),(1,6),(1,7),(1,8),(1,9),(2,0),(2,1),(2,2),(2,3),
@@ -46,10 +47,10 @@ def setUp(N,model,setUpType):
             x,y = listOfPositions.pop()
             model.grid.place_agent(newAgent,(x,y))
 
-        instruktor_agent = ac.covid_Agent(1000,model)
-        model.schedule.add(instruktor_agent)
+        TA = ac.covid_Agent(1000,model)
+        model.schedule.add(TA)
         x,y = random.choice([(7,6),(7,5),(7,4)])
-        model.grid.place_agent(instruktor_agent,(x,y))
+        model.grid.place_agent(TA,(x,y))
     elif setUpType == 4:
         listOfPositions = [(1,1),(1,2),(2,1),(2,2),
                            (1,4),(1,5),(2,4),(2,5),
@@ -63,10 +64,10 @@ def setUp(N,model,setUpType):
             x,y = listOfPositions.pop()
             model.grid.place_agent(newAgent,(x,y))
 
-        instruktor_agent = ac.covid_Agent(1000,model)
-        model.schedule.add(instruktor_agent)
+        TA = ac.covid_Agent(1000,model)
+        model.schedule.add(TA)
         x,y = random.choice([(7,6),(7,5),(7,4)])
-        model.grid.place_agent(instruktor_agent,(x,y))
+        model.grid.place_agent(TA,(x,y))
 
 
 class SetUpType():
@@ -91,7 +92,7 @@ class covid_Model(Model):
         #Classroom only
         self.timeToTeach = 5
 
-        ' Tilføj person-agenter '
+        ' Tilføj agenter til vores setup '
         setUp(self.n_agents+1,self,setUpType)
 
 
@@ -115,13 +116,18 @@ class covid_Model(Model):
           student_with_Question.hasQuestion = 1
           self.schedule.add(student_with_Question)
 
+
         self.recovered = 0
         self.schedule.step()
         self.datacollector.collect(self)
 
+
+
+        #Minute count
         self.minute_count += 1
         if self.minute_count % 120 == 0:
             self.day_count += 1
 
+        #Terminate model when everyone is healthy
         if find_status(self) == 0:
            self.running = False
