@@ -39,16 +39,15 @@ def covid_draw(agent):
     portrayal = {"Shape": "circle", "r": 0.8, "Filled": "true", "Layer": 0}
     if agent.infected == 0:
         portrayal["Color"] = "green"
-    if agent.infected == 1:
-        if agent.id == 1000:
+    if agent.infected == 1 and agent.id == 1000:
             portrayal["Color"] = "Pink"
             portrayal["scale"] = 0.9
-        else:
+    if agent.infected == 1 and not agent.id == 1000:
             portrayal["Shape"] = "resources/corona.png"
             portrayal["scale"] = 0.9
     if agent.hasQuestion == 1:
         portrayal["Color"] = "blue"
-    if agent.id == 1000:
+    if agent.infected == 0 and agent.id == 1000:
         portrayal["Color"] = "Orange"
         portrayal["scale"] = 0.9
     return portrayal

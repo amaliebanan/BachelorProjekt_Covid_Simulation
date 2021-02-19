@@ -21,6 +21,7 @@ class covid_Agent(Agent):
         self.recovered = 0 #0 for False, 1 for True
         self.mask = 0 #0 for False, 1 for True
         self.infection_period = 9
+        self.asymptomatic = 5 # Agents are asymptomatic for 5 days
         self.id = id
 
         #Relevant for classroom only
@@ -41,16 +42,12 @@ class covid_Agent(Agent):
         for neigbor in all_neighbors_within_radius:
             if not self.model.grid.is_cell_empty(neigbor.pos):
                 closest_neighbors.append(neigbor)
-        closest_neighbors
 
-
-
-        r90 = 1
+        r90 = np.random.poisson(90/100)
         r68 = np.random.poisson(68/100)
         r30 = np.random.poisson(30/100)
         r10 = np.random.poisson(10/100)
         r2 = np.random.poisson(2/100)
-
 
         for agent in closest_neighbors:
             distance = getDistance(self.pos,agent.pos)
@@ -58,8 +55,8 @@ class covid_Agent(Agent):
             agent_status = agent.infected
             agent_recovered_status = agent.recovered
 
-            'Agent kan ikke blive smittet'
-            if agent_recovered_status == 1 or agent_status == 1:
+
+            if agent_recovered_status == 1 or agent_status == 1: # kan ikke blive smittet, da den er immun eller allerede infected
                 continue
             elif distance <= 0.1:
                 if r90 == 1:
@@ -84,10 +81,9 @@ class covid_Agent(Agent):
                 self.model.timeToTeach = 5          #Reset timer
 
             elif self.model.timeToTeach == 4:   #Student has not recieved help yet, go to that student
-                TA = self
 
-                self.model.schedule.remove(TA)
-                self.model.grid.remove_agent(TA)
+                self.model.schedule.remove(self)
+                self.model.grid.remove_agent(self)
                 newTA = covid_Agent(1000,self.model)
                 newTA.mask = 1
                 self.model.schedule.add(newTA)
@@ -111,10 +107,16 @@ class covid_Agent(Agent):
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
 
+
         #Infect if you are infected otherwise pass
         if self.infected == 1:
+            self.asymptomatic -= 1
+            if self.asymptomatic == 0:
+                self.model.schedule.remove(self)
+                self.model.grid.remove_agent(self)
+                return
 
-            randomInt = np.random.poisson(1/2)
+            randomInt = np.random.poisson(1/8)
             if randomInt == 1:
                 self.infectNewAgent()
 
@@ -130,7 +132,7 @@ class covid_Agent(Agent):
                     self.recovered = 1
         else: pass  #If infected=0, dont do anything
 
-          ##MOVE###
+        ##MOVE###
         if self.model.setUpType == 1:
             self.move()
         elif not self.model.setUpType == 1 and self.id == 1000: #Move only TA
@@ -140,15 +142,3 @@ class covid_Agent(Agent):
                     self.move(student)
 
             else: self.move()
-
-class Table(Agent):
-    def __init__(self,id,model):
-        super().__init__(id, model)
-        self.id = id
-        self.model = model
-        self.occupied = 0 #Der sidder ikke nogen fra start
-
-    def step(self):
-        print("hej")
-        #TBI
-

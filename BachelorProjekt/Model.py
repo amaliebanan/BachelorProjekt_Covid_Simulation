@@ -1,5 +1,5 @@
 import AgentClass as ac
-from mesa.time import SimultaneousActivation
+from mesa.time import SimultaneousActivation,RandomActivation
 from mesa.space import MultiGrid
 import random
 from enum import Enum
@@ -81,11 +81,12 @@ class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
         self.n_agents = N
         self.grid = MultiGrid(width, height, torus=False) #torus wraps edges
-        self.schedule = SimultaneousActivation(self)
+        self.schedule = RandomActivation(self)
         self.setUpType = setUpType
         self.status = find_status(self)
         self.datacollector = DataCollector(model_reporters={"infected": lambda m:find_status(self)})
-        #The scheduler is a special model component which controls the order in which agents are activated
+
+
         self.minute_count = 0
         self.day_count = 1
 
