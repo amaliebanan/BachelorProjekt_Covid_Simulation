@@ -99,6 +99,28 @@ class covid_Agent(Agent):
 
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
+
+          #Infect another agent random
+        if self.infected == 0:
+            pass
+        else:
+            #Generate random int and infect a new agent if int = 1.
+            randomInt = np.random.poisson(1/2)
+            if randomInt == 1:
+                self.infectNewAgent()
+
+            #Subtract 1 from infection period. Reset infection period if == 0 and make agent not infected anymore
+            # (not yet immun)
+            self.infection_period -= 1
+            if self.infection_period == 0:
+                self.infected = 0
+                if np.random.poisson(1/100) == 0:
+                    self.recovered = 0
+                    self.infection_period = 9
+                else:
+                    self.recovered = 1
+            else: self.infected = 1
+
           ##MOVE###
         if self.model.setUpType == 1:
             self.move()
@@ -111,26 +133,6 @@ class covid_Agent(Agent):
             else: self.move()
 
 
-          #Infect another agent random
-        if self.infected == 0:
-            return
-
-        #Generate random int and infect a new agent if int = 1.
-        randomInt = np.random.poisson(1/2)
-        if randomInt == 1:
-            self.infectNewAgent()
-
-        #Subtract 1 from infection period. Reset infection period if == 0 and make agent not infected anymore
-        # (not yet immun)
-        self.infection_period -= 1
-        if self.infection_period == 0:
-            self.infected = 0
-            if np.random.poisson(1/100) == 0:
-                self.recovered = 0
-                self.infection_period = 9
-            else:
-                self.recovered = 1
-        else: self.infected = 1
 
 
 

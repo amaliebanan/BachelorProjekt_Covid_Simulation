@@ -85,6 +85,8 @@ class covid_Model(Model):
         self.status = find_status(self)
         self.datacollector = DataCollector(model_reporters={"infected": lambda m:find_status(self)})
         #The scheduler is a special model component which controls the order in which agents are activated
+        self.minute_count = 0
+        self.day_count = 1
 
         #Classroom only
         self.timeToTeach = 5
@@ -117,5 +119,9 @@ class covid_Model(Model):
         self.schedule.step()
         self.datacollector.collect(self)
 
-       # if find_status(self) == 0:
-       #    self.running = False
+        self.minute_count += 1
+        if self.minute_count % 120 == 0:
+            self.day_count += 1
+
+        if find_status(self) == 0:
+           self.running = False
