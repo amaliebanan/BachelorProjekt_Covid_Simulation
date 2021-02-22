@@ -12,7 +12,7 @@ class infected_Element(TextElement):
         pass
 
     def render(self, model):
-        return "Infected agents: " + str(find_status(model))
+        return "Infected agents: " + str(find_status(model,"infected",ac.covid_Agent))
 
 
 class count_Days(TextElement):
@@ -37,21 +37,25 @@ def covid_draw(agent):
     if agent is None:
         return
     portrayal = {"Shape": "circle", "r": 0.8, "Filled": "true", "Layer": 0}
-    if agent.infected == 0:
-        portrayal["Color"] = "green"
-    if agent.infected == 1 and agent.id == 1000:
+    if isinstance(agent,ac.covid_Agent):
+        if agent.infected == 0:
+            portrayal["Color"] = "green"
+        if agent.infected == 1:
+                portrayal["Shape"] = "resources/corona.png"
+                portrayal["scale"] = 0.9
+        if agent.hasQuestion == 1 and agent.infected == 1:
+            portrayal["Color"] = "black"
+        if agent.hasQuestion == 1 and agent.infected == 0:
+            portrayal["Color"] = "Blue"
+    if isinstance(agent,ac.TA):
+        if agent.infected == 0:
+            portrayal["Color"] = "Orange"
+            portrayal["scale"] = 0.9
+        elif agent.infected == 1:
             portrayal["Color"] = "Pink"
             portrayal["scale"] = 0.9
-    if agent.infected == 1 and not agent.id == 1000:
-            portrayal["Shape"] = "resources/corona.png"
-            portrayal["scale"] = 0.9
-    if agent.hasQuestion == 1:
-        portrayal["Color"] = "blue"
-    if agent.infected == 0 and agent.id == 1000:
-        portrayal["Color"] = "Orange"
-        portrayal["scale"] = 0.9
-    if type(agent) is ac.door:
-        portrayal["Color"] = "Brown"
+    if isinstance(agent,ac.door):
+        portrayal["Shape"] = "resources/door.png"
         portrayal["scale"] = 0.9
 
     return portrayal
