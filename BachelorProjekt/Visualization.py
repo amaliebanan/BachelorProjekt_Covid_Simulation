@@ -56,7 +56,7 @@ def covid_draw(agent):
 
     return portrayal
 
-agentsN = 26
+agentsN = 25
 width, height = 9, 10
 
 infected_element = infected_Element()

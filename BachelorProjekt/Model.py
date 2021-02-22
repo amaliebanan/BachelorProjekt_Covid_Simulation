@@ -8,6 +8,8 @@ from mesa.datacollection import DataCollector
 
 
 init_positive_agents = 2
+directions = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
+
 
 def find_status(model):
     agents_status = []
@@ -16,6 +18,7 @@ def find_status(model):
             agents_status.append(agent.infected)
     return sum(agents_status)
 
+
 def setUp(N,model,setUpType):
     'random set-up'
     if setUpType == 1:
@@ -23,14 +26,31 @@ def setUp(N,model,setUpType):
             newAgent = ac.covid_Agent(i, model)
             model.schedule.add(newAgent) #Add agent to scheduler
             x, y = model.grid.find_empty()#Place agent randomly in empty cell on grid
+            newAgent.coords = random.choice(directions)    #Give agent random direction to look at
             model.grid.place_agent(newAgent, (x,y))
-    elif setUpType == 2:
+    elif setUpType == 2: #Horseshoe
         listOfPositions = [(1,1),(2,1),(3,1),(4,1),(5,1),(6,1),(1,2),(1,3),(2,3),(3,3),(4,3),(5,3),(6,3),
-                                          (1,6),(2,6),(3,6),(4,6),(5,6),(6,6),(1,7),(1,8),(2,8),(3,8),(4,8),(5,8),(6,8)]
+                            (1,6),(2,6),(3,6),(4,6),(5,6),(6,6),(1,7),(1,8),(2,8),(3,8),(4,8),(5,8),(6,8)]
+
+    elif setUpType == 3: #Rows
+        listOfPositions = [(1,5),(1,6),(1,7),(1,8),(1,9),(2,0),(2,1),(2,2),(2,3),
+                           (3,5),(3,6),(3,7),(3,8),(3,9),(4,0),(4,1),(4,2),(4,3),
+                           (5,6),(5,7),(5,8),(5,9),(6,0),(6,1),(6,2),(6,3)]
+    elif setUpType == 4: #4-people table
+        listOfPositions = [((1,1),(0,1)),((1,2),(0,-1)),((2,1),(0,1)),((2,2),(0,-1)),
+                           ((1,4),(0,1)),((1,5),(0,-1)),((2,4),(0,1)),((2,5),(0,-1)),
+                           ((1,7),(0,1)),((1,8),(0,-1)),((2,7),(0,1)),((2,8),(0,-1)),
+                           ((4,1),(1,0)),((4,2),(1,0)),((5,1),(0,1)),((5,2),(0,-1)),((6,1),(0,1)),((6,2),(0,-1)),
+                           ((4,4),(0,1)),((4,5),(0,-1)),((5,4),(0,1)),((5,5),(0,-1)),
+                           ((4,7),(0,1)),((4,8),(0,-1)),((5,7),(0,1)),((5,8),(0,-1))]
+    if setUpType is not 1:
         for i in range(N):
             newAgent = ac.covid_Agent(i, model)
             model.schedule.add(newAgent) #Add agent to scheduler
-            x,y = listOfPositions.pop()
+            posAndDirection = listOfPositions.pop()
+            x,y = posAndDirection[0]
+            newAgent.coords = posAndDirection[1]
+            print(posAndDirection[1])
             model.grid.place_agent(newAgent,(x,y))
         TA = ac.covid_Agent(1000,model)
         TA.mask = 1
@@ -38,44 +58,6 @@ def setUp(N,model,setUpType):
         x,y = random.choice([(7,5),(7,4)])
         model.grid.place_agent(TA,(x,y))
 
-    elif setUpType == 3: #Rows
-        listOfPositions = [(1,5),(1,6),(1,7),(1,8),(1,9),(2,0),(2,1),(2,2),(2,3),
-                           (3,5),(3,6),(3,7),(3,8),(3,9),(4,0),(4,1),(4,2),(4,3),
-                           (5,6),(5,7),(5,8),(5,9),(6,0),(6,1),(6,2),(6,3)]
-        for i in range(N):
-            newAgent = ac.covid_Agent(i, model)
-            model.schedule.add(newAgent)
-            x,y = listOfPositions.pop()
-            model.grid.place_agent(newAgent,(x,y))
-
-        TA = ac.covid_Agent(1000,model)
-        model.schedule.add(TA)
-        x,y = random.choice([(7,6),(7,5),(7,4)])
-        model.grid.place_agent(TA,(x,y))
-    elif setUpType == 4:
-        listOfPositions = [(1,1),(1,2),(2,1),(2,2),
-                           (1,4),(1,5),(2,4),(2,5),
-                           (1,7),(1,8),(2,7),(2,8),
-                           (4,1),(4,2),(5,1),(5,2),(6,1),(6,2),
-                           (4,4),(4,5),(5,4),(5,5),
-                           (4,7),(4,8),(5,7),(5,8)]
-        for i in range(1,N):
-            newAgent = ac.covid_Agent(i, model)
-            model.schedule.add(newAgent)
-            x,y = listOfPositions.pop()
-            model.grid.place_agent(newAgent,(x,y))
-
-        TA = ac.covid_Agent(1000,model)
-        model.schedule.add(TA)
-        x,y = random.choice([(7,6),(7,5),(7,4)])
-        model.grid.place_agent(TA,(x,y))
-
-
-class SetUpType():
-    random = 1
-    horseshoe = 2
-    rows = 3
-    groups = 4
 
 
 class covid_Model(Model):
@@ -135,5 +117,5 @@ class covid_Model(Model):
             self.day_count += 1
 
         #Terminate model when everyone is healthy
-        if find_status(self) == 0:
-           self.running = False
+       # if find_status(self) == 0:
+        #   self.running = False

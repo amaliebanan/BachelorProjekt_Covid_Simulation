@@ -83,11 +83,11 @@ class covid_Agent(Agent):
         for position in possible_steps:
             if self.model.grid.is_cell_empty(position):
                 possible_empty_steps.append(position)
-        distances = []
+        distances,dist = [], []
         if len(possible_empty_steps) != 0:
             for pos in possible_empty_steps:
-                distances.append(pos,getDistance(pos, self.door))
-            min_dist = (distances.sort(key=lambda x: x[1]))[0]
+                distances.append((pos,getDistance(pos, self.door.pos)))
+            min_dist = min(distances,key=lambda x:x[1])
         self.model.grid.move_agent(self, min_dist[0])
 
 
@@ -153,7 +153,7 @@ class covid_Agent(Agent):
         else: pass  #If infected=0, dont do anything
 
         ##MOVE###
-        if self.model.minute_count == 120:
+        if self.model.minute_count%120==0:
             self.move(None, True)
         elif self.model.setUpType == 1:
             self.move()
