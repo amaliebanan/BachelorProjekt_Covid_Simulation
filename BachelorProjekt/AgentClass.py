@@ -155,6 +155,7 @@ class covid_Agent(Agent):
         else: pass  #If infected=0, dont do anything
 
         ##MOVE###
+        
         if self.model.minute_count%120==120:
             self.move(None, True)
         elif self.model.setUpType == 1:
