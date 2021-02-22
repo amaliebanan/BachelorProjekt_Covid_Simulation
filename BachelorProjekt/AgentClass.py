@@ -88,7 +88,9 @@ class covid_Agent(Agent):
             for pos in possible_empty_steps:
                 distances.append((pos,getDistance(pos, self.door.pos)))
             min_dist = min(distances,key=lambda x:x[1])
-        self.model.grid.move_agent(self, min_dist[0])
+            ##TJEK OM MAN SELV ER TÆTTERE PÅ DØREN, SÅ IK RYK!#
+            self.model.grid.move_agent(self, min_dist[0])
+
 
 
     def move(self,student=None, timestep=False):
