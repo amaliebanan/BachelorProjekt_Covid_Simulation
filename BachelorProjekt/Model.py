@@ -2,17 +2,18 @@ import AgentClass as ac
 from mesa.time import SimultaneousActivation,RandomActivation
 from mesa.space import MultiGrid
 import random
-from enum import Enum
-import matplotlib.pyplot as plt
 from mesa import Agent, Model
 import numpy as np
 from mesa.datacollection import DataCollector
-import matplotlib
+
 
 init_positive_agents = 2
 
 def find_status(model):
-    agents_status = [agent.infected for agent in model.schedule.agents]
+    agents_status = []
+    for agent in model.schedule.agents:
+        if isinstance(agent, ac.covid_Agent):
+            agents_status.append(agent.infected)
     return sum(agents_status)
 
 def setUp(N,model,setUpType):
@@ -92,6 +93,10 @@ class covid_Model(Model):
 
         #Classroom only
         self.timeToTeach = 5
+
+        door_location = (8,5)
+        self.door = ac.door(500, door_location, self)
+        self.schedule.add(self.door)
 
         ' Tilføj agenter til vores setup '
         setUp(self.n_agents+1,self,setUpType)

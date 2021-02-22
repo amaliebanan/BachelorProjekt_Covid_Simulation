@@ -1,6 +1,6 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement
 from mesa.visualization.ModularVisualization import ModularServer
-
+import AgentClass as ac
 from Model import covid_Model, find_status
 
 
@@ -50,16 +50,20 @@ def covid_draw(agent):
     if agent.infected == 0 and agent.id == 1000:
         portrayal["Color"] = "Orange"
         portrayal["scale"] = 0.9
+    if type(agent) is ac.door:
+        portrayal["Color"] = "Brown"
+        portrayal["scale"] = 0.9
+
     return portrayal
 
-agentsN = 25
-width, height = 8,10
+agentsN = 26
+width, height = 9, 10
 
 infected_element = infected_Element()
 days_chart = count_Days()
 grid = CanvasGrid(covid_draw, width, height, 500, 500)
 
-infected_chart = ChartModule([{"Label":"infected","Color":"Black"}],data_collector_name="datacollector")
+infected_chart = ChartModule([{"Label":"infected","Color":"Black"}], data_collector_name="datacollector")
 
 server = ModularServer(covid_Model,
                        [grid,infected_element, infected_chart,days_chart],

@@ -21,8 +21,9 @@ class covid_Agent(Agent):
         self.recovered = 0 #0 for False, 1 for True
         self.mask = 0 #0 for False, 1 for True
         self.infection_period = 9
-        self.asymptomatic = 5 # Agents are asymptomatic for 5 days
+        self.asymptomatic = 100 # Agents are asymptomatic for 5 days
         self.id = id
+        self.door = self.model.door
 
         #Relevant for classroom only
         self.hasQuestion = 0
@@ -41,7 +42,8 @@ class covid_Agent(Agent):
 
         for neigbor in all_neighbors_within_radius:
             if not self.model.grid.is_cell_empty(neigbor.pos):
-                closest_neighbors.append(neigbor)
+                if isinstance(neigbor,covid_Agent):
+                    closest_neighbors.append(neigbor)
 
         r90 = np.random.poisson(90/100)
         r68 = np.random.poisson(68/100)
@@ -73,8 +75,26 @@ class covid_Agent(Agent):
             elif r2 == 1:
                 agent.infected = 1
 
-    def move(self,student=None):
-        if student is not None:
+
+    def door_move(self):
+        """" Takes one step closer to door"""
+        possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
+        possible_empty_steps = []
+        for position in possible_steps:
+            if self.model.grid.is_cell_empty(position):
+                possible_empty_steps.append(position)
+        distances = []
+        if len(possible_empty_steps) != 0:
+            for pos in possible_empty_steps:
+                distances.append(pos,getDistance(pos, self.door))
+            min_dist = (distances.sort(key=lambda x: x[1]))[0]
+        self.model.grid.move_agent(self, min_dist[0])
+
+
+    def move(self,student=None, timestep=False):
+        if timestep is True:
+            self.door_move()
+        elif student is not None:
             x,y = student.pos
             if self.model.timeToTeach == 0:           #Student has recieved help for 5 minutes
                 student.hasQuestion = 0             #Student does not have question anymore
@@ -116,7 +136,7 @@ class covid_Agent(Agent):
                 self.model.grid.remove_agent(self)
                 return
 
-            randomInt = np.random.poisson(1/8)
+            randomInt = np.random.poisson(1/2)
             if randomInt == 1:
                 self.infectNewAgent()
 
@@ -133,12 +153,24 @@ class covid_Agent(Agent):
         else: pass  #If infected=0, dont do anything
 
         ##MOVE###
-        if self.model.setUpType == 1:
+        if self.model.minute_count == 120:
+            self.move(None, True)
+        elif self.model.setUpType == 1:
             self.move()
         elif not self.model.setUpType == 1 and self.id == 1000: #Move only TA
             listOfStudents = self.model.schedule.agents
             for student in listOfStudents:
-                if student.hasQuestion == 1:
+                if isinstance(student, covid_Agent) and student.hasQuestion == 1:
                     self.move(student)
 
             else: self.move()
+
+
+
+
+class door(Agent):
+    """" Door for people to enter by and to exit by at end of class"""
+    def __init__(self, id, pos, model):
+        super().__init__(id, model)
+        self.pos = pos
+

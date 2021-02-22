@@ -1,3 +1,3 @@
 from Visualization import server
 
-#server.launch()
+server.launch()
