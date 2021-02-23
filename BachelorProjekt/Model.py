@@ -14,7 +14,6 @@ dir = {'N':(1,0), 'S':(-1,0), 'E':(0,1), 'W':(0,-1),'NE': (1,1), 'NW': (-1,1), '
 def find_status(model,parameter,agent_type=None):
     agents_status = []
     all_agents = model.schedule.agents
-    agents = list(filter(lambda a: isinstance(a,agent_type), all_agents))
 
     if agent_type is not None:
         for agent in model.schedule.agents:

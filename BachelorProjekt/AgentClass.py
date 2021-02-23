@@ -18,7 +18,7 @@ def getDistance(pos1,pos2):
 
     return math.sqrt(dx**2+dy**2)
 
-#Moving functions
+#Moving function
 
 def wonder(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
@@ -79,7 +79,7 @@ def hasSymptoms(self):
     else: return False
 
 #Update infection status
-def setInfectionStatus(self):
+def updateInfectionStatus(self):
     self.infection_period -= 1
     if self.infection_period == 0:
         self.infected = 0
@@ -125,7 +125,7 @@ class covid_Agent(Agent):
         if timestep is True:                    #Agents go to door
             self.move_to_door()
 
-        else: wonder()
+        else: wonder(self)
 
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
@@ -140,10 +140,10 @@ class covid_Agent(Agent):
                 infect(self)
 
             #Update infection status
-            setInfectionStatus(self)
+            updateInfectionStatus(self)
 
         ##MOVE###
-        if self.model.minute_count > 2 and (self.model.minute_count)%120==0:
+        if self.model.minute_count > 2 and (self.model.minute_count)%120==0 and self.model.setUpType is not 1:
             self.move(True)                                           #Students go to door
         elif self.model.setUpType == 1:
             self.move()
@@ -208,6 +208,6 @@ class TA(Agent):
                 infect(self)
 
             #Update infection status
-            setInfectionStatus(self)
+            updateInfectionStatus(self)
 
           self.move()
