@@ -57,6 +57,11 @@ def covid_draw(agent):
     if isinstance(agent,ac.door):
         portrayal["Shape"] = "resources/door.png"
         portrayal["scale"] = 0.9
+    if isinstance(agent,ac.wall):
+        portrayal["Shape"] = "rect"
+        portrayal["Color"] = "Black"
+        portrayal["w"] = 0.2
+        portrayal["h"] = 1
 
     return portrayal
 
@@ -72,5 +77,5 @@ infected_chart = ChartModule([{"Label":"infected","Color":"Black"}], data_collec
 server = ModularServer(covid_Model,
                        [grid,infected_element, infected_chart,days_chart],
                        "Covid Model",
-                       {"N":agentsN, "width":width, "height":height, "setUpType":1})
+                       {"N":agentsN, "width":width, "height":height, "setUpType":2})
 server.port = 8521 # The default

@@ -69,6 +69,12 @@ def setUp(N,model,setUpType):
         TA.coords = dir['W']
         model.schedule.add(TA)
         model.grid.place_agent(TA,(x,y))
+        #place walls
+        wall_placements=[(8,0),(8,1),(8,2),(8,3),(8,4),(8,6),(8,7),(8,8),(8,9)]
+        for i in range(len(wall_placements)):
+            newBrick = ac.wall(i+100, model)
+            model.schedule.add(newBrick)
+            model.grid.place_agent(newBrick, wall_placements[i])
 
 
     #Add positive agents

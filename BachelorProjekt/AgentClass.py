@@ -193,6 +193,13 @@ class door(Agent):
         self.id = id
         self.model = model
 
+
+class wall(Agent):
+    """" Door for people to enter by and to exit by end of class"""
+    def __init__(self, id, model):
+        super().__init__(id, model)
+        self.id = id
+
 class TA(Agent):
     def __init__(self,id,model):
         super().__init__(id,model)
