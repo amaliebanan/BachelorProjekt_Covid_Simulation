@@ -8,6 +8,7 @@ from Model import find_status
 infection_period = 9 #How long are they sick?
 asymptomatic = 100 #Agents are asymptomatic for 5 days
 #From sugerscape_cg
+##Helper functions
 'Afstandskrav: 2 meter'
 def getDistance(pos1,pos2):
     x1,y1 = pos1
@@ -17,6 +18,15 @@ def getDistance(pos1,pos2):
     dy = abs(y1-y2)
 
     return math.sqrt(dx**2+dy**2)
+def dotproduct(v1, v2):
+  return v1[0]*v2[0]+v1[1]*v2[1]
+def length(v):
+  return math.sqrt(v[0]**2+v[1]**2)
+def angle(v1, v2):
+  angle_in_radians = math.acos(dotproduct(v1, v2) / (length(v1) * length(v2)))
+  angle_in_degrees = (angle_in_radians*180)/math.pi
+  return angle_in_degrees
+
 
 #Moving function
 def wonder(self):
@@ -30,6 +40,26 @@ def wonder(self):
         next_move = self.random.choice(possible_empty_steps)
         self.model.grid.move_agent(self, next_move)
 
+#check direction between two agents
+def checkDirection(agent,neighbor):
+    dirA,dirN = agent.coords, neighbor.coords
+    angle_ = angle((1,0),(-1,1))
+    if -1 <= angle_ <= 1: #The look in the same direction
+        return 0
+    elif 179 <= angle_ <= 181: #They look in opposite direction
+        return 180
+    elif 89 <= angle_ <= 91: #De kigger vinkelret på hianden
+        return 90
+    elif 44 <= angle_ <= 46: #De kigger næsten i samme retning
+        return 45
+    elif 134 <= angle_ <= 136: #Næsten i modsat retning
+        return 135
+    elif 224 <= angle_ <= 226: #næsten i modsat retning
+        return 225
+    elif 314 <= angle_ <= 316: #næsten i samme retning
+        return 315
+    else: return angle_
+
 #Infect a person
 def infect(self):
         all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
@@ -39,18 +69,6 @@ def infect(self):
             if not self.model.grid.is_cell_empty(neighbor.pos):
                 if isinstance(neighbor,covid_Agent) or isinstance(neighbor,TA):
                     closest_neighbors.append(neighbor)
-        print(closest_neighbors,self.id)
-
-        for neighbor in closest_neighbors:
-            xn,yn = neighbor.coords
-            xs,ys = self.coords
-            vector = (xn+xs,yn+ys)
-            if (xn,yn)==(xs,ys): #Ansigt-mod-nakke eller ved siden ad hinanden
-                print("WUUHUHU",neighbor.pos,neighbor.coords,self.coords,self.pos)
-            elif vector == (0,0): #Modsatrettede retningsvektor
-                 print("JAJAJ",neighbor.pos,neighbor.coords,self.coords,self.pos)
-
-
 
         r90 = np.random.poisson(90/100)
         r68 = np.random.poisson(68/100)
@@ -69,8 +87,9 @@ def infect(self):
                 if r90 == 1:
                     agent.infected = 1
             elif distance > 0.5 and distance <= 1.0:
-                if r68 == 1:
-                    agent.infected = 1
+                if checkDirection(self,agent) < 10: #Face-to-face
+                    if r68 == 1:
+                        agent.infected = 1
             elif distance > 1.0 and distance <= 1.7:
                 if r30 == 1:
                     agent.infected = 1
@@ -158,9 +177,8 @@ class covid_Agent(Agent):
 
             #Update infection status
             updateInfectionStatus(self)
-
         ##MOVE###
-        if self.model.minute_count > 2 and (self.model.minute_count)%10==0:
+        if self.model.minute_count > 2 and (self.model.minute_count)%12==0:
             self.moving_to_door = 1
         if self.moving_to_door == 1 and self.model.setUpType is not 1:
             self.move(True)                                           #Students go to door
