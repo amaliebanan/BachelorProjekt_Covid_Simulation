@@ -8,7 +8,7 @@ from mesa.datacollection import DataCollector
 
 
 init_positive_agents = 2
-dir = {'N':(1,0), 'S':(-1,0), 'E':(0,1), 'W':(0,-1),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
+dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
 #Get the status of a given parameter at any time in model (infected, hasQuestion, recovered, etc).
 def find_status(model,parameter,agent_type=None):
@@ -66,7 +66,7 @@ def setUp(N,model,setUpType):
             model.grid.place_agent(newAgent,(x,y))
         x,y = random.choice([(7,5),(7,4)])
         TA = ac.TA(1000,model)
-        TA.coords = (-1,0)
+        TA.coords = dir['W']
         model.schedule.add(TA)
         model.grid.place_agent(TA,(x,y))
 
@@ -111,7 +111,7 @@ class covid_Model(Model):
 
     def step(self):
         #Every 10th timestep add asking student
-        if not self.setUpType == 1 and self.schedule.time>2 and (self.schedule.time) % 10 == 0:
+        if not self.setUpType == 1 and self.schedule.time>2 and (self.schedule.time) % 8 == 0:
           randomStudent = self.random.choice(self.schedule.agents)
           self.schedule.remove(randomStudent)
           student_with_Question = randomStudent
@@ -124,7 +124,7 @@ class covid_Model(Model):
 
         #Minute count
         self.minute_count += 1
-        if self.minute_count % 120 == 0:
+        if self.minute_count % 12 == 0:
             self.day_count += 1
 
         #Terminate model when everyone is healthy
