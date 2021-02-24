@@ -19,7 +19,6 @@ def getDistance(pos1,pos2):
     return math.sqrt(dx**2+dy**2)
 
 #Moving function
-
 def wonder(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
     possible_empty_steps = []
@@ -102,6 +101,7 @@ class covid_Agent(Agent):
 
         #Relevant for classroom only
         self.hasQuestion = 0
+        self.hasEnteredDoor = []
 
     #Go through neighbors and find one to infect.
 
@@ -110,16 +110,23 @@ class covid_Agent(Agent):
         """" Takes one step closer to door"""
         possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
         possible_empty_steps = []
+        door_pos = self.door.pos
+
         for position in possible_steps:
-            if self.model.grid.is_cell_empty(position):
-                possible_empty_steps.append(position)
+            if position == door_pos:
+                self.model.grid.move_agent(self, door_pos)
+                self.hasEnteredDoor.append(self)
+                return
+            elif self.model.grid.is_cell_empty(position):
+                 possible_empty_steps.append(position)
         distances = []
         if len(possible_empty_steps) != 0:
             for pos in possible_empty_steps:
-                distances.append((pos,getDistance(pos, self.door.pos)))
+                distances.append((pos,getDistance(pos, door_pos)))
             min_dist = min(distances,key=lambda x:x[1])
-            ##TJEK OM MAN SELV ER TÆTTERE PÅ DØREN, SÅ IK RYK!#
-            self.model.grid.move_agent(self, min_dist[0])
+            if getDistance(self.pos,door_pos) <= min_dist[1]:
+               return
+            else: self.model.grid.move_agent(self, min_dist[0])
 
     def move(self,timestep=False):
         if timestep is True:                    #Agents go to door
@@ -143,7 +150,7 @@ class covid_Agent(Agent):
             updateInfectionStatus(self)
 
         ##MOVE###
-        if self.model.minute_count > 2 and (self.model.minute_count)%120==0 and self.model.setUpType is not 1:
+        if self.model.minute_count > 2 and (self.model.minute_count)%10==0 and self.model.setUpType is not 1:
             self.move(True)                                           #Students go to door
         elif self.model.setUpType == 1:
             self.move()
@@ -194,7 +201,9 @@ class TA(Agent):
             for s in students:
                 if s.hasQuestion == 1:
                     self.move_to_student(s)
-        else: wonder(self)
+        else:
+            wonder(self)
+            wonder(self)
 
     def step(self):
         #Check if TA should go home

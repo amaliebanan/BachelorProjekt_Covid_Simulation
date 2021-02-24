@@ -72,5 +72,5 @@ infected_chart = ChartModule([{"Label":"infected","Color":"Black"}], data_collec
 server = ModularServer(covid_Model,
                        [grid,infected_element, infected_chart,days_chart],
                        "Covid Model",
-                       {"N":agentsN, "width":width, "height":height, "setUpType":1})
+                       {"N":agentsN, "width":width, "height":height, "setUpType":4})
 server.port = 8521 # The default

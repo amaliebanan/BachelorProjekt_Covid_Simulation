@@ -124,5 +124,5 @@ class covid_Model(Model):
             self.day_count += 1
 
         #Terminate model when everyone is healthy
-        if find_status(self,"infected") == 0:
-           self.running = False
+     #   if find_status(self,"infected") == 0:
+      #     self.running = False
