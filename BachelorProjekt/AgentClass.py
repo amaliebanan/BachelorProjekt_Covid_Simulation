@@ -32,13 +32,25 @@ def wonder(self):
 
 #Infect a person
 def infect(self):
-        all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=True,radius=2)
+        all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
         closest_neighbors = []
 
-        for neigbor in all_neighbors_within_radius:
-            if not self.model.grid.is_cell_empty(neigbor.pos):
-                if isinstance(neigbor,covid_Agent) or isinstance(neigbor,TA):
-                    closest_neighbors.append(neigbor)
+        for neighbor in all_neighbors_within_radius:
+            if not self.model.grid.is_cell_empty(neighbor.pos):
+                if isinstance(neighbor,covid_Agent) or isinstance(neighbor,TA):
+                    closest_neighbors.append(neighbor)
+        print(closest_neighbors,self.id)
+
+        for neighbor in closest_neighbors:
+            xn,yn = neighbor.coords
+            xs,ys = self.coords
+            vector = (xn+xs,yn+ys)
+            if (xn,yn)==(xs,ys): #Ansigt-mod-nakke eller ved siden ad hinanden
+                print("WUUHUHU",neighbor.pos,neighbor.coords,self.coords,self.pos)
+            elif vector == (0,0): #Modsatrettede retningsvektor
+                 print("JAJAJ",neighbor.pos,neighbor.coords,self.coords,self.pos)
+
+
 
         r90 = np.random.poisson(90/100)
         r68 = np.random.poisson(68/100)
@@ -98,13 +110,12 @@ class covid_Agent(Agent):
         self.asymptomatic = asymptomatic
         self.id = id
         self.door = self.model.door
+        self.coords = ()
+        self.moving_to_door = 0
 
         #Relevant for classroom only
         self.hasQuestion = 0
         self.hasEnteredDoor = []
-
-    #Go through neighbors and find one to infect.
-
 
     def move_to_door(self):
         """" Takes one step closer to door"""
@@ -136,7 +147,6 @@ class covid_Agent(Agent):
 
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
-
         if self.infected == 1:
             #Infect if agent should go home
             if hasSymptoms(self):
@@ -150,7 +160,9 @@ class covid_Agent(Agent):
             updateInfectionStatus(self)
 
         ##MOVE###
-        if self.model.minute_count > 2 and (self.model.minute_count)%10==0 and self.model.setUpType is not 1:
+        if self.model.minute_count > 2 and (self.model.minute_count)%10==0:
+            self.moving_to_door = 1
+        if self.moving_to_door == 1 and self.model.setUpType is not 1:
             self.move(True)                                           #Students go to door
         elif self.model.setUpType == 1:
             self.move()
@@ -173,6 +185,7 @@ class TA(Agent):
         self.asymptomatic = asymptomatic # Agents are asymptomatic for 5 days
         self.id = id
         self.door = self.model.door
+        self.coords = ()
 
     def move_to_student(self,student):
         x,y = student.pos
@@ -186,6 +199,7 @@ class TA(Agent):
             self.model.grid.remove_agent(self)
             newTA = TA(1000,self.model)
             newTA.mask = 1
+            newTA.coords = self.coords
             newTA.infected = self.infected
             self.model.schedule.add(newTA)
             self.model.grid.place_agent(newTA,(x,y))
@@ -197,7 +211,7 @@ class TA(Agent):
         students = [s for s in self.model.schedule.agents if isinstance(s,covid_Agent)]
         questionStatus = find_status(self.model,"hasQuestion",covid_Agent)
 
-        if questionStatus > 0:  #Someone has a question
+        if questionStatus > 0 and self.model.day_count == 1:  #Someone has a question
             for s in students:
                 if s.hasQuestion == 1:
                     self.move_to_student(s)
@@ -220,3 +234,17 @@ class TA(Agent):
             updateInfectionStatus(self)
 
           self.move()
+
+class Cantine_Agent(Agent):
+    def __init__(self, id, model):
+        super().__init__(id, model)
+        self.infected = 0 #0 for False, 1 for True
+        self.recovered = 0 #0 for False, 1 for True
+        self.mask = 0 #0 for False, 1 for True
+        self.infection_period = infection_period
+        self.asymptomatic = asymptomatic
+        self.id = id
+        self.door = self.model.door
+
+        #Relevant for classroom only
+        self.hasQuestion = 0

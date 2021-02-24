@@ -9,12 +9,10 @@ from mesa.datacollection import DataCollector
 
 init_positive_agents = 2
 dir = {'N':(1,0), 'S':(-1,0), 'E':(0,1), 'W':(0,-1),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
-
+listOfSetup = []
 #Get the status of a given parameter at any time in model (infected, hasQuestion, recovered, etc).
 def find_status(model,parameter,agent_type=None):
     agents_status = []
-    all_agents = model.schedule.agents
-
     if agent_type is not None:
         for agent in model.schedule.agents:
             if isinstance(agent, agent_type):
@@ -27,6 +25,7 @@ def find_status(model,parameter,agent_type=None):
 
 #Set up the grid accordingly - also adding positive agents.
 def setUp(N,model,setUpType):
+    listOfPositions = []
     'random set-up'
     if setUpType == 1:
         for i in range(1,N):
@@ -67,8 +66,10 @@ def setUp(N,model,setUpType):
             model.grid.place_agent(newAgent,(x,y))
         x,y = random.choice([(7,5),(7,4)])
         TA = ac.TA(1000,model)
+        TA.coords = (-1,0)
         model.schedule.add(TA)
         model.grid.place_agent(TA,(x,y))
+
 
     #Add positive agents
     for i in range(init_positive_agents):
@@ -77,6 +78,8 @@ def setUp(N,model,setUpType):
         postive_agent = randomAgent
         postive_agent.infected = 1
         model.schedule.add(postive_agent)
+
+    listOfSetup.append(listOfPositions)
 
 class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
@@ -114,6 +117,7 @@ class covid_Model(Model):
           student_with_Question = randomStudent
           student_with_Question.hasQuestion = 1
           self.schedule.add(student_with_Question)
+
 
         self.schedule.step()
         self.datacollector.collect(self)
