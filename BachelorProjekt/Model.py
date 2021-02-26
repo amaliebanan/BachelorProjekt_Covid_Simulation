@@ -10,6 +10,8 @@ from mesa.datacollection import DataCollector
 init_positive_agents = 2
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
+
+
 #Get the status of a given parameter at any time in model (infected, hasQuestion, recovered, etc).
 def find_status(model,parameter,agent_type=None):
     agents_status = []
@@ -19,7 +21,7 @@ def find_status(model,parameter,agent_type=None):
                 agents_status.append(getattr(agent,parameter))
     else:
         for agent in model.schedule.agents:
-            if not isinstance(agent, ac.door):
+            if not isinstance(agent, ac.door) and not isinstance(agent,ac.wall):
                 agents_status.append(getattr(agent,parameter))
     return sum(agents_status)
 
@@ -94,7 +96,7 @@ class covid_Model(Model):
         self.schedule = RandomActivation(self)
         self.setUpType = setUpType
         self.status = find_status(self,"infected",ac.covid_Agent)
-        self.datacollector = DataCollector(model_reporters={"infected": lambda m:find_status(self,"infected",ac.covid_Agent)})
+        self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", ac.covid_Agent)})
 
         #Counting minutes and days
         self.minute_count = 0
@@ -134,5 +136,5 @@ class covid_Model(Model):
             self.day_count += 1
 
         #Terminate model when everyone is healthy
-     #   if find_status(self,"infected") == 0:
-      #     self.running = False
+        #if find_status(self,"infected") == 0:
+         #  self.running = False

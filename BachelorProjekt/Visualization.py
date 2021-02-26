@@ -2,7 +2,9 @@ from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement
 from mesa.visualization.ModularVisualization import ModularServer
 import AgentClass as ac
 from Model import covid_Model, find_status
-
+import numpy as np
+from mesa.batchrunner import BatchRunner
+import matplotlib.pyplot as plt
 
 class infected_Element(TextElement):
     '''
@@ -12,7 +14,7 @@ class infected_Element(TextElement):
         pass
 
     def render(self, model):
-        return "Infected agents: " + str(find_status(model,"infected",ac.covid_Agent))
+        return "Infected agents: " + str(find_status(model, "infected", ac.covid_Agent))
 
 
 class count_Days(TextElement):
@@ -77,5 +79,9 @@ infected_chart = ChartModule([{"Label":"infected","Color":"Black"}], data_collec
 server = ModularServer(covid_Model,
                        [grid,infected_element, infected_chart,days_chart],
                        "Covid Model",
-                       {"N":agentsN, "width":width, "height":height, "setUpType":2})
+                       {"N":agentsN, "width":width, "height":height, "setUpType":1})
 server.port = 8521 # The default
+
+
+
+

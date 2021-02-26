@@ -2,10 +2,10 @@ from mesa import Agent, Model
 import math
 from mesa.space import MultiGrid
 import numpy as np
+import sys
 from Model import find_status
 
-
-infection_period = 9 #How long are they sick?
+infection_period = abs(round(np.random.normal(18,7.5)))*120 #How long are they sick?
 asymptomatic = 100 #Agents are asymptomatic for 5 days
 #From sugerscape_cg
 ##Helper functions
@@ -70,11 +70,11 @@ def infect(self):
                 if isinstance(neighbor,covid_Agent) or isinstance(neighbor,TA):
                     closest_neighbors.append(neighbor)
 
-        r90 = np.random.poisson(90/100)
-        r68 = np.random.poisson(68/100)
-        r30 = np.random.poisson(30/100)
-        r10 = np.random.poisson(10/100)
-        r2 = np.random.poisson(2/100)
+        r90 = np.random.poisson(0.025)
+        r68 = np.random.poisson(0.025)
+        r30 = np.random.poisson(0.025)
+        r10 = np.random.poisson(0.025)
+        r2 = np.random.poisson(0.025)
 
         for agent in closest_neighbors:
             distance = getDistance(self.pos,agent.pos)
