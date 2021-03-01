@@ -95,7 +95,7 @@ class covid_Model(Model):
         self.day_count = 1
 
         #Classroom only
-        self.timeToTeach = 5
+        self.timeToTeach = 6
 
         #Add door(s) to model and grid
         door_location = (8,5)
@@ -111,20 +111,19 @@ class covid_Model(Model):
 
     def step(self):
         #Every 10th timestep add asking student
-        if not self.setUpType == 1 and self.schedule.time>2 and (self.schedule.time) % 8 == 0:
+        if not self.setUpType == 1 and self.schedule.time>2 and (self.schedule.time) % 10 == 0:
           randomStudent = self.random.choice(self.schedule.agents)
           self.schedule.remove(randomStudent)
           student_with_Question = randomStudent
           student_with_Question.hasQuestion = 1
           self.schedule.add(student_with_Question)
 
-
         self.schedule.step()
         self.datacollector.collect(self)
 
         #Minute count
         self.minute_count += 1
-        if self.minute_count % 12 == 0:
+        if self.minute_count % 120 == 0:
             self.day_count += 1
 
         #Terminate model when everyone is healthy

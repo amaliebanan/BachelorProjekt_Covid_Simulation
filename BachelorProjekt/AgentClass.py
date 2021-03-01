@@ -5,7 +5,7 @@ import numpy as np
 from Model import find_status
 
 
-infection_period = 9 #How long are they sick?
+infection_period = 1080 #How long are they sick?
 asymptomatic = 100 #Agents are asymptomatic for 5 days
 #From sugerscape_cg
 ##Helper functions
@@ -26,7 +26,6 @@ def angle(v1, v2):
   angle_in_radians = math.acos(dotproduct(v1, v2) / (length(v1) * length(v2)))
   angle_in_degrees = (angle_in_radians*180)/math.pi
   return angle_in_degrees
-
 
 #Moving function
 def wonder(self):
@@ -70,11 +69,11 @@ def infect(self):
                 if isinstance(neighbor,covid_Agent) or isinstance(neighbor,TA):
                     closest_neighbors.append(neighbor)
 
-        r90 = np.random.poisson(90/100)
-        r68 = np.random.poisson(68/100)
-        r30 = np.random.poisson(30/100)
-        r10 = np.random.poisson(10/100)
-        r2 = np.random.poisson(2/100)
+
+        pTA = np.random.poisson(2.5/100) #TA står meget tæt og snakker højt
+        p_1 = np.random.poisson(0.25/100) #Indenfor 1 meters afstand
+        p_1_til_2 = np.random.poisson(0.22450/100) #Mellem 1 og 2 meters afstand
+        p_over_2 = np.random.poisson(0.2199651/100) #Over 2 meters afstand
 
         for agent in closest_neighbors:
             distance = getDistance(self.pos,agent.pos)
@@ -84,19 +83,15 @@ def infect(self):
             if agent_recovered_status == 1 or agent_status == 1: # kan ikke blive smittet, da den er immun eller allerede infected
                 continue
             elif distance <= 0.1:
-                if r90 == 1:
+                if pTA == 1:
                     agent.infected = 1
             elif distance > 0.5 and distance <= 1.0:
-                if checkDirection(self,agent) < 10: #Face-to-face
-                    if r68 == 1:
-                        agent.infected = 1
-            elif distance > 1.0 and distance <= 1.7:
-                if r30 == 1:
+                if p_1 == 1:
                     agent.infected = 1
-            elif distance > 1.7 and distance <= 2.0:
-                if r10 == 1:
+            elif distance > 1.0 and distance <= 2.0:
+                if p_1_til_2 == 1:
                     agent.infected = 1
-            elif r2 == 1:
+            elif p_over_2 == 1:
                 agent.infected = 1
 
 #Check if a person has symptoms
@@ -170,15 +165,12 @@ class covid_Agent(Agent):
             #Infect if agent should go home
             if hasSymptoms(self):
                 return
-            #If not, roll a dice
-            randomInt = np.random.poisson(1/2)
-            if randomInt == 1:
-                infect(self)
+            infect(self)
 
             #Update infection status
             updateInfectionStatus(self)
         ##MOVE###
-        if self.model.minute_count > 2 and (self.model.minute_count)%12==0:
+        if self.model.minute_count > 2 and (self.model.minute_count)%120==0:
             self.moving_to_door = 1
         if self.moving_to_door == 1 and self.model.setUpType is not 1:
             self.move(True)                                           #Students go to door
@@ -243,10 +235,8 @@ class TA(Agent):
             #Infect if agent should go home
             if hasSymptoms(self):
                 return
-            #If not, roll a dice
-            randomInt = np.random.poisson(1/2)
-            if randomInt == 1:
-                infect(self)
+
+            infect(self)
 
             #Update infection status
             updateInfectionStatus(self)

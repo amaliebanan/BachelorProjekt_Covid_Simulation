@@ -14,7 +14,6 @@ class infected_Element(TextElement):
     def render(self, model):
         return "Infected agents: " + str(find_status(model,"infected",ac.covid_Agent))
 
-
 class count_Days(TextElement):
     '''
     Display a text count of how many happy agents there are.   FROM MESA-EXAMPLES
@@ -72,5 +71,5 @@ infected_chart = ChartModule([{"Label":"infected","Color":"Black"}], data_collec
 server = ModularServer(covid_Model,
                        [grid,infected_element, infected_chart,days_chart],
                        "Covid Model",
-                       {"N":agentsN, "width":width, "height":height, "setUpType":1})
+                       {"N":agentsN, "width":width, "height":height, "setUpType":4})
 server.port = 8521 # The default
