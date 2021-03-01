@@ -25,6 +25,22 @@ def find_status(model,parameter,agent_type=None):
                 agents_status.append(getattr(agent,parameter))
     return sum(agents_status)
 
+def add_init_infected_to_grid(self,n):
+    i = 0
+    positives = []
+    while i<n:
+        randomAgent = self.random.choice(self.schedule.agents)
+        if randomAgent.pos in positives:
+            pass
+        elif isinstance(randomAgent,ac.covid_Agent) or isinstance(randomAgent,ac.TA):
+            self.schedule.remove(randomAgent)
+            postive_agent = randomAgent
+            postive_agent.infected = 1
+            self.schedule.add(postive_agent)
+            positives.append(randomAgent.pos)
+            i+=1
+        else: pass
+
 #Set up the grid accordingly - also adding positive agents.
 def setUp(N,model,setUpType):
     listOfPositions = []
@@ -80,12 +96,7 @@ def setUp(N,model,setUpType):
 
 
     #Add positive agents
-    for i in range(init_positive_agents):
-        randomAgent = model.random.choice(model.schedule.agents)
-        model.schedule.remove(randomAgent)
-        postive_agent = randomAgent
-        postive_agent.infected = 1
-        model.schedule.add(postive_agent)
+    add_init_infected_to_grid(model,init_positive_agents)
 
     listOfSetup.append(listOfPositions)
 
@@ -119,6 +130,7 @@ class covid_Model(Model):
 
     def step(self):
         #Every 10th timestep add asking student
+
         if not self.setUpType == 1 and self.schedule.time>2 and (self.schedule.time) % 8 == 0:
           randomStudent = self.random.choice(self.schedule.agents)
           self.schedule.remove(randomStudent)
@@ -132,7 +144,7 @@ class covid_Model(Model):
 
         #Minute count
         self.minute_count += 1
-        if self.minute_count % 12 == 0:
+        if self.minute_count % 120 == 0:
             self.day_count += 1
 
         #Terminate model when everyone is healthy
