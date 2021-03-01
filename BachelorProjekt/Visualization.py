@@ -68,7 +68,7 @@ def covid_draw(agent):
     return portrayal
 
 agentsN = 25
-width, height = 9, 10
+width, height = 20, 32
 
 infected_element = infected_Element()
 days_chart = count_Days()
@@ -79,7 +79,7 @@ infected_chart = ChartModule([{"Label":"infected","Color":"Black"}], data_collec
 server = ModularServer(covid_Model,
                        [grid,infected_element, infected_chart,days_chart],
                        "Covid Model",
-                       {"N":agentsN, "width":width, "height":height, "setUpType":4})
+                       {"N":agentsN, "width":width, "height":height, "setUpType":[4,4,4]})
 server.port = 8521 # The default
 
 

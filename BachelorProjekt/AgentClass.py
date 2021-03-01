@@ -125,6 +125,7 @@ class covid_Agent(Agent):
         self.door = self.model.door
         self.coords = ()
         self.moving_to_door = 0
+        self.TA = 0
 
         #Relevant for classroom only
         self.hasQuestion = 0
@@ -199,35 +200,40 @@ class TA(Agent):
         self.infection_period = infection_period
         self.asymptomatic = asymptomatic # Agents are asymptomatic for 5 days
         self.id = id
+
+        self.timeToTeach = 5
         self.door = self.model.door
+        self.students = []
         self.coords = ()
 
     def move_to_student(self,student):
         x,y = student.pos
-        if self.model.timeToTeach == 0:           #Student has recieved help for 5 minutes
-            student.hasQuestion = 0             #Student does not have question anymore
-            self.model.timeToTeach = 5          #Reset timer
+        print("VI I LOOP",self.timeToTeach)
+        if self.timeToTeach == 0:           #Student has recieved help for 5 minutes
+            student.hasQuestion = 1             #Student does not have question anymore
+            self.timeToTeach = 5          #Reset timer
 
-        elif self.model.timeToTeach == 4:   #Student has not recieved help yet, go to that student
-
+        elif self.timeToTeach == 4:   #Student has not recieved help yet, go to that student
+            id = self.id
             self.model.schedule.remove(self)
             self.model.grid.remove_agent(self)
-            newTA = TA(1000,self.model)
+            newTA = TA(id,self.model)
             newTA.mask = 1
             newTA.coords = self.coords
             newTA.infected = self.infected
             self.model.schedule.add(newTA)
             self.model.grid.place_agent(newTA,(x,y))
-            self.model.timeToTeach -= 1
+            self.timeToTeach -= 1
         else:                               #Student is still recieving help, subtract one minut and stay put
-            self.model.timeToTeach -= 1
+            self.timeToTeach -= 1
+        print("STATUS Q",student.hasQuestion)
 
     def move(self):
-        students = [s for s in self.model.schedule.agents if isinstance(s,covid_Agent)]
-        questionStatus = find_status(self.model,"hasQuestion",covid_Agent)
+        questionStatus = find_status(self.model,"hasQuestion",covid_Agent,self.students)
+        print(self.id,self.pos,questionStatus,self.timeToTeach)
 
         if questionStatus > 0 and self.model.day_count == 1:  #Someone has a question
-            for s in students:
+            for s in self.students:
                 if s.hasQuestion == 1:
                     self.move_to_student(s)
         else:
