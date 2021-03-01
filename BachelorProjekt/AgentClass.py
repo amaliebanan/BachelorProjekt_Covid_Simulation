@@ -226,7 +226,7 @@ class TA(Agent):
             self.timeToTeach -= 1
         else:                               #Student is still recieving help, subtract one minut and stay put
             self.timeToTeach -= 1
-        print("STATUS Q",student.hasQuestion)
+        print("STATUS Q",student.hasQuestion,student.id,student.pos)
 
     def move(self):
         questionStatus = find_status(self.model,"hasQuestion",covid_Agent,self.students)
