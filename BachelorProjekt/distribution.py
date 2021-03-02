@@ -24,16 +24,16 @@ def cdf(n,p):
     plt.ylabel("Cumulative probability")
     plt.xlabel("Time steps")
     plt.plot(x,y)
-    plt.show()
+   # plt.show()
 
     return x,y
 
 #Calculate and plot Cumulative Distribution Function for geometrisk fordeling med vores p-værdi
-x,y = cdf(120,pTA)
+x,y= cdf(120,pTA)
 
-x,y = cdf(1000,p1)
+x,y = cdf(120,p1)
 
-x,y = cdf(1000,p2)
+x,y = cdf(120,p2)
 
 #https://blogs.sas.com/content/iml/2020/04/08/reducing-spread-of-coronavirus.html
 #https://blogs.sas.com/content/iml/2020/04/06/geometric-distribution-sas.html
@@ -54,4 +54,4 @@ mean, var, skew, kurt = geom.stats(p, moments='mvsk')
 x = np.arange(geom.ppf(0.01, p),geom.ppf(0.99, p))
 ax.plot(x, geom.pmf(x, p), 'bo', ms=8, label='geom pmf')
 ax.vlines(x, 0, geom.pmf(x, p), colors='b', lw=5, alpha=0.5)
-#plt.show()
+plt.show()

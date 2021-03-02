@@ -16,7 +16,6 @@ class infected_Element(TextElement):
     def render(self, model):
         return "Infected agents: " + str(find_status(model, "infected", ac.covid_Agent))
 
-
 class count_Days(TextElement):
     '''
     Display a text count of how many happy agents there are.   FROM MESA-EXAMPLES
@@ -39,7 +38,7 @@ def covid_draw(agent):
     if agent is None:
         return
     portrayal = {"Shape": "circle", "r": 0.8, "Filled": "true", "Layer": 0}
-    if isinstance(agent,ac.covid_Agent):
+    if isinstance(agent,ac.covid_Agent) or isinstance(agent,ac.Cantine_Agent):
         if agent.infected == 0:
             portrayal["Color"] = "green"
         if agent.infected == 1:
@@ -62,13 +61,17 @@ def covid_draw(agent):
     if isinstance(agent,ac.wall):
         portrayal["Shape"] = "rect"
         portrayal["Color"] = "Black"
-        portrayal["w"] = 0.2
-        portrayal["h"] = 1
+        if agent.orientation == 'v':
+            portrayal["w"] = 0.2
+            portrayal["h"] = 1
+        elif agent.orientation == 'h':
+            portrayal["w"] = 1
+            portrayal["h"] = 0.2
 
     return portrayal
 
 agentsN = 25
-width, height = 20, 32
+width, height = 30, 33
 
 infected_element = infected_Element()
 days_chart = count_Days()
@@ -79,7 +82,7 @@ infected_chart = ChartModule([{"Label":"infected","Color":"Black"}], data_collec
 server = ModularServer(covid_Model,
                        [grid,infected_element, infected_chart,days_chart],
                        "Covid Model",
-                       {"N":agentsN, "width":width, "height":height, "setUpType":[4,4,4]})
+                       {"N":agentsN, "width":width, "height":height, "setUpType":[2,3,4]})
 server.port = 8521 # The default
 
 

@@ -113,19 +113,41 @@ def updateInfectionStatus(self):
         else:
             self.recovered = 1
 
+def class_to_cantine(self):
+    self.model.grid.move_agent(self, self.door.pos)
+    c_agent = Cantine_Agent(self.id,self.model)
+    c_agent.infected, c_agent.recovered, c_agent.mask = self.infected, self.recovered,self.mask
+    c_agent.door = self.door
+    self.model.schedule.remove(self)
+    self.model.schedule.add(c_agent)
+    x,y = self.pos
+    c_agent.pos = x+1,y
+    self.model.grid.place_agent(c_agent,(x+1,y))
+    self.hasEnteredDoor.append(self)
+
+def TA_to_cantine(self):
+    TA_turn_student = Cantine_Agent(self.id,self.model)
+    x,y = self.pos
+    self.model.schedule.remove(self)
+    self.model.grid.remove_agent(self)
+    self.model.schedule.add(TA_turn_student)
+    self.model.grid.place_agent(TA_turn_student,(x,y))
+    print("hey",type(TA_turn_student))
+
 class covid_Agent(Agent):
     def __init__(self, id, model):
         super().__init__(id, model)
         self.infected = 0 #0 for False, 1 for True
         self.recovered = 0 #0 for False, 1 for True
         self.mask = 0 #0 for False, 1 for True
+
         self.infection_period = infection_period
         self.asymptomatic = asymptomatic
         self.id = id
-        self.door = self.model.door
         self.coords = ()
         self.moving_to_door = 0
-        self.TA = 0
+        self.TA = ()
+        self.door = ()
 
         #Relevant for classroom only
         self.hasQuestion = 0
@@ -138,9 +160,9 @@ class covid_Agent(Agent):
         door_pos = self.door.pos
 
         for position in possible_steps:
-            if position == door_pos:
-                self.model.grid.move_agent(self, door_pos)
-                self.hasEnteredDoor.append(self)
+            if position == door_pos: #Create new Cantine-agent
+                class_to_cantine(self)
+                self.TA.students.remove(self)
                 return
             elif self.model.grid.is_cell_empty(position):
                  possible_empty_steps.append(position)
@@ -149,8 +171,8 @@ class covid_Agent(Agent):
             for pos in possible_empty_steps:
                 distances.append((pos,getDistance(pos, door_pos)))
             min_dist = min(distances,key=lambda x:x[1])
-            if getDistance(self.pos,door_pos) <= min_dist[1]:
-               return
+            if getDistance(self.pos,door_pos) < min_dist[1]:
+                return
             else: self.model.grid.move_agent(self, min_dist[0])
 
     def move(self,timestep=False):
@@ -170,7 +192,7 @@ class covid_Agent(Agent):
             updateInfectionStatus(self)
 
         ##MOVE###
-        if self.model.minute_count > 2 and (self.model.minute_count)%120==0:
+        if self.model.minute_count > 2 and (self.model.minute_count)%12==0:
             self.moving_to_door = 1
         if self.moving_to_door == 1 and self.model.setUpType is not 1:
             self.move(True)                                           #Students go to door
@@ -190,6 +212,7 @@ class wall(Agent):
     def __init__(self, id, model):
         super().__init__(id, model)
         self.id = id
+        self.orientation = ()
 
 class TA(Agent):
     def __init__(self,id,model):
@@ -202,35 +225,30 @@ class TA(Agent):
         self.id = id
 
         self.timeToTeach = 5
-        self.door = self.model.door
+        self.door = ()
         self.students = []
         self.coords = ()
 
     def move_to_student(self,student):
+
         x,y = student.pos
-        print("VI I LOOP",self.timeToTeach)
         if self.timeToTeach == 0:           #Student has recieved help for 5 minutes
-            student.hasQuestion = 1             #Student does not have question anymore
+            student.hasQuestion = 0            #Student does not have question anymore
             self.timeToTeach = 5          #Reset timer
 
         elif self.timeToTeach == 4:   #Student has not recieved help yet, go to that student
-            id = self.id
+            newTA = self
             self.model.schedule.remove(self)
             self.model.grid.remove_agent(self)
-            newTA = TA(id,self.model)
-            newTA.mask = 1
-            newTA.coords = self.coords
-            newTA.infected = self.infected
             self.model.schedule.add(newTA)
             self.model.grid.place_agent(newTA,(x,y))
             self.timeToTeach -= 1
         else:                               #Student is still recieving help, subtract one minut and stay put
             self.timeToTeach -= 1
-        print("STATUS Q",student.hasQuestion,student.id,student.pos)
+
 
     def move(self):
         questionStatus = find_status(self.model,"hasQuestion",covid_Agent,self.students)
-        print(self.id,self.pos,questionStatus,self.timeToTeach)
 
         if questionStatus > 0 and self.model.day_count == 1:  #Someone has a question
             for s in self.students:
@@ -241,18 +259,19 @@ class TA(Agent):
             wonder(self)
 
     def step(self):
-        #Check if TA should go home
-          if self.infected == 1:
-            #Infect if agent should go home
-            if hasSymptoms(self):
-                return
+    #  if len(self.students) == 0:
+     #       TA_to_cantine(self)
+      if self.infected == 1:
+        #Infect if agent should go home
+        if hasSymptoms(self):
+            return
 
-            infect(self)
+        infect(self)
 
-            #Update infection status
-            updateInfectionStatus(self)
+        #Update infection status
+        updateInfectionStatus(self)
 
-          self.move()
+      self.move()
 
 class Cantine_Agent(Agent):
     def __init__(self, id, model):
@@ -263,7 +282,15 @@ class Cantine_Agent(Agent):
         self.infection_period = infection_period
         self.asymptomatic = asymptomatic
         self.id = id
-        self.door = self.model.door
+        self.door = ()
+        self.just_finished_class = 1
+
 
         #Relevant for classroom only
         self.hasQuestion = 0
+
+    def move(self):
+        wonder(self)
+    def step(self):
+        self.move()
+

@@ -8,9 +8,9 @@ from mesa.datacollection import DataCollector
 
 
 init_positive_agents = 2
+init_cantine_agents = 30
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
-
 
 #Get the status of a given parameter at any time in model (infected, hasQuestion, recovered, etc).
 def find_status(model,parameter,agent_type=None,list=None):
@@ -37,7 +37,7 @@ def add_init_infected_to_grid(self,n):
         randomAgent = self.random.choice(self.schedule.agents)
         if randomAgent.pos in positives:
             pass
-        elif isinstance(randomAgent,ac.covid_Agent) or isinstance(randomAgent,ac.TA):
+        elif isinstance(randomAgent,ac.covid_Agent) or isinstance(randomAgent,ac.TA) or isinstance(randomAgent,ac.Cantine_Agent):
             self.schedule.remove(randomAgent)
             postive_agent = randomAgent
             postive_agent.infected = 1
@@ -46,6 +46,13 @@ def add_init_infected_to_grid(self,n):
             i+=1
         else: pass
 
+def add_init_cantine_agents_to_grid(self,n,i):
+    for j in range(n*i,(1+i)*n):
+        newAgent = ac.Cantine_Agent(j,self)
+        self.schedule.add(newAgent) #Add agent to scheduler
+        x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
+        newAgent.coords = random.choice(list(dir.values()))   #Give agent random direction to look at
+        self.grid.place_agent(newAgent, (max(x,9),y))
 #Set up the grid accordingly - also adding positive agents.
 def setUp(N,model,setUpType,i):
     listOfPositions = []
@@ -86,33 +93,49 @@ def setUp(N,model,setUpType,i):
         listOfPositions = adjustY_coord
     if setUpType is not 1:
         students = []
+        # Add TA
         x,y = random.choice([(7,5+i*11),(7,4+i*11)])
         TA = ac.TA(1000+i,model)
         TA.coords = dir['W']
         model.schedule.add(TA)
         model.grid.place_agent(TA,(x,y))
         model.TAs.append(TA)
+
+        #Add door(s) to model and grid
+        door_location = (8,5+i*11)
+        door = ac.door(500+i*11, door_location, model)
+        model.door = door
+        model.schedule.add(door)
+        model.grid.place_agent(door,door_location)
+
+
         for j in range(N*i,(i+1)*N):
             newAgent = ac.covid_Agent(j, model)
             model.schedule.add(newAgent) #Add agent to scheduler
             posAndDirection = listOfPositions.pop()
             x,y = posAndDirection[0]
             newAgent.coords = posAndDirection[1]
+            newAgent.door = door
             model.grid.place_agent(newAgent,(x,y))
             newAgent.TA = TA
             students.append(newAgent)
         TA.students = students
 
         #Place walls
-        wall_placements =[(8,0+i*11),(8,1+i*11),(8,2+i*11),(8,3+i*11),(8,4+i*11),(8,5+i*11),(8,6+i*11),(8,7+i*11),(8,8+i*11),(8,9+i*11)]
-        wall_placements_id = [k for k in range(10000+len(wall_placements)*i,10000+(i+1)*len(wall_placements))]
-        for j in range(len(wall_placements)):
-            newBrick = ac.wall(wall_placements_id[j], model)
+        wall_placements_vertical = [(8,j+i*11) for j in range(0,11)]
+        wall_placements_horizontal = [(j,10+i*11) for j in range(0,8)]
+        wall_placements_v_id = [k for k in range(10000+len(wall_placements_vertical)*i,10000+(i+1)*len(wall_placements_vertical))]
+        wall_placements_h_id = [k for k in range(6000+len(wall_placements_horizontal)*i,6000+(i+1)*len(wall_placements_horizontal))]
+        for j in range(len(wall_placements_vertical)):
+            newBrick = ac.wall(wall_placements_v_id[j], model)
+            newBrick.orientation = 'v'
             model.schedule.add(newBrick)
-            model.grid.place_agent(newBrick, wall_placements[j])
-
-
-    #Add positive agents
+            model.grid.place_agent(newBrick, wall_placements_vertical[j])
+        for j in range(len(wall_placements_horizontal)):
+            newWall = ac.wall(wall_placements_h_id[j],model)
+            newWall.orientation = 'h'
+            model.schedule.add(newWall)
+            model.grid.place_agent(newWall,wall_placements_horizontal[j])
 
 
     listOfSetup.append(listOfPositions)
@@ -130,29 +153,26 @@ class covid_Model(Model):
         #Counting minutes and days
         self.minute_count = 0
         self.day_count = 1
+        self.door = ()
 
-
-
-        #Add door(s) to model and grid
-        door_location = (8,5)
-        self.door = ac.door(500, door_location, self)
-        self.schedule.add(self.door)
-        self.grid.place_agent(self.door,door_location)
 
         #Add agents to model and grid
         i = 0
         for s in setUpType:
             setUp(self.n_agents+1,self,s,i)
             i+=1
+
+        add_init_cantine_agents_to_grid(self,init_cantine_agents,i)
         add_init_infected_to_grid(self,init_positive_agents)
         self.datacollector.collect(self)
         self.running = True
 
     def step(self):
         #Every 10th timestep add asking student
-
-        if not self.setUpType == 1 and self.schedule.time>2 and (self.schedule.time) % 10 == 0:
+        if not self.setUpType == 1 and self.schedule.time > 2 and (self.schedule.time) % 10 == 0:
             for ta in self.TAs:
+                if len(ta.students) == 0:
+                    continue
                 TAs_students = ta.students
                 randomStudent = self.random.choice(TAs_students)
                 self.schedule.remove(randomStudent)
@@ -160,15 +180,15 @@ class covid_Model(Model):
                 student_with_Question.hasQuestion = 1
                 self.schedule.add(student_with_Question)
 
-
         self.schedule.step()
         self.datacollector.collect(self)
 
+        countTA = [a for a in self.schedule.agents if isinstance(a,ac.TA)]
+    
         #Minute count
         self.minute_count += 1
         if self.minute_count % 120 == 0:
             self.day_count += 1
-
         #Terminate model when everyone is healthy
         #if find_status(self,"infected") == 0:
          #  self.running = False
