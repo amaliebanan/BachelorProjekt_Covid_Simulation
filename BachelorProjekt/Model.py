@@ -28,7 +28,7 @@ def find_status(model,parameter,agent_type=None,list=None):
                         agents_status.append(getattr(agent,parameter))
     else:
         for agent in model.schedule.agents:
-            if not isinstance(agent, [ac.door]) and not isinstance(agent,[ac.wall]):
+            if not isinstance(agent, ac.door) and not isinstance(agent,ac.wall):
                 agents_status.append(getattr(agent,parameter))
     return sum(agents_status)
 
