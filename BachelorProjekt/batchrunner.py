@@ -9,7 +9,7 @@ import ray
 
 fixed_params = {"width": 20, "height": 33, "setUpType": [2,2,2]}
 variable_params = {"N": range(25,26,1)} # 25 students
-iterationer = 10
+iterationer = 500
 skridt = 140
 
 
@@ -102,16 +102,16 @@ def list_of_infected(j):
 
 "uncomment below to run list_of_infected function with different set up types. Change line 12 and 13 to change number of iterations and timesteps"
 pool = mp.Pool(mp.cpu_count()) #opens pools for running parallel programs
-results=pool.map(list_of_infected(), [2,3,4]) #runs the list_of_infected function for j={2,3,4}
+results=pool.map(list_of_infected, [2,3,4]) #runs the list_of_infected function for j={2,3,4}
 pool.close() #closes the pools
 
 "Uncomment below for plotting the three plots for comparing"
-#time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
-#for i in range(1,4,1):
-#    plt.plot(time, results[i-1], label= [i+1,i+1,i+1]) #makes the three different plots
-#plt.xlabel('Tidsskridt')
-#plt.ylabel('Gennemsnit antal smittede')
-#plt.title('%s simulationer' %iterationer)
-#plt.legend()
+time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
+for i in range(1,4,1):
+    plt.plot(time, results[i-1], label= [i+1,i+1,i+1]) #makes the three different plots
+plt.xlabel('Tidsskridt')
+plt.ylabel('Gennemsnit antal smittede')
+plt.title('%s simulationer' %iterationer)
+plt.legend()
 
-#plt.show()
+plt.show()
