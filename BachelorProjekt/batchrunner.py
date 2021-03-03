@@ -4,7 +4,7 @@ import numpy as np
 from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 
-fixed_params = {"width": 20, "height": 32, "setUpType": [4,4]}
+fixed_params = {"width": 20, "height": 33, "setUpType": [4,4,4]}
 variable_params = {"N": range(25,26,1)} # 25 students
 
 
@@ -60,8 +60,10 @@ def max_infected(fix_par, var_par, model, iter, steps):
         max_number_of_infected.append(max(temp_list))
     return max_number_of_infected
 
-#print(np.mean(max_infected(fixed_params, variable_params, covid_Model, 50, 120)))
+print("Gennemsnitligt er antallet af max antal smittede: \t", np.mean(max_infected(fixed_params, variable_params, covid_Model, 50, 120)))
 
-plot_infected(fixed_params, variable_params, covid_Model, 50, 120)
-plt.show()
+#plot_infected(fixed_params, variable_params, covid_Model, 50, 120)
+
+#plt.show()
+
 

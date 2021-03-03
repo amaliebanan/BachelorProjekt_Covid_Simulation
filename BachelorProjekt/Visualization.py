@@ -14,7 +14,7 @@ class infected_Element(TextElement):
         pass
 
     def render(self, model):
-        return "Infected agents: " + str(find_status(model, "infected", ac.covid_Agent))
+        return "Infected agents: " + str(find_status(model, "infected", [ac.covid_Agent, ac.Cantine_Agent, ac.TA]))
 
 class count_Days(TextElement):
     '''
@@ -84,7 +84,6 @@ server = ModularServer(covid_Model,
                        "Covid Model",
                        {"N":agentsN, "width":width, "height":height, "setUpType":[2,3,4]})
 server.port = 8521 # The default
-
 
 
 
