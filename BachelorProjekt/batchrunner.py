@@ -62,6 +62,6 @@ def max_infected(fix_par, var_par, model, iter, steps):
 
 #print(np.mean(max_infected(fixed_params, variable_params, covid_Model, 50, 120)))
 
-#plot_infected(fixed_params, variable_params, covid_Model, 50, 120)
-#plt.show()
+plot_infected(fixed_params, variable_params, covid_Model, 50, 120)
+plt.show()
 

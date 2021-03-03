@@ -2,6 +2,7 @@ from mesa import Agent, Model
 import math
 from mesa.space import MultiGrid
 import numpy as np
+import random
 import sys
 from Model import find_status
 
@@ -113,26 +114,41 @@ def updateInfectionStatus(self):
         else:
             self.recovered = 1
 
+#Turn class-object to cantine-object
 def class_to_cantine(self):
     self.model.grid.move_agent(self, self.door.pos)
-    c_agent = Cantine_Agent(self.id,self.model)
+    c_agent = canteen_Agent(self.id,self.model)
     c_agent.infected, c_agent.recovered, c_agent.mask = self.infected, self.recovered,self.mask
     c_agent.door = self.door
     self.model.schedule.remove(self)
-    self.model.schedule.add(c_agent)
+
     x,y = self.pos
-    c_agent.pos = x+1,y
-    self.model.grid.place_agent(c_agent,(x+1,y))
+    nY = random.randint(-1, 1)
+    c_agent.pos = x+1,y+nY
+
+    self.model.schedule.add(c_agent)
+    self.model.grid.place_agent(c_agent, c_agent.pos)
+
+    #If it is a TA->class->Canteen, we cannot remove TA from its own list of students.
+    if self.TA is not ():
+        self.TA.students.remove(self)
     self.hasEnteredDoor.append(self)
 
-def TA_to_cantine(self):
-    TA_turn_student = Cantine_Agent(self.id,self.model)
-    x,y = self.pos
+#Turn TA-object to class-object
+def TA_to_class(self):
+    self.model.grid.move_agent(self, self.pos)
+    c_agent = covid_Agent(self.id,self.model)
+    c_agent.infected, c_agent.recovered, c_agent.mask = self.infected, self.recovered,self.mask
+    c_agent.door, c_agent.moving_to_door = self.door, 1
     self.model.schedule.remove(self)
+
+    x,y = self.pos
+
+    self.model.schedule.add(c_agent)
+    self.model.grid.place_agent(c_agent,(x,y))
+
     self.model.grid.remove_agent(self)
-    self.model.schedule.add(TA_turn_student)
-    self.model.grid.place_agent(TA_turn_student,(x,y))
-    print("hey",type(TA_turn_student))
+
 
 class covid_Agent(Agent):
     def __init__(self, id, model):
@@ -158,11 +174,9 @@ class covid_Agent(Agent):
         possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
         possible_empty_steps = []
         door_pos = self.door.pos
-
         for position in possible_steps:
             if position == door_pos: #Create new Cantine-agent
                 class_to_cantine(self)
-                self.TA.students.remove(self)
                 return
             elif self.model.grid.is_cell_empty(position):
                  possible_empty_steps.append(position)
@@ -198,21 +212,6 @@ class covid_Agent(Agent):
             self.move(True)                                           #Students go to door
         elif self.model.setUpType == 1:
             self.move()
-
-class door(Agent):
-    """" Door for people to enter by and to exit by end of class"""
-    def __init__(self, id, pos, model):
-        super().__init__(id, model)
-        self.pos = pos
-        self.id = id
-        self.model = model
-
-class wall(Agent):
-    """" Door for people to enter by and to exit by end of class"""
-    def __init__(self, id, model):
-        super().__init__(id, model)
-        self.id = id
-        self.orientation = ()
 
 class TA(Agent):
     def __init__(self,id,model):
@@ -259,8 +258,13 @@ class TA(Agent):
             wonder(self)
 
     def step(self):
-    #  if len(self.students) == 0:
-     #       TA_to_cantine(self)
+      if len(self.students) == 0:
+          TA_to_class(self)
+          return
+
+
+
+
       if self.infected == 1:
         #Infect if agent should go home
         if hasSymptoms(self):
@@ -273,7 +277,7 @@ class TA(Agent):
 
       self.move()
 
-class Cantine_Agent(Agent):
+class canteen_Agent(Agent):
     def __init__(self, id, model):
         super().__init__(id, model)
         self.infected = 0 #0 for False, 1 for True
@@ -294,3 +298,27 @@ class Cantine_Agent(Agent):
     def step(self):
         self.move()
 
+class wall(Agent):
+    """" Door for people to enter by and to exit by end of class"""
+    def __init__(self, id, model):
+        super().__init__(id, model)
+        self.id = id
+        self.orientation = ()
+
+class door(Agent):
+    """" Door for people to enter by and to exit by end of class"""
+    def __init__(self, id, pos, model):
+        super().__init__(id, model)
+        self.pos = pos
+        self.id = id
+        self.model = model
+
+
+#Places in canteen to attract people
+#Toilets, canteen, tables in hall, etc.
+class hotspot(Agent):
+    def __init__(self,id,model):
+        super().__init__(id,model)
+        self.id = id
+        self.model = id
+        self.students_to_attrach = []

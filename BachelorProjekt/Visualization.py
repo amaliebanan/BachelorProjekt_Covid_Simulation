@@ -38,7 +38,7 @@ def covid_draw(agent):
     if agent is None:
         return
     portrayal = {"Shape": "circle", "r": 0.8, "Filled": "true", "Layer": 0}
-    if isinstance(agent,ac.covid_Agent) or isinstance(agent,ac.Cantine_Agent):
+    if isinstance(agent,ac.covid_Agent) or isinstance(agent,ac.canteen_Agent):
         if agent.infected == 0:
             portrayal["Color"] = "green"
         if agent.infected == 1:
