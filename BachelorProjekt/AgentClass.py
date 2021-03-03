@@ -248,7 +248,7 @@ class TA(Agent):
 
 
     def move(self):
-        questionStatus = find_status(self.model,"hasQuestion",covid_Agent,self.students)
+        questionStatus = find_status(self.model,"hasQuestion",[covid_Agent],self.students)
 
         if questionStatus > 0 and self.model.day_count == 1:  #Someone has a question
             for s in self.students:

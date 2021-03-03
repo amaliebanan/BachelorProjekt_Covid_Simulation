@@ -18,15 +18,17 @@ def find_status(model,parameter,agent_type=None,list=None):
     if agent_type is not None:
         if list is not None:
             for agent in list:
-                if isinstance(agent, agent_type):
-                    agents_status.append(getattr(agent,parameter))
+                for i in range(len(agent_type)):
+                    if isinstance(agent, agent_type[i]):
+                        agents_status.append(getattr(agent,parameter))
         else:
             for agent in model.schedule.agents:
-                if isinstance(agent, agent_type):
-                    agents_status.append(getattr(agent,parameter))
+                for i in range(len(agent_type)):
+                    if isinstance(agent, agent_type[i]):
+                        agents_status.append(getattr(agent,parameter))
     else:
         for agent in model.schedule.agents:
-            if not isinstance(agent, ac.door) and not isinstance(agent,ac.wall):
+            if not isinstance(agent, [ac.door]) and not isinstance(agent,[ac.wall]):
                 agents_status.append(getattr(agent,parameter))
     return sum(agents_status)
 
@@ -147,8 +149,8 @@ class covid_Model(Model):
         self.grid = MultiGrid(width, height, torus=False) #torus wraps edges
         self.schedule = RandomActivation(self)
         self.setUpType = []
-        self.status = find_status(self,"infected",ac.covid_Agent)
-        self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", ac.covid_Agent)})
+        self.status = find_status(self,"infected",[ac.covid_Agent])
+        self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", [ac.covid_Agent, ac.Cantine_Agent, ac.TA])})
 
         #Counting minutes and days
         self.minute_count = 0
