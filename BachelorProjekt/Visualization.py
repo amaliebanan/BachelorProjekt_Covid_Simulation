@@ -14,7 +14,7 @@ class infected_Element(TextElement):
         pass
 
     def render(self, model):
-        return "Infected agents: " + str(find_status(model, "infected", [ac.covid_Agent, ac.Cantine_Agent, ac.TA]))
+        return "Infected agents: " + str(find_status(model, "infected", [ac.covid_Agent, ac.canteen_Agent, ac.TA]))
 
 class count_Days(TextElement):
     '''

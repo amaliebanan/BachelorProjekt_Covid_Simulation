@@ -154,7 +154,7 @@ class covid_Model(Model):
         self.schedule = RandomActivation(self)
         self.setUpType = []
         self.status = find_status(self,"infected",[ac.covid_Agent])
-        self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", [ac.covid_Agent, ac.Cantine_Agent, ac.TA])})
+        self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", [ac.covid_Agent, ac.canteen_Agent, ac.TA])})
 
         #Counting minutes and days
         self.minute_count = 0
