@@ -6,6 +6,7 @@ import numpy as np
 from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 
+ids = [i for i in range(79,94)]
 class infected_Element(TextElement):
     '''
     Display a text count of how many happy agents there are. FROM MESA-EXAMPLES
@@ -37,6 +38,7 @@ def agent_portrayal(agent):
 def covid_draw(agent):
     if agent is None:
         return
+
     portrayal = {"Shape": "circle", "r": 0.8, "Filled": "true", "Layer": 0}
     if isinstance(agent,ac.covid_Agent) or isinstance(agent,ac.canteen_Agent):
         if agent.infected == 0:
@@ -67,11 +69,13 @@ def covid_draw(agent):
         elif agent.orientation == 'h':
             portrayal["w"] = 1
             portrayal["h"] = 0.2
+    if agent.id in ids:
+        portrayal["Color"] = "black"
 
     return portrayal
 
 agentsN = 25
-width, height = 30, 33
+width, height = 25,33
 
 infected_element = infected_Element()
 days_chart = count_Days()
@@ -82,7 +86,7 @@ infected_chart = ChartModule([{"Label":"infected","Color":"Black"}], data_collec
 server = ModularServer(covid_Model,
                        [grid,infected_element, infected_chart,days_chart],
                        "Covid Model",
-                       {"N":agentsN, "width":width, "height":height, "setUpType":[2,3,4]})
+                       {"N":agentsN, "width":width, "height":height, "setUpType":[2,2,4]})
 server.port = 8521 # The default
 
 
