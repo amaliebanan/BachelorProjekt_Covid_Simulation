@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from sympy import symbols, solve,Eq
 import seaborn as sns
 import numpy as np
+import Model
 
 #Covid infektionen er geometrisk fordelt. Sandsynligheden for at blive smittet akkumulerer over tid.
 
@@ -29,21 +30,20 @@ def cdf(n,p):
     return x,y
 
 #Calculate and plot Cumulative Distribution Function for geometrisk fordeling med vores p-værdi
-x,y= cdf(120,pTA)
+#x,y = cdf(120,p)
 
-x,y = cdf(120,p1)
+#x,y = cdf(120,p1)
 
-x,y = cdf(120,p2)
+#x,y = cdf(120,p2)
 
 #https://blogs.sas.com/content/iml/2020/04/08/reducing-spread-of-coronavirus.html
 #https://blogs.sas.com/content/iml/2020/04/06/geometric-distribution-sas.html
 
-print("ssh for at blive smittet",1-(1-p)**120)
-
+print("ssh for at blive smittet i løbet af timen",1-(1-p)**120)
 
 #sns.distplot(x, hist=False)
 
-plt.show()
+#plt.show()
 expected = 1/p  #Expected number of trails until success(infection) happens
 std = math.sqrt((1-p)/p**2)
 
@@ -54,4 +54,7 @@ mean, var, skew, kurt = geom.stats(p, moments='mvsk')
 x = np.arange(geom.ppf(0.01, p),geom.ppf(0.99, p))
 ax.plot(x, geom.pmf(x, p), 'bo', ms=8, label='geom pmf')
 ax.vlines(x, 0, geom.pmf(x, p), colors='b', lw=5, alpha=0.5)
-plt.show()
+#plt.show()
+
+
+

@@ -4,7 +4,7 @@ from mesa.space import MultiGrid
 import numpy as np
 import random
 import sys
-from Model import find_status
+from Model import find_status, make_classrooms_fit_to_grid, covid_Model
 
 infection_period = abs(round(np.random.normal(9,4)))*120 #How long are they sick?
 asymptomatic = 600 #Agents are asymptomatic for 5 days
@@ -27,7 +27,6 @@ def angle(v1, v2):
   angle_in_radians = math.acos(dotproduct(v1, v2) / (length(v1) * length(v2)))
   angle_in_degrees = (angle_in_radians*180)/math.pi
   return angle_in_degrees
-
 
 #Moving function
 def wonder(self):
@@ -114,25 +113,30 @@ def updateInfectionStatus(self):
         else:
             self.recovered = 1
 
-#Turn class-object to cantine-object
-def class_to_cantine(self):
-    self.model.grid.move_agent(self, self.door.pos)
+#Turn class-object to canteen-object
+def class_to_canteen(self):
     c_agent = canteen_Agent(self.id,self.model)
+
+    #Set up canteen agent to have same paramters as prior class-agent
     c_agent.infected, c_agent.recovered, c_agent.mask = self.infected, self.recovered,self.mask
-    c_agent.door = self.door
+    c_agent.courses, c_agent.classrooms = self.courses, self.classrooms
+    c_agent.pos = self.pos
+
+    #Get the correct door (based on the next course the agent will attend)
+    next_door_id = 500+(self.courses[1]%4)+1
+    next_door = [a for a in self.model.schedule.agents if isinstance(a,door) and a.id == next_door_id]
+    c_agent.door = next_door[0]
+
     self.model.schedule.remove(self)
-
-    x,y = self.pos
-    nY = random.randint(-1, 1)
-    c_agent.pos = x+1,y+nY
-
+    self.model.grid.remove_agent(self)
     self.model.schedule.add(c_agent)
-    self.model.grid.place_agent(c_agent, c_agent.pos)
 
-    #If it is a TA->class->Canteen, we cannot remove TA from its own list of students.
+
+    #If it is a TA->Class->Canteen, we cannot remove TA from its own list of students.
     if self.TA is not ():
         self.TA.students.remove(self)
-    self.hasEnteredDoor.append(self)
+
+    return c_agent
 
 #Turn TA-object to class-object
 def TA_to_class(self):
@@ -140,8 +144,12 @@ def TA_to_class(self):
     c_agent = covid_Agent(self.id,self.model)
     c_agent.infected, c_agent.recovered, c_agent.mask = self.infected, self.recovered,self.mask
     c_agent.door, c_agent.moving_to_door = self.door, 1
-    self.model.schedule.remove(self)
 
+    if self.courses == (): #First time, we need to initialize TA's courses
+        c_agent.courses = [0,c_agent.door.id-501]
+    else: c_agent.courses = self.courses
+
+    self.model.schedule.remove(self)
     x,y = self.pos
 
     self.model.schedule.add(c_agent)
@@ -149,6 +157,102 @@ def TA_to_class(self):
 
     self.model.grid.remove_agent(self)
 
+def move_to_specific_pos(self,pos_):
+    possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
+    possible_empty_steps = [cell for cell in possible_steps if self.model.grid.is_cell_empty(cell)]
+
+    #If no cell is empty, agent can go through others "person"-agents (to avoid bottleneck)
+    #Back-up list contains cells with covid,TA and canteen agents in
+    pos_other_agents = [cell for cell in self.model.grid.get_neighbors(self.pos,moore=True,include_center=False)
+                         if isinstance(cell,covid_Agent) or isinstance(cell,TA) or isinstance(cell,canteen_Agent)]
+    back_up_empty_cells = [cell.pos for cell in pos_other_agents]
+
+    #If goal-position is in possible steps, go there
+    if pos_ in possible_steps:
+        #If goal-position is a door change object accordingly
+        if pos_ == self.door.pos:
+            if isinstance(self,covid_Agent):
+                newAgent = class_to_canteen(self)
+                #"push" agent through door
+                x,y = pos_                         #Door position
+                newY = random.randint(-1, 1)
+                newAgent.pos = x+1,y+newY
+                self.model.grid.place_agent(newAgent, newAgent.pos)
+                return
+
+            elif isinstance(self,canteen_Agent):
+                newAgent,seat_ = canteen_to_class(self)
+                #"push" agent through door
+                x,y = pos_                      #Door position
+                newY = random.randint(-1, 1)
+                newAgent.pos = x-1,y+newY
+                newAgent.seat = seat_
+                self.model.grid.place_agent(newAgent, newAgent.pos)
+                return
+        #If goal-position is the seat, go there
+        if isinstance(self,covid_Agent) and pos_ == self.seat:
+            self.model.grid.move_agent(self,pos_)
+            return
+
+    #If you are already at your seat, stay there
+    if pos_ == self.pos:
+        return
+
+   #### Agent is moving one step closer to goal-position ####
+
+    #Which list to use? If possible_empty_steps is empty, use back-up list (allowing agent to go through agents)
+    if possible_empty_steps == []:
+        cells_to_check = back_up_empty_cells
+    else: cells_to_check = possible_empty_steps
+
+    #Distances from all possible positions and goal-position
+    distances = [(pos,getDistance(pos_,pos)) for pos in cells_to_check]
+
+    #Get x,y position of the cell with the smallest distance between goal-position and possible cells to go to
+    x_,y_ = min(distances,key=lambda x:x[1])[0]
+
+
+    dist_from_desired_cell_to_pos_ = min(distances,key=lambda x:x[1])[1]
+    dist_self_to_pos_ = getDistance(self.pos,pos_)
+
+    #Only move if the cell is closer to desired cell than your own cell
+    #if dist_self_to_pos_ > dist_from_desired_cell_to_pos_:
+    self.model.grid.move_agent(self,(x_,y_))
+
+
+def canteen_to_class(self):
+    c_agent = covid_Agent(self.id,self.model)
+
+    #Set up canteen agent to have same paramters as prior class-agent
+    c_agent.infected, c_agent.recovered, c_agent.mask = self.infected, self.recovered,self.mask
+    c_agent.courses, c_agent.classrooms = self.courses, self.classrooms
+    c_agent.pos = self.pos
+    c_agent.moving_to_door = 0
+
+    #Get the correct door (based on the course the agent will be attending)
+    next_door_id = 500+(self.courses[1]%4)+1
+    next_door = [a for a in self.model.schedule.agents if isinstance(a,door) and a.id == next_door_id]
+    c_agent.door = next_door[0]
+
+
+    #Which classroom are the agent in, adjust the y-coordinate accordingly.
+    i = self.door.id-501
+
+    #Get a seat
+    seat = self.model.seats[i].pop()
+
+    self.model.schedule.remove(self)
+    self.model.grid.remove_agent(self)
+    self.model.schedule.add(c_agent)
+    ids = [i for i in range(103,129)]
+    if c_agent.id in ids:
+        print("ITS ME MAMA",c_agent.id,"seat",c_agent.seat,"current pos",c_agent.pos,c_agent.door.id,c_agent.courses)
+
+    return c_agent,seat
+
+#Turn canteen-object to TA-object
+def canteen_to_TA(self):
+    print("To be implemented")
 
 class covid_Agent(Agent):
     def __init__(self, id, model):
@@ -164,34 +268,20 @@ class covid_Agent(Agent):
         self.moving_to_door = 0
         self.TA = ()
         self.door = ()
+        self.courses = [0,0]
+        self.classrooms = [0,0]
+        self.seat = ()
 
         #Relevant for classroom only
         self.hasQuestion = 0
         self.hasEnteredDoor = []
 
-    def move_to_door(self):
-        """" Takes one step closer to door"""
-        possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
-        possible_empty_steps = []
-        door_pos = self.door.pos
-        for position in possible_steps:
-            if position == door_pos: #Create new Cantine-agent
-                class_to_cantine(self)
-                return
-            elif self.model.grid.is_cell_empty(position):
-                 possible_empty_steps.append(position)
-        distances = []
-        if len(possible_empty_steps) != 0:
-            for pos in possible_empty_steps:
-                distances.append((pos,getDistance(pos, door_pos)))
-            min_dist = min(distances,key=lambda x:x[1])
-            if getDistance(self.pos,door_pos) < min_dist[1]:
-                return
-            else: self.model.grid.move_agent(self, min_dist[0])
-
     def move(self,timestep=False):
-        if timestep is True:                    #Agents go to door
-            self.move_to_door()
+        if timestep is True:
+            if self.moving_to_door == 1: #Agents go to door
+                move_to_specific_pos(self,self.door.pos)
+            elif self.moving_to_door == 0: #Agents go to seat
+                move_to_specific_pos(self,self.seat)
         else: wonder(self)
 
     #The step method is the action the agent takes when it is activated by the model schedule.
@@ -208,10 +298,7 @@ class covid_Agent(Agent):
         ##MOVE###
         if self.model.minute_count > 2 and (self.model.minute_count)%120==0:
             self.moving_to_door = 1
-        if self.moving_to_door == 1 and self.model.setUpType is not 1:
-            self.move(True)                                           #Students go to door
-        elif self.model.setUpType == 1:
-            self.move()
+        self.move(True)
 
 class TA(Agent):
     def __init__(self,id,model):
@@ -224,6 +311,7 @@ class TA(Agent):
         self.id = id
 
         self.timeToTeach = 5
+        self.courses = ()
         self.door = ()
         self.students = []
         self.coords = ()
@@ -262,9 +350,6 @@ class TA(Agent):
           TA_to_class(self)
           return
 
-
-
-
       if self.infected == 1:
         #Infect if agent should go home
         if hasSymptoms(self):
@@ -288,15 +373,24 @@ class canteen_Agent(Agent):
         self.id = id
         self.door = ()
         self.just_finished_class = 1
-
+        self.courses = ()
+        self.classrooms = ()
+        self.moving_to_door = 0
 
         #Relevant for classroom only
         self.hasQuestion = 0
 
-    def move(self):
-        wonder(self)
+    def move(self,timestep=False):
+        if timestep is True: #Agents go to door
+            move_to_specific_pos(self,self.door.pos)
+        else: wonder(self)
+
     def step(self):
-        self.move()
+        if self.model.minute_count > 2 and (self.model.minute_count)%170==0 and self.courses[0]==0:
+            self.moving_to_door = 1
+        if self.moving_to_door == 1 and self.model.setUpType is not 1:
+            self.move(True)
+        else: self.move()
 
 class wall(Agent):
     """" Door for people to enter by and to exit by end of class"""
@@ -312,7 +406,7 @@ class door(Agent):
         self.pos = pos
         self.id = id
         self.model = model
-
+        self.classroom = 0
 
 #Places in canteen to attract people
 #Toilets, canteen, tables in hall, etc.
