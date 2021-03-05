@@ -296,7 +296,7 @@ class covid_Agent(Agent):
             updateInfectionStatus(self)
 
         ##MOVE###
-        if self.model.minute_count > 10 and (self.model.minute_count)%120==0:
+        if self.model.minute_count > 2 and (self.model.minute_count)%120==0:
             self.moving_to_door = 1
         self.move(True)
 

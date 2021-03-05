@@ -87,6 +87,7 @@ server = ModularServer(covid_Model,
                        [grid,infected_element, infected_chart,days_chart],
                        "Covid Model",
                        {"N":agentsN, "width":width, "height":height, "setUpType":[2,2,4]})
+
 server.port = 8521 # The default
 
 
