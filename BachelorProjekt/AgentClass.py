@@ -395,7 +395,8 @@ class canteen_Agent(Agent):
         else: wonder(self)
 
     def step(self):
-        if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 1 and self.next_to_attend_class is True:
+        if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 1 and \
+                self.next_to_attend_class is True and self.courses is not ():
             self.moving_to_door = 1
         if self.moving_to_door == 1 and self.model.setUpType is not 1:
             self.move(True)

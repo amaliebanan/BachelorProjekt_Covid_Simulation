@@ -7,7 +7,7 @@ import numpy as np
 from mesa.datacollection import DataCollector
 
 init_positive_agents = 2
-init_canteen_agents = 60
+init_canteen_agents = 80
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
 
@@ -47,10 +47,10 @@ def add_init_infected_to_grid(self,n):
             i+=1
         else: pass
 
-def add_init_cantine_agents_to_grid(self,N,n,list_of_setup):
+def add_init_cantine_agents_to_grid(self,N,n):
     id_ = N
-    limit = N
-    n_canteen_agents_total = 0
+    print(n)
+    limit = N #We start by initializing N many canteen-agents. These are the agents that will be attending courses.
     counter = 0
     while limit > counter:
             newAgent = ac.canteen_Agent(id_,self)
@@ -66,6 +66,19 @@ def add_init_cantine_agents_to_grid(self,N,n,list_of_setup):
             self.grid.place_agent(newAgent, (max(x,9),y))
             id_+=1
             counter+=1
+    print(n,limit)
+    if n>limit: #We still need to initialize more canteen-agents, but these will not attend classes (fx students writing their master thesis)
+        m = n-limit
+        #They are initialized without door, courses, etc. They are "dummy" agents which can only contribute
+        #to infecting others.
+        print(m)
+        for i in range(0,m):
+            newAgent = ac.canteen_Agent(id_,self)
+            self.schedule.add(newAgent) #Add agent to scheduler
+            x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
+            newAgent.coords = random.choice(list(dir.values()))   #Give agent random direction to look at
+            self.grid.place_agent(newAgent, (max(x,9),y))
+            id_+=1
 
 def set_canteen_agents_next_to_attend_class(self):
      canteens_agents = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.id not in [1003,1001,1002]]
@@ -216,7 +229,7 @@ class covid_Model(Model):
             setUp(self.n_agents+1,self,s,i)
             i+=1
 
-        add_init_cantine_agents_to_grid(self,(self.n_agents+1)*i,init_canteen_agents,setUpType)
+        add_init_cantine_agents_to_grid(self,(self.n_agents+1)*i,init_canteen_agents)
         add_init_infected_to_grid(self,init_positive_agents)
 
         self.seat = make_classrooms_fit_to_grid(setUpType,self)
@@ -244,6 +257,8 @@ class covid_Model(Model):
         countCanteen =len([a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.id not in [1003,1001,1002]])
         countCovid=len([a for a in self.schedule.agents if isinstance(a,ac.covid_Agent)])
         countTA=len([a for a in self.schedule.agents if a.id in [1001,1003,1002]])
+
+       # print(countTA+countCovid+countCanteen,countCanteen)
 
 
         if self.minute_count in [200,360]:
