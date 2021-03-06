@@ -6,12 +6,10 @@ from mesa import Agent, Model
 import numpy as np
 from mesa.datacollection import DataCollector
 
-
 init_positive_agents = 2
 init_canteen_agents = 60
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
-
 
 #Get the status of a given parameter at any time in model (infected, hasQuestion, recovered, etc).
 def find_status(model,parameter,agent_type=None,list=None):
@@ -51,26 +49,24 @@ def add_init_infected_to_grid(self,n):
 
 def add_init_cantine_agents_to_grid(self,N,n,list_of_setup):
     id_ = N
-    limit = int(N/len(list_of_setup))-1
-
-    #Add as many canteen agents as the classrooms have capacity for. Assign every agent to one of the classes
-    for ran in range(4,7):
-        counter = 0
-        while limit > counter:
+    limit = N
+    print(limit)
+    n_canteen_agents_total = 0
+    counter = 0
+    while limit > counter:
             newAgent = ac.canteen_Agent(id_,self)
             self.schedule.add(newAgent) #Add agent to scheduler
             x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
             newAgent.coords = random.choice(list(dir.values()))   #Give agent random direction to look at
 
-            newAgent.courses = [0,ran]
-            next_door_id = 500+(newAgent.courses[1]%4)+1  #Which door should agent go to when class starts - depending on course
+            newAgent.courses = [self.range13.pop(),self.range46.pop()]
+            next_door_id = 500+newAgent.courses[0]  #Which door should agent go to when class starts - depending on course
             next_door = [a for a in self.schedule.agents if isinstance(a,ac.door) and a.id == next_door_id]
             newAgent.door = next_door[0]
-
+            newAgent.next_to_attend_class = True
             self.grid.place_agent(newAgent, (max(x,9),y))
             id_+=1
             counter+=1
-
 
 #Set up the grid accordingly
 #Add walls, doors, TAs and classrooms
@@ -111,15 +107,17 @@ def setUp(N,model,setUpType,i):
         model.grid.place_agent(TA,(x,y))
         model.TAs.append(TA)
 
+        other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
+
+
         for j in range(N*i,(i+1)*N):
             newAgent = ac.covid_Agent(j, model)
             model.schedule.add(newAgent)
             posAndDirection = listOfPositions.pop()
             x,y = posAndDirection[0]
             newAgent.coords = posAndDirection[1]
-            ran13, ran46 = random.randint(1,3), random.randint(4,6)
-            newAgent.courses = [i+1,ran46]
-            newAgent.classrooms = [i+1,ran13]
+            other_course = other_courses.pop()
+            newAgent.courses = [i+1,other_course]
             newAgent.door = door
             model.grid.place_agent(newAgent,(x,y))
             newAgent.TA = TA
@@ -143,6 +141,7 @@ def setUp(N,model,setUpType,i):
             model.schedule.add(newWall)
             model.grid.place_agent(newWall,wall_placements_horizontal[j])
 
+#Returns list of lists of seats I can assign to agents
 def make_classrooms_fit_to_grid(list_of_setuptypes,model):
     seats = []
 
@@ -167,6 +166,19 @@ class covid_Model(Model):
         self.hour_count = 0
         self.day_count = 1
         self.door = ()
+
+
+        #minute%120 == 0: 1,2,3 go to out of class
+        #minute%135 == 0: 4,5,6 go to class
+        #minute%240 == 0: 4,5,6 go out of class
+        #minute%315 == 0: 1,2,3 go to class
+        #minute%520 == 0: 1,2,3 go out of class
+        #minute%535 == 0: 4,5,6 go to class
+        #minute%620 == 0: 4,5,6 go out of class
+        self.class_times = [0,120,135,240,315,420,435,540]
+
+        self.range46 = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
+        self.range13 = random.sample([1]*26+[2]*26+[3]*26,k=len([1]*26+[2]*26+[3]*26))
 
         #Classrooms +  directions
         self.classroom_2 = [((1,1),dir['E']),((2,1),dir['N']),((3,1),dir['N']),((4,1),dir['N']),((5,1),dir['N']),
@@ -197,14 +209,12 @@ class covid_Model(Model):
             setUp(self.n_agents+1,self,s,i)
             i+=1
 
-
         add_init_cantine_agents_to_grid(self,(self.n_agents+1)*i,init_canteen_agents,setUpType)
         add_init_infected_to_grid(self,init_positive_agents)
 
         self.seat = make_classrooms_fit_to_grid(setUpType,self)
         for list in self.seat:
             self.seats.append(random.sample(list,k=len(list)))
-          #  print(list)
         self.datacollector.collect(self)
         self.running = True
 
@@ -223,16 +233,25 @@ class covid_Model(Model):
 
         self.schedule.step()
         self.datacollector.collect(self)
-        countCanteen=len([a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent)])
+        countCanteen =len([a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.id not in [1000,1001,1002]])
         countCovid=len([a for a in self.schedule.agents if isinstance(a,ac.covid_Agent)])
-        countTA=len([a for a in self.schedule.agents if isinstance(a,ac.TA)])
-       # print("Canteen:",countCanteen,"Covid:",countCovid,"TA",countTA)
+        countTA=len([a for a in self.schedule.agents if a.id in [1000,1001,1002]])
+
+        #print("Canteen:",countCanteen,"Covid:",countCovid,"TA",countTA)
+        if self.minute_count == 200:
+            print(countCanteen+countCovid+countTA)
+            canteens_agents =[a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.id not in [1000,1001,1002]]
+            print(len(canteens_agents))
+
+            for agent in canteens_agents:
+                agent.next_to_attend_class = not agent.next_to_attend_class
 
 
         #Time count
         self.minute_count += 1
-        if self.minute_count % 120 == 0:
+        if self.minute_count % 60 == 0:
             self.hour_count += 1
+
             #Reset list of seats so new agents can pop from original list of seats in classrooms
             self.seats = []
             for list in self.seat:
