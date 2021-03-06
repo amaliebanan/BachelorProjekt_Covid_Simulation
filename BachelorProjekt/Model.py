@@ -7,7 +7,7 @@ import numpy as np
 from mesa.datacollection import DataCollector
 
 init_positive_agents = 2
-init_canteen_agents = 80
+init_canteen_agents = 84
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
 
@@ -66,12 +66,25 @@ def add_init_cantine_agents_to_grid(self,N,n):
             self.grid.place_agent(newAgent, (max(x,9),y))
             id_+=1
             counter+=1
-    print(n,limit)
-    if n>limit: #We still need to initialize more canteen-agents, but these will not attend classes (fx students writing their master thesis)
-        m = n-limit
+    #m >= 3 since we want to create 3 TAs that start in the canteen
+    #Thus, these 3 are soon-to-be TAs. Dont have courses, only have door attached.
+    j=4
+    for i in range(0,3):
+        newAgent = ac.canteen_Agent(1000+j+i,self)
+        self.schedule.add(newAgent) #Add agent to scheduler
+        x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
+        newAgent.coords = random.choice(list(dir.values()))   #Give agent random direction to look at
+        next_door_id = newAgent.id-503 #Which door should agent go to when class starts - depending on course
+        next_door = [a for a in self.schedule.agents if isinstance(a,ac.door) and a.id == next_door_id]
+        newAgent.next_to_attend_class = True
+        newAgent.door = next_door[0]
+        self.grid.place_agent(newAgent, (max(x,9),y))
+
+
+    m = n-limit-3
+    if n-3>limit: #We still need to initialize more canteen-agents, but these will not attend classes (fx students writing their master thesis)
         #They are initialized without door, courses, etc. They are "dummy" agents which can only contribute
         #to infecting others.
-        print(m)
         for i in range(0,m):
             newAgent = ac.canteen_Agent(id_,self)
             self.schedule.add(newAgent) #Add agent to scheduler
