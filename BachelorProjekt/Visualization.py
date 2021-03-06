@@ -73,6 +73,8 @@ def covid_draw(agent):
         portrayal["Color"] = "black"
     if agent.id == 100:
         portrayal["Color"] = "red"
+    if agent.id == 2:
+        portrayal["Color"] = "gold"
 
     return portrayal
 

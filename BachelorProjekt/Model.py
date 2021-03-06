@@ -50,7 +50,6 @@ def add_init_infected_to_grid(self,n):
 def add_init_cantine_agents_to_grid(self,N,n,list_of_setup):
     id_ = N
     limit = N
-    print(limit)
     n_canteen_agents_total = 0
     counter = 0
     while limit > counter:
@@ -67,6 +66,13 @@ def add_init_cantine_agents_to_grid(self,N,n,list_of_setup):
             self.grid.place_agent(newAgent, (max(x,9),y))
             id_+=1
             counter+=1
+
+def set_canteen_agents_next_to_attend_class(self):
+     canteens_agents = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.id not in [1003,1001,1002]]
+     for agent in canteens_agents:
+                agent.next_to_attend_class = not agent.next_to_attend_class
+
+
 
 #Set up the grid accordingly
 #Add walls, doors, TAs and classrooms
@@ -107,7 +113,7 @@ def setUp(N,model,setUpType,i):
         model.grid.place_agent(TA,(x,y))
         model.TAs.append(TA)
 
-        other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
+
 
 
         for j in range(N*i,(i+1)*N):
@@ -116,7 +122,7 @@ def setUp(N,model,setUpType,i):
             posAndDirection = listOfPositions.pop()
             x,y = posAndDirection[0]
             newAgent.coords = posAndDirection[1]
-            other_course = other_courses.pop()
+            other_course = model.other_courses.pop()
             newAgent.courses = [i+1,other_course]
             newAgent.door = door
             model.grid.place_agent(newAgent,(x,y))
@@ -176,6 +182,7 @@ class covid_Model(Model):
         #minute%535 == 0: 4,5,6 go to class
         #minute%620 == 0: 4,5,6 go out of class
         self.class_times = [0,120,135,240,315,420,435,540]
+        self.other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
 
         self.range46 = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
         self.range13 = random.sample([1]*26+[2]*26+[3]*26,k=len([1]*26+[2]*26+[3]*26))
@@ -233,19 +240,14 @@ class covid_Model(Model):
 
         self.schedule.step()
         self.datacollector.collect(self)
-        countCanteen =len([a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.id not in [1000,1001,1002]])
+
+        countCanteen =len([a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.id not in [1003,1001,1002]])
         countCovid=len([a for a in self.schedule.agents if isinstance(a,ac.covid_Agent)])
-        countTA=len([a for a in self.schedule.agents if a.id in [1000,1001,1002]])
+        countTA=len([a for a in self.schedule.agents if a.id in [1001,1003,1002]])
 
-        #print("Canteen:",countCanteen,"Covid:",countCovid,"TA",countTA)
-        if self.minute_count == 200:
-            print(countCanteen+countCovid+countTA)
-            canteens_agents =[a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.id not in [1000,1001,1002]]
-            print(len(canteens_agents))
 
-            for agent in canteens_agents:
-                agent.next_to_attend_class = not agent.next_to_attend_class
-
+        if self.minute_count in [200,360]:
+            set_canteen_agents_next_to_attend_class(self)
 
         #Time count
         self.minute_count += 1

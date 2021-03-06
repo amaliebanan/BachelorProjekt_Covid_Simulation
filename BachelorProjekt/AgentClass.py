@@ -126,11 +126,15 @@ def class_to_canteen(self):
     #Set up canteen agent to have same paramters as prior class-agent
     c_agent.infected, c_agent.recovered, c_agent.mask = self.infected, self.recovered,self.mask
     c_agent.pos = self.pos
+
     #Get the correct door (based on the next course the agent will attend)
     x,y = self.courses
     c_agent.courses = [y,x]
-    if y is not 0:
+
+    if y in [4,5,6]:
         next_door_id = 500+(y%4)+1
+    elif y in [1,2,3]:
+        next_door_id = 500+y
     else:
         next_door_id = 500+1 ##TO BE FIXED !! TAS DOOR
 
@@ -240,11 +244,10 @@ def canteen_to_class(self):
 
     c_agent.door = self.door
 
-    #Which classroom are the agent in, adjust the y-coordinate accordingly.
+    #Which classroom are agent entering, adjust the y-coordinate accordingly.
     i = self.door.id-501
 
     #Get a seat
-    print(self.model.seats)
     seat = self.model.seats[i].pop()
 
 
@@ -393,7 +396,6 @@ class canteen_Agent(Agent):
 
     def step(self):
         if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 1 and self.next_to_attend_class is True:
-            print(self.id,self.pos,self.courses)
             self.moving_to_door = 1
         if self.moving_to_door == 1 and self.model.setUpType is not 1:
             self.move(True)
