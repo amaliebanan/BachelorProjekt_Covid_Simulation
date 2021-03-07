@@ -49,7 +49,6 @@ def add_init_infected_to_grid(self,n):
 
 def add_init_cantine_agents_to_grid(self,N,n):
     id_ = N
-    print(n)
     limit = N #We start by initializing N many canteen-agents. These are the agents that will be attending courses.
     counter = 0
     while limit > counter:
@@ -94,8 +93,23 @@ def add_init_cantine_agents_to_grid(self,N,n):
             id_+=1
 
 def set_canteen_agents_next_to_attend_class(self):
-     canteens_agents = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.id not in [1003,1001,1002]]
-     for agent in canteens_agents:
+     canteens_agents = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent)
+                        and a.id not in [1001,1002,1003,1004,1005,1006]
+                        and a.door is not ()] #Only get students who are attending class
+     print(canteens_agents)
+     print(len(canteens_agents))
+     get_correct_TAs = list(set([a.TA.id for a in canteens_agents if a.TA is not ()])) #Get unique id of TAs-to-be. These will also get True in nexT_to_attend_class
+     print(get_correct_TAs)
+     print(len(get_correct_TAs))
+     soon_to_be_TAs = [a for a in self.schedule.agents if a.id in get_correct_TAs]
+     for agent in soon_to_be_TAs:
+         canteens_agents.append(agent)
+
+
+     going_to_class_next_agents = canteens_agents
+
+
+     for agent in going_to_class_next_agents:
                 agent.next_to_attend_class = not agent.next_to_attend_class
 
 
@@ -257,12 +271,13 @@ class covid_Model(Model):
             for ta in self.TAs:
                 if len(ta.students) == 0:
                     continue
-                TAs_students = ta.students
-                randomStudent = self.random.choice(TAs_students)
-                self.schedule.remove(randomStudent)
-                student_with_Question = randomStudent
-                student_with_Question.hasQuestion = 1
-                self.schedule.add(student_with_Question)
+                if len(ta.students)>1:
+                    TAs_students = ta.students
+                    randomStudent = self.random.choice(TAs_students)
+                    self.schedule.remove(randomStudent)
+                    student_with_Question = randomStudent
+                    student_with_Question.hasQuestion = 1
+                    self.schedule.add(student_with_Question)
 
         self.schedule.step()
         self.datacollector.collect(self)
@@ -274,7 +289,7 @@ class covid_Model(Model):
        # print(countTA+countCovid+countCanteen,countCanteen)
 
 
-        if self.minute_count in [200,360]:
+        if self.minute_count in [200,360,520]:
             set_canteen_agents_next_to_attend_class(self)
 
         #Time count

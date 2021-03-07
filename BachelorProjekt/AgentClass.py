@@ -135,10 +135,6 @@ def canteen_to_class(self):
     #Get a seat
     seat = self.model.seats[i].pop()
 
-    #Get a TA
-    self.TA = [ta for ta in self.model.schedule.agents if isinstance(ta,TA) and ta.id == 1004]
-    print("MY TA IS ",self.TA)
-
     self.model.schedule.remove(self)
     self.model.grid.remove_agent(self)
     self.model.schedule.add(c_agent)
@@ -152,7 +148,7 @@ def class_to_canteen(self):
 
     #Set up canteen agent to have same paramters as prior class-agent
     c_agent.infected, c_agent.recovered, c_agent.mask = self.infected, self.recovered,self.mask
-    c_agent.pos = self.pos
+    c_agent.pos, c_agent.TA = self.pos, self.TA
 
     #Get the correct door (based on the next course the agent will attend)
     x,y = self.courses
@@ -163,7 +159,7 @@ def class_to_canteen(self):
     elif y in [1,2,3]:
         next_door_id = 500+y
     else:
-        next_door_id = 500+1 ##TO BE FIXED !! TAS DOOR
+        next_door_id = self.door.id ##TO BE FIXED !! TAS DOOR
 
     next_door = [a for a in self.model.schedule.agents if isinstance(a,door) and a.id == next_door_id]
     c_agent.door = next_door[0]
@@ -174,9 +170,7 @@ def class_to_canteen(self):
 
 
     #If it is a TA->Class->Canteen, we cannot remove TA from its own list of students.
-    print("YOYO",self.TA,self.id,self.pos)
     if self.TA is not ():
-        print("TA IS NOT ()",self.TA.students)
         self.TA.students.remove(self)
 
     return c_agent
@@ -207,11 +201,10 @@ def canteen_to_TA(self):
 
     #Set up TA agent to have same paramters as prior canteen-agent
     c_agent.infected, c_agent.recovered, c_agent.mask = self.infected, self.recovered,self.mask
-    c_agent.pos= self.pos
+    c_agent.pos,c_agent.door = self.pos, self.door
 
-    students = [a for a in self.model.schedule.agents if isinstance(a,covid_Agent) and a.door.id == self.door.id]
+    c_agent.students = [0] ##Dummy list, when all students are in class we update the TA's list of students
 
-    c_agent.students = students ##Dummy list, when all students are in class we update the TA's list of students
     self.model.TAs.append(c_agent)
 
     self.model.schedule.remove(self)
@@ -322,6 +315,7 @@ class covid_Agent(Agent):
                 move_to_specific_pos(self,self.seat)
         else: wonder(self)
 
+
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
         if self.infected == 1:
@@ -337,9 +331,6 @@ class covid_Agent(Agent):
         if self.model.minute_count > 2 and self.model.minute_count in self.model.class_times and self.model.minute_count%2 == 0:
             self.moving_to_door = 1
         self.move(True)
-
-def set_TA_list_of_students(self):
-    self.students_classroom = [a for a in self.model.schedule.agents if isinstance(a,covid_Agent) and a.door == self.door]
 
 class TA(Agent):
     def __init__(self,id,model):
@@ -378,11 +369,17 @@ class TA(Agent):
         else:                               #Student is still recieving help, subtract one minut and stay put
             self.timeToTeach -= 1
 
+    def connect_TA_and_students(self):
+        self.students = [a for a in self.model.schedule.agents if isinstance(a,covid_Agent) and a.door == self.door]
+        for s in self.students:
+            s.TA = self
+
+
 
     def move(self):
         questionStatus = find_status(self.model,"hasQuestion",[covid_Agent],self.students)
 
-        if questionStatus > 0:  #Someone has a question
+        if questionStatus > 0 and len(self.students) >15:  #Class is started and somebody a question
             for s in self.students:
                 if s.hasQuestion == 1:
                     self.move_to_student(s)
@@ -394,6 +391,7 @@ class TA(Agent):
       if len(self.students) == 0:
           TA_to_class(self)
           return
+      self.connect_TA_and_students()
 
       if self.infected == 1:
         #Infect if agent should go home
@@ -423,6 +421,7 @@ class canteen_Agent(Agent):
         self.moving_to_door = 0
         self.just_created = 0
         self.next_to_attend_class = False
+        self.TA = ()
 
         #Relevant for classroom only
         self.hasQuestion = 0
