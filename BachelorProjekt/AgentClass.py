@@ -114,6 +114,10 @@ def updateInfectionStatus(self):
             self.infection_period = 9
         else:
             self.recovered = 1
+
+###CHANGING OBJECT-TYPE###
+
+#Turn canteen-object to class-object
 def canteen_to_class(self):
     c_agent = covid_Agent(self.id,self.model)
 
@@ -131,6 +135,9 @@ def canteen_to_class(self):
     #Get a seat
     seat = self.model.seats[i].pop()
 
+    #Get a TA
+    self.TA = [ta for ta in self.model.schedule.agents if isinstance(ta,TA) and ta.id == 1004]
+    print("MY TA IS ",self.TA)
 
     self.model.schedule.remove(self)
     self.model.grid.remove_agent(self)
@@ -167,7 +174,9 @@ def class_to_canteen(self):
 
 
     #If it is a TA->Class->Canteen, we cannot remove TA from its own list of students.
+    print("YOYO",self.TA,self.id,self.pos)
     if self.TA is not ():
+        print("TA IS NOT ()",self.TA.students)
         self.TA.students.remove(self)
 
     return c_agent
@@ -188,8 +197,28 @@ def TA_to_class(self):
 
     self.model.schedule.add(c_agent)
     self.model.grid.place_agent(c_agent,(x,y))
+    self.model.TAs.remove(self)
 
     self.model.grid.remove_agent(self)
+
+#Turn canteen-object to TA-object
+def canteen_to_TA(self):
+    c_agent = TA(self.id,self.model)
+
+    #Set up TA agent to have same paramters as prior canteen-agent
+    c_agent.infected, c_agent.recovered, c_agent.mask = self.infected, self.recovered,self.mask
+    c_agent.pos= self.pos
+
+    students = [a for a in self.model.schedule.agents if isinstance(a,covid_Agent) and a.door.id == self.door.id]
+
+    c_agent.students = students ##Dummy list, when all students are in class we update the TA's list of students
+    self.model.TAs.append(c_agent)
+
+    self.model.schedule.remove(self)
+    self.model.grid.remove_agent(self)
+    self.model.schedule.add(c_agent)
+
+    return c_agent
 
 def move_to_specific_pos(self,pos_):
     possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
@@ -215,17 +244,23 @@ def move_to_specific_pos(self,pos_):
                 return
 
             elif isinstance(self,canteen_Agent):
-                if self.id in [1004,1005,1006]:
-                    print("ITS WORKING")
+                if self.id in [1001,1002,1003,1004,1005,1006]:
+                    newAgent = canteen_to_TA(self)
+                    #"push" agent through door
+                    x,y = pos_                      #Door position
+                    newY = random.randint(-1, 1)
+                    newAgent.pos = x-1,y+newY
+                    self.model.grid.place_agent(newAgent, newAgent.pos)
                     return
-                newAgent,seat_ = canteen_to_class(self)
-                #"push" agent through door
-                x,y = pos_                      #Door position
-                newY = random.randint(-1, 1)
-                newAgent.pos = x-1,y+newY
-                newAgent.seat = seat_
-                self.model.grid.place_agent(newAgent, newAgent.pos)
-                return
+                else:
+                    newAgent,seat_ = canteen_to_class(self)
+                    #"push" agent through door
+                    x,y = pos_                      #Door position
+                    newY = random.randint(-1, 1)
+                    newAgent.pos = x-1,y+newY
+                    newAgent.seat = seat_
+                    self.model.grid.place_agent(newAgent, newAgent.pos)
+                    return
         #If goal-position is the seat, go there
         if isinstance(self,covid_Agent) and pos_ == self.seat:
             self.model.grid.move_agent(self,pos_)
@@ -254,11 +289,8 @@ def move_to_specific_pos(self,pos_):
 
     #Only move if the cell is closer to desired cell than your own cell
     #if dist_self_to_pos_ > dist_from_desired_cell_to_pos_:
-    self.model.grid.move_agent(self,(x_,y_))
 
-#Turn canteen-object to TA-object
-def canteen_to_TA(self):
-    print("To be implemented")
+    self.model.grid.move_agent(self,(x_,y_))
 
 class covid_Agent(Agent):
     def __init__(self, id, model):
@@ -306,6 +338,9 @@ class covid_Agent(Agent):
             self.moving_to_door = 1
         self.move(True)
 
+def set_TA_list_of_students(self):
+    self.students_classroom = [a for a in self.model.schedule.agents if isinstance(a,covid_Agent) and a.door == self.door]
+
 class TA(Agent):
     def __init__(self,id,model):
         super().__init__(id,model)
@@ -321,6 +356,10 @@ class TA(Agent):
         self.door = ()
         self.students = []
         self.coords = ()
+
+        self.students_classroom = []
+
+
 
     def move_to_student(self,student):
 
@@ -343,7 +382,7 @@ class TA(Agent):
     def move(self):
         questionStatus = find_status(self.model,"hasQuestion",[covid_Agent],self.students)
 
-        if questionStatus > 0 and self.model.day_count == 1:  #Someone has a question
+        if questionStatus > 0:  #Someone has a question
             for s in self.students:
                 if s.hasQuestion == 1:
                     self.move_to_student(s)
