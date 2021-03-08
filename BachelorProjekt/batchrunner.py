@@ -5,12 +5,14 @@ from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 from multiprocessing import Pool
-import ray
+
 
 fixed_params = {"width": 20, "height": 33, "setUpType": [4,4,4]}
 variable_params = {"N": range(25,26,1)} # 25 students
 iterationer = 100
-skridt = 540
+skridt = 540*1
+
+
 
 
 
@@ -123,5 +125,3 @@ plt.title('%s simulationer' %iterationer)
 plt.legend()
 
 plt.show()
-
-
