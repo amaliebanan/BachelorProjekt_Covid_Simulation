@@ -11,6 +11,7 @@ incubation = 2700 #5 days = 540*5 minutes at school
 asymptomatic = 2700 #Agents are asymptomatic for 5 days
 exposed = 1620 #Du er smittet, men smitter ikke videre før den er på 0. Varer 3 dage.
 other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
+ids = [i for i in range(0,78)]
 
 #From sugerscape_cg
 ##Helper functions
@@ -172,7 +173,7 @@ def class_to_canteen(self):
     #If it is a TA->Class->Canteen, we cannot remove TA from its own list of students.
     if self.TA is not ():
         self.TA.students.remove(self)
-        self.TA.enrolled_students.remove(self)
+   #     self.TA.enrolled_students.remove(self)
 
     return c_agent
 
@@ -379,7 +380,12 @@ class TA(Agent):
             self.timeToTeach -= 1
 
     def connect_TA_and_students(self):
-        self.students = [a for a in self.model.schedule.agents if isinstance(a,covid_Agent) and a.door == self.door]
+        ss = [a for a in self.model.schedule.agents if isinstance(a,covid_Agent) and a.door == self.door]
+        if self.id in [1001,1002,1003]:
+            self.students = [a for a in ss if a.id in range(0,78)]
+        elif self.id in [1004,1005,1006]:
+            self.students = [a for a in ss if a.id not in range(0,78)]
+
         for s in self.students:
             s.TA = self
 
@@ -396,17 +402,9 @@ class TA(Agent):
 
     def step(self):
 
-      if self.model.minute_count in [119,229,419,539]:
-          for s in self.students:
-              self.enrolled_students.append(s)
-          if 0 in self.enrolled_students:
-              self.enrolled_students.remove(0)
-      if self.model.minute_count in [20,170,365,455]:
-          self.connect_TA_and_students()
+      self.connect_TA_and_students()
 
-      print(self.id,len(self.students))
-
-      if len(self.students) == 0 or self.enrolled_students == []:
+      if len(self.students) == 0:
           TA_to_class(self)
           return
 
