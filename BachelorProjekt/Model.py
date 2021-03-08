@@ -37,13 +37,15 @@ def add_init_infected_to_grid(self,n):
     positives = []
     while i<n:
         randomAgent = self.random.choice(self.schedule.agents)
-        if randomAgent.pos in positives:
+        if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
         elif isinstance(randomAgent,ac.covid_Agent) or isinstance(randomAgent,ac.TA) or isinstance(randomAgent,ac.canteen_Agent):
             self.schedule.remove(randomAgent)
-            postive_agent = randomAgent
-            postive_agent.infected = 1
-            self.schedule.add(postive_agent)
+            positive_agent = randomAgent
+            positive_agent.infected = 1
+            positive_agent.exposed = 0
+            positive_agent.asymptomatic = 1040
+            self.schedule.add(positive_agent)
             positives.append(randomAgent.pos)
             i+=1
         else: pass
@@ -195,6 +197,20 @@ def make_classrooms_fit_to_grid(list_of_setuptypes,model):
         seats.append(class_room)
     return seats
 
+def update_exposed_and_asympomatic_status(self):
+    agents = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent)
+              or isinstance(a,ac.canteen_Agent)) and a.infected == 1]
+    for a in agents:
+        a.asymptomatic = max(0,a.asymptomatic-1)
+        a.exposed = max(0,a.exposed-1)    #If already 0 stay there, if larger than 0 subtract one
+
+def remove_agents_having_symptoms(self):
+    agents = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent)
+              or isinstance(a,ac.canteen_Agent)) and a.asymptomatic == 0]
+    for a in agents:
+        self.schedule.remove(a)
+        self.grid.remove_agent(a)
+
 class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
         self.n_agents = N
@@ -296,7 +312,7 @@ class covid_Model(Model):
         #if find_status(self,"infected") == 0:
          #  self.running = False
 
- #Time count
+        #Time count
         self.minute_count += 1
         if self.minute_count % 60 == 0:
             self.hour_count += 1
@@ -310,3 +326,7 @@ class covid_Model(Model):
             self.day_count += 1
             self.minute_count = 0
             self.hour_count = 0
+
+        print(find_status(self,"infected"))
+        update_exposed_and_asympomatic_status(self)
+        remove_agents_having_symptoms(self)

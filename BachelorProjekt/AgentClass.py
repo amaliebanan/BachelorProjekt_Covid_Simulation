@@ -9,7 +9,7 @@ from Model import find_status, make_classrooms_fit_to_grid, covid_Model
 infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
 incubation = 2700 #5 days = 540*5 minutes at school
 asymptomatic = 2700 #Agents are asymptomatic for 5 days
-exposed = 1620 #Du er smittet, men smitter ikke videre endnu - 3 dage.
+exposed = 1620 #Du er smittet, men smitter ikke videre før den er på 0. Varer 3 dage.
 other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
 #From sugerscape_cg
 ##Helper functions
@@ -64,18 +64,21 @@ def checkDirection(agent,neighbor):
 
 #Infect a person
 def infect(self):
+        if self.exposed != 0:   #Agent smitter ikke endnu.
+            return
         all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
         closest_neighbors = []
 
         for neighbor in all_neighbors_within_radius:
             if not self.model.grid.is_cell_empty(neighbor.pos):
-                if isinstance(neighbor,covid_Agent) or isinstance(neighbor,TA):
+                if isinstance(neighbor,covid_Agent) or isinstance(neighbor,TA) or isinstance(neighbor,canteen_Agent):
                     closest_neighbors.append(neighbor)
 
         pTA = np.random.poisson(2.5/100) #TA står meget tæt og snakker højt
         p_1 = np.random.poisson(0.25/100) #Indenfor 1 meters afstand
         p_1_til_2 = np.random.poisson(0.22450/100) #Mellem 1 og 2 meters afstand
         p_over_2 = np.random.poisson(0.2199651/100) #Over 2 meters afstand
+
         for agent in closest_neighbors:
             distance = getDistance(self.pos,agent.pos)
             agent_status = agent.infected
@@ -122,8 +125,8 @@ def canteen_to_class(self):
     c_agent = covid_Agent(self.id,self.model)
 
     #Set up canteen agent to have same paramters as prior class-agent
-    c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.mask = \
-        self.infected, self.recovered, self.exposed,self.mask
+    c_agent.infected, c_agent.recovered, c_agent.exposed, c_agent.asymptomatic, c_agent.mask = \
+        self.infected, self.recovered, self.exposed, self.asymptomatic, self.mask
     c_agent.courses, c_agent.classrooms = self.courses, self.classrooms
     c_agent.pos = self.pos
     c_agent.moving_to_door = 0
@@ -148,8 +151,8 @@ def class_to_canteen(self):
     c_agent = canteen_Agent(self.id,self.model)
 
     #Set up canteen agent to have same paramters as prior class-agent
-    c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.mask = \
-        self.infected, self.recovered, self.exposed,self.mask
+    c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.asymptomatic, c_agent.mask = \
+        self.infected, self.recovered, self.exposed,self.asymptomatic,self.mask
     c_agent.pos, c_agent.TA = self.pos, self.TA
 
     #Get the correct door (based on the next course the agent will attend)
@@ -181,8 +184,8 @@ def class_to_canteen(self):
 def TA_to_class(self):
     self.model.grid.move_agent(self, self.pos)
     c_agent = covid_Agent(self.id,self.model)
-    c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.mask = \
-        self.infected, self.recovered, self.exposed,self.mask
+    c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.asymptomatic, c_agent.mask = \
+        self.infected, self.recovered, self.exposed,self.asymptomatic,self.mask
     c_agent.door, c_agent.moving_to_door = self.door, 1
 
     if self.courses == (): #First time, we need to initialize TA's courses
@@ -203,8 +206,8 @@ def canteen_to_TA(self):
     c_agent = TA(self.id,self.model)
 
     #Set up TA agent to have same paramters as prior canteen-agent
-    c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.mask = \
-        self.infected, self.recovered, self.exposed,self.mask
+    c_agent.infected, c_agent.recovered, c_agent.exposed, c_agent.asymptomatic, c_agent.mask = \
+        self.infected, self.recovered, self.exposed,self.asymptomatic, self.mask
     c_agent.pos,c_agent.door = self.pos, self.door
 
     c_agent.students = [0] ##Dummy list, when all students are in class we update the TA's list of students
@@ -326,8 +329,8 @@ class covid_Agent(Agent):
     def step(self):
         if self.infected == 1:
             #Infect if agent should go home
-            if hasSymptoms(self):
-                return
+          #  if hasSymptoms(self):
+           #     return
             #Try to infect
             infect(self)
             #Update infection status
@@ -405,8 +408,8 @@ class TA(Agent):
 
       if self.infected == 1:
         #Infect if agent should go home
-        if hasSymptoms(self):
-            return
+       # if hasSymptoms(self):
+        #    return
 
         infect(self)
 
