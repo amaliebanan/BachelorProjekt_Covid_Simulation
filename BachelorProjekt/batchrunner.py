@@ -125,3 +125,4 @@ plt.title('%s simulationer' %iterationer)
 plt.legend()
 
 plt.show()
+

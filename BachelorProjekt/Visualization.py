@@ -25,7 +25,7 @@ class count_Days(TextElement):
         pass
 
     def render(self, model):
-        return "Hour #: " + str(model.hour_count)
+        return "Day #: " + str(model.day_count)
 
 def agent_portrayal(agent):
     portrayal = {"Shape": "circle",
@@ -75,6 +75,8 @@ def covid_draw(agent):
         portrayal["Color"] = "red"
     if agent.id == 2:
         portrayal["Color"] = "gold"
+    if agent.id in [1004,1005,1006]:
+        portrayal["Color"] = "silver"
 
     return portrayal
 

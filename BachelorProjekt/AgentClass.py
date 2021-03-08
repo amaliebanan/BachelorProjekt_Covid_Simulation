@@ -6,10 +6,10 @@ import random
 import sys
 from Model import find_status, make_classrooms_fit_to_grid, covid_Model
 
-infection_period = abs(round(np.random.normal(9,4)))*120 #How long are they sick?
-incubation = 3100 #5 days = 620*5 minutes at school
-asymptomatic = 600 #Agents are asymptomatic for 5 days
-
+infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
+incubation = 2700 #5 days = 540*5 minutes at school
+asymptomatic = 2700 #Agents are asymptomatic for 5 days
+exposed = 1620 #Du er smittet, men smitter ikke videre endnu - 3 dage.
 other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
 #From sugerscape_cg
 ##Helper functions
@@ -122,7 +122,8 @@ def canteen_to_class(self):
     c_agent = covid_Agent(self.id,self.model)
 
     #Set up canteen agent to have same paramters as prior class-agent
-    c_agent.infected, c_agent.recovered, c_agent.mask = self.infected, self.recovered,self.mask
+    c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.mask = \
+        self.infected, self.recovered, self.exposed,self.mask
     c_agent.courses, c_agent.classrooms = self.courses, self.classrooms
     c_agent.pos = self.pos
     c_agent.moving_to_door = 0
@@ -147,7 +148,8 @@ def class_to_canteen(self):
     c_agent = canteen_Agent(self.id,self.model)
 
     #Set up canteen agent to have same paramters as prior class-agent
-    c_agent.infected, c_agent.recovered, c_agent.mask = self.infected, self.recovered,self.mask
+    c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.mask = \
+        self.infected, self.recovered, self.exposed,self.mask
     c_agent.pos, c_agent.TA = self.pos, self.TA
 
     #Get the correct door (based on the next course the agent will attend)
@@ -179,7 +181,8 @@ def class_to_canteen(self):
 def TA_to_class(self):
     self.model.grid.move_agent(self, self.pos)
     c_agent = covid_Agent(self.id,self.model)
-    c_agent.infected, c_agent.recovered, c_agent.mask = self.infected, self.recovered,self.mask
+    c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.mask = \
+        self.infected, self.recovered, self.exposed,self.mask
     c_agent.door, c_agent.moving_to_door = self.door, 1
 
     if self.courses == (): #First time, we need to initialize TA's courses
@@ -200,7 +203,8 @@ def canteen_to_TA(self):
     c_agent = TA(self.id,self.model)
 
     #Set up TA agent to have same paramters as prior canteen-agent
-    c_agent.infected, c_agent.recovered, c_agent.mask = self.infected, self.recovered,self.mask
+    c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.mask = \
+        self.infected, self.recovered, self.exposed,self.mask
     c_agent.pos,c_agent.door = self.pos, self.door
 
     c_agent.students = [0] ##Dummy list, when all students are in class we update the TA's list of students
@@ -294,9 +298,11 @@ class covid_Agent(Agent):
 
         self.infection_period = infection_period
         self.asymptomatic = asymptomatic
+        self.exposed = exposed
         self.id = id
         self.coords = ()
         self.moving_to_door = 0
+        self.exposed = exposed
         self.TA = ()
         self.door = ()
         self.courses = [0,0]
@@ -330,6 +336,9 @@ class covid_Agent(Agent):
         ##MOVE###
         if self.model.minute_count > 2 and self.model.minute_count in self.model.class_times and self.model.minute_count%2 == 0:
             self.moving_to_door = 1
+        elif self.model.day_count>0 and self.model.minute_count in self.model.class_times+[0] and self.model.minute_count%2 == 0:
+            self.moving_to_door = 1
+
         self.move(True)
 
 class TA(Agent):
@@ -340,6 +349,7 @@ class TA(Agent):
         self.mask = 1 #0 for False, 1 for True
         self.infection_period = infection_period
         self.asymptomatic = asymptomatic # Agents are asymptomatic for 5 days
+        self.exposed = exposed
         self.id = id
 
         self.timeToTeach = 5
@@ -415,6 +425,7 @@ class canteen_Agent(Agent):
         self.asymptomatic = asymptomatic
         self.id = id
         self.door = ()
+        self.exposed = exposed
         self.just_finished_class = 1
         self.courses = ()
         self.classrooms = ()
@@ -432,8 +443,9 @@ class canteen_Agent(Agent):
         else: wonder(self)
 
     def step(self):
-        if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 1 and \
-                self.next_to_attend_class is True:
+        if (self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 1 and self.next_to_attend_class is True):
+            self.moving_to_door = 1
+        elif self.model.day_count > 0 and self.model.minute_count == 0 and self.next_to_attend_class is True:
             self.moving_to_door = 1
         if self.moving_to_door == 1 and self.model.setUpType is not 1:
             self.move(True)
