@@ -5,12 +5,12 @@ from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 from multiprocessing import Pool
-import ray
+
 
 fixed_params = {"width": 20, "height": 33, "setUpType": [2,2,2]}
 variable_params = {"N": range(25,26,1)} # 25 students
-iterationer = 500
-skridt = 140
+iterationer = 100
+skridt = 520*1
 
 
 

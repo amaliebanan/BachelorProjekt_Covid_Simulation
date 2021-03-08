@@ -3,6 +3,7 @@ from mesa.time import SimultaneousActivation,RandomActivation
 from mesa.space import MultiGrid
 import random
 from mesa import Agent, Model
+
 import numpy as np
 from mesa.datacollection import DataCollector
 
@@ -96,11 +97,7 @@ def set_canteen_agents_next_to_attend_class(self):
      canteens_agents = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent)
                         and a.id not in [1001,1002,1003,1004,1005,1006]
                         and a.door is not ()] #Only get students who are attending class
-     print(canteens_agents)
-     print(len(canteens_agents))
      get_correct_TAs = list(set([a.TA.id for a in canteens_agents if a.TA is not ()])) #Get unique id of TAs-to-be. These will also get True in nexT_to_attend_class
-     print(get_correct_TAs)
-     print(len(get_correct_TAs))
      soon_to_be_TAs = [a for a in self.schedule.agents if a.id in get_correct_TAs]
      for agent in soon_to_be_TAs:
          canteens_agents.append(agent)
@@ -110,9 +107,10 @@ def set_canteen_agents_next_to_attend_class(self):
 
 
      for agent in going_to_class_next_agents:
+         if isinstance(agent,ac.TA):
+             print(self.minute_count,self.setUpType,agent.id,agent.pos)
+         if isinstance(agent,ac.canteen_Agent):
                 agent.next_to_attend_class = not agent.next_to_attend_class
-
-
 
 #Set up the grid accordingly
 #Add walls, doors, TAs and classrooms
@@ -203,14 +201,14 @@ class covid_Model(Model):
         self.TAs = []
         self.grid = MultiGrid(width, height, torus=False) #torus wraps edges
         self.schedule = RandomActivation(self)
-        self.setUpType = []
+        self.setUpType = setUpType
         self.status = find_status(self,"infected",[ac.covid_Agent])
         self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", [ac.covid_Agent, ac.canteen_Agent, ac.TA])})
 
         #Counting minutes and days
         self.minute_count = 0
         self.hour_count = 0
-        self.day_count = 1
+        self.day_count = 0
         self.door = ()
 
 
@@ -221,7 +219,9 @@ class covid_Model(Model):
         #minute%520 == 0: 1,2,3 go out of class
         #minute%535 == 0: 4,5,6 go to class
         #minute%620 == 0: 4,5,6 go out of class
-        self.class_times = [0,120,135,240,315,420,435,540]
+       # self.class_times = [0+520*self.day_count,120+540*self.day_count,135+540*self.day_count, 240+540*self.day_count,315+540*self.day_count,420+540*self.day_count,435+540*self.day_count,540+540*self.day_count]
+        self.class_times = [120,135,240,315,420,435,540]
+
         self.other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
 
         self.range46 = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
@@ -286,13 +286,17 @@ class covid_Model(Model):
         countCovid=len([a for a in self.schedule.agents if isinstance(a,ac.covid_Agent)])
         countTA=len([a for a in self.schedule.agents if a.id in [1001,1003,1002]])
 
-       # print(countTA+countCovid+countCanteen,countCanteen)
-
-
-        if self.minute_count in [200,360,520]:
+        if self.day_count>0 and self.minute_count in [0,220,390]:
+            set_canteen_agents_next_to_attend_class(self)
+        elif self.minute_count in [220,390]:
             set_canteen_agents_next_to_attend_class(self)
 
-        #Time count
+
+        #Terminate model when everyone is healthy
+        #if find_status(self,"infected") == 0:
+         #  self.running = False
+
+ #Time count
         self.minute_count += 1
         if self.minute_count % 60 == 0:
             self.hour_count += 1
@@ -302,10 +306,7 @@ class covid_Model(Model):
             for list in self.seat:
                 self.seats.append(random.sample(list,k=len(list)))
 
-
-        if self.minute_count % 570 == 0:
+        if self.minute_count % 540 == 0:
             self.day_count += 1
-        #Terminate model when everyone is healthy
-        #if find_status(self,"infected") == 0:
-         #  self.running = False
-
+            self.minute_count = 0
+            self.hour_count = 0
