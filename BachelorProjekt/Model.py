@@ -327,6 +327,5 @@ class covid_Model(Model):
             self.minute_count = 0
             self.hour_count = 0
 
-        print(find_status(self,"infected"))
         update_exposed_and_asympomatic_status(self)
         remove_agents_having_symptoms(self)

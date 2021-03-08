@@ -9,12 +9,8 @@ from multiprocessing import Pool
 
 fixed_params = {"width": 20, "height": 33, "setUpType": [4,4,4]}
 variable_params = {"N": range(25,26,1)} # 25 students
-iterationer = 100
-skridt = 540*1
-
-
-
-
+iterationer = 5
+skridt = 540*15
 
 "Below is to plot infected vs timestep for a single set up type"
 
