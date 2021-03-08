@@ -12,6 +12,7 @@ init_canteen_agents = 84
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
 
+
 #Get the status of a given parameter at any time in model (infected, hasQuestion, recovered, etc).
 def find_status(model,parameter,agent_type=None,list=None):
     agents_status = []
@@ -106,6 +107,7 @@ def set_canteen_agents_next_to_attend_class(self):
 
 
      going_to_class_next_agents = canteens_agents
+     print("next ones", len(going_to_class_next_agents))
 
 
      for agent in going_to_class_next_agents:
@@ -170,6 +172,7 @@ def setUp(N,model,setUpType,i):
             newAgent.seat = (x,y)
             students.append(newAgent)
         TA.students = students
+        TA.enrolled_students = students
 
         #Place walls
         wall_placements_vertical = [(8,j+i*11) for j in range(0,11)]
@@ -203,13 +206,15 @@ def update_exposed_and_asympomatic_status(self):
     for a in agents:
         a.asymptomatic = max(0,a.asymptomatic-1)
         a.exposed = max(0,a.exposed-1)    #If already 0 stay there, if larger than 0 subtract one
+        if a.asymptomatic == 0:
+            self.removed_infected_agents.append(a)
+            self.schedule.remove(a)
+            self.grid.remove_agent(a)
 
-def remove_agents_having_symptoms(self):
-    agents = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent)
-              or isinstance(a,ac.canteen_Agent)) and a.asymptomatic == 0]
+def introduce_recovered_agents(self):
+    agents = [a for a in self.removed_infected_agents]
     for a in agents:
-        self.schedule.remove(a)
-        self.grid.remove_agent(a)
+        print(a)
 
 class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
@@ -226,6 +231,7 @@ class covid_Model(Model):
         self.hour_count = 0
         self.day_count = 0
         self.door = ()
+        self.removed_infected_agents = []
 
 
         #minute%120 == 0: 1,2,3 go to out of class
@@ -283,6 +289,7 @@ class covid_Model(Model):
 
     def step(self):
         #Every 10th timestep add asking student
+        print("# TAs",len(self.TAs))
         if not self.setUpType == 1 and self.schedule.time > 2 and (self.schedule.time) % 10 == 0:
             for ta in self.TAs:
                 if len(ta.students) == 0:
@@ -302,9 +309,11 @@ class covid_Model(Model):
         countCovid=len([a for a in self.schedule.agents if isinstance(a,ac.covid_Agent)])
         countTA=len([a for a in self.schedule.agents if a.id in [1001,1003,1002]])
 
-        if self.day_count>0 and self.minute_count in [0,220,390]:
+        print(self.minute_count)
+        if self.day_count>0 and self.minute_count in [90,220,390,520]:
+            print("its knoooowwwww",self.minute_count)
             set_canteen_agents_next_to_attend_class(self)
-        elif self.minute_count in [220,390]:
+        elif self.minute_count in [220,390,520]:
             set_canteen_agents_next_to_attend_class(self)
 
 
@@ -328,4 +337,5 @@ class covid_Model(Model):
             self.hour_count = 0
 
         update_exposed_and_asympomatic_status(self)
-        remove_agents_having_symptoms(self)
+        introduce_recovered_agents(self)
+
