@@ -107,7 +107,7 @@ def set_canteen_agents_next_to_attend_class(self):
 
 
      going_to_class_next_agents = canteens_agents
-     print("next ones", len(going_to_class_next_agents))
+  #   print("next ones", len(going_to_class_next_agents))
 
 
      for agent in going_to_class_next_agents:
@@ -213,8 +213,7 @@ def update_exposed_and_asympomatic_status(self):
 
 def introduce_recovered_agents(self):
     agents = [a for a in self.removed_infected_agents]
-    for a in agents:
-        print(a)
+
 
 class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
@@ -288,19 +287,22 @@ class covid_Model(Model):
         self.running = True
 
     def step(self):
+        l = len([a for a in self.schedule.agents if isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent) or isinstance(a,ac.canteen_Agent)])
+        if l == 0:
+            return
         #Every 10th timestep add asking student
-        print("# TAs",len(self.TAs))
+        #print("# TAs",len(self.TAs))
         if not self.setUpType == 1 and self.schedule.time > 2 and (self.schedule.time) % 10 == 0:
             for ta in self.TAs:
                 if len(ta.students) == 0:
                     continue
-                if len(ta.students)>1:
+                if len(ta.students)>10:
                     TAs_students = ta.students
                     randomStudent = self.random.choice(TAs_students)
-                    self.schedule.remove(randomStudent)
-                    student_with_Question = randomStudent
-                    student_with_Question.hasQuestion = 1
-                    self.schedule.add(student_with_Question)
+               #     self.schedule.remove(randomStudent)
+               #     student_with_Question = randomStudent
+                    randomStudent.hasQuestion = 1
+               #     self.schedule.add(student_with_Question)
 
         self.schedule.step()
         self.datacollector.collect(self)
@@ -309,9 +311,9 @@ class covid_Model(Model):
         countCovid=len([a for a in self.schedule.agents if isinstance(a,ac.covid_Agent)])
         countTA=len([a for a in self.schedule.agents if a.id in [1001,1003,1002]])
 
-        print(self.minute_count)
+    #print(self.minute_count)
         if self.day_count>0 and self.minute_count in [90,220,390,520]:
-            print("its knoooowwwww",self.minute_count)
+         #   print("its knoooowwwww",self.minute_count)
             set_canteen_agents_next_to_attend_class(self)
         elif self.minute_count in [220,390,520]:
             set_canteen_agents_next_to_attend_class(self)
@@ -338,4 +340,7 @@ class covid_Model(Model):
 
         update_exposed_and_asympomatic_status(self)
         introduce_recovered_agents(self)
+
+
+
 
