@@ -7,10 +7,12 @@ import multiprocessing as mp
 from multiprocessing import Pool
 
 
-fixed_params = {"width": 20, "height": 33, "setUpType": [2,2,2]}
+fixed_params = {"width": 20, "height": 33, "setUpType": [4,4,4]}
 variable_params = {"N": range(25,26,1)} # 25 students
 iterationer = 100
-skridt = 520*1
+skridt = 540*1
+
+
 
 
 
@@ -71,7 +73,7 @@ def max_infected(fix_par, var_par, model, iter, steps):
         for j in range(len(data_list[i]["infected"])):
             temp_list.append(data_list[i]["infected"][j]) #appends number of infected
         max_number_of_infected.append(max(temp_list)) #saves max of temp_list
-    return max_number_of_infected
+    return max_number_of_infected #this is now a list of max number of infected for each iteration
 
 "uncomment below to get avg max number of infected. Change setup type by changing fixed_params at line 10"
 #print("Gennemsnitligt er antallet af max antal smittede: \t", np.mean(max_infected(fixed_params, variable_params, covid_Model, iterationer, skridt)))
@@ -91,7 +93,15 @@ def list_of_infected(j):
         model_reporters={"infected": lambda m: find_status(m,"infected")})
     batch_run.run_all() #run batchrunner
     data_list = list(batch_run.get_collector_model().values()) #saves batchrunner data in list
-
+    #next 7 lines is to determine max number of infected
+    max_number_of_infected = []
+    for i in range(len(data_list)):
+        temp_list = []
+        for k in range(len(data_list[i]["infected"])):
+            temp_list.append(data_list[i]["infected"][k]) #appends number of infected
+        max_number_of_infected.append(max(temp_list)) #saves max of temp_list
+    print("Gennemsnitligt er antallet af max smittede for setup type %s " %[j,j,j], "is: ", np.mean(max_number_of_infected))
+    #rest of code is to get y-values for the plot
     sum_of_infected = [0]*(skridt+1) #makes list for y-values
     for i in range(len(data_list)):
         for j in range(len(data_list[i]["infected"])):
@@ -115,3 +125,4 @@ plt.title('%s simulationer' %iterationer)
 plt.legend()
 
 plt.show()
+
