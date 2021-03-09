@@ -8,7 +8,7 @@ from Model import find_status, make_classrooms_fit_to_grid, covid_Model
 
 
 incubation = 2700 #5 days = 540*5 minutes at school
-asymptomatic = 2700 #Agents are asymptomatic for 5 days
+#asymptomatic = 2700 #Agents are asymptomatic for 5 days
 exposed = 1620 #Du er smittet, men smitter ikke videre før den er på 0. Varer 3 dage.
 other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
 ids = [i for i in range(0,78)]
@@ -307,7 +307,7 @@ class covid_Agent(Agent):
         self.mask = 0 #0 for False, 1 for True
         self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
 
-        self.asymptomatic = asymptomatic
+        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,560))))
         self.exposed = exposed
         self.id = id
         self.coords = ()
@@ -358,7 +358,7 @@ class TA(Agent):
         self.mask = 1 #0 for False, 1 for True
         self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
 
-        self.asymptomatic = asymptomatic # Agents are asymptomatic for 5 days
+        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,560)))) # Agents are asymptomatic for 5 days
         self.exposed = exposed
         self.id = id
 
@@ -433,7 +433,7 @@ class canteen_Agent(Agent):
         self.recovered = 0 #0 for False, 1 for True
         self.mask = 0 #0 for False, 1 for True
         self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
-        self.asymptomatic = asymptomatic
+        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,560))))
         self.id = id
         self.door = ()
         self.exposed = exposed

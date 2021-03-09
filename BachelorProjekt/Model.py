@@ -121,6 +121,7 @@ def set_canteen_agents_next_to_attend_class(self):
              print(self.minute_count,self.setUpType,agent.id,agent.pos)
          if isinstance(agent,ac.canteen_Agent):
                 agent.next_to_attend_class = not agent.next_to_attend_class
+
 #Set up the grid accordingly
 #Add walls, doors, TAs and classrooms
 def setUp(N,model,setUpType,i):
@@ -355,5 +356,7 @@ class covid_Model(Model):
             self.minute_count = 0
             self.hour_count = 0
 
+       # countIned=[a.asymptomatic for a in self.schedule.agents if (isinstance(a,ac.canteen_Agent) or isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent))]
+       # print(countIned)
         update_exposed_and_asympomatic_status(self)
         remove_agents_having_symptoms(self)

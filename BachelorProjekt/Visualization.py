@@ -38,18 +38,23 @@ def agent_portrayal(agent):
 def covid_draw(agent):
     if agent is None:
         return
-
     portrayal = {"Shape": "circle", "r": 0.8, "Filled": "true", "Layer": 0}
     if isinstance(agent,ac.covid_Agent) or isinstance(agent,ac.canteen_Agent):
         if agent.infected == 0:
             portrayal["Color"] = "green"
-        if agent.infected == 1:
+        if agent.infected == 1 and agent.exposed == 0:
                 portrayal["Shape"] = "resources/corona.png"
                 portrayal["scale"] = 0.9
+        if agent.infected == 1 and agent.exposed >0:
+                portrayal["Shape"] = "resources/exposed.png"
+                portrayal["scale"] = 0.9
+
         if agent.hasQuestion == 1 and agent.infected == 1:
             portrayal["Color"] = "black"
         if agent.hasQuestion == 1 and agent.infected == 0:
             portrayal["Color"] = "Blue"
+    if agent.id in [1001,1002,1003,1004,1005,1006]:
+        portrayal["Color"] = "silver"
     if isinstance(agent,ac.TA):
         if agent.infected == 0:
             portrayal["Color"] = "Orange"
@@ -69,14 +74,13 @@ def covid_draw(agent):
         elif agent.orientation == 'h':
             portrayal["w"] = 1
             portrayal["h"] = 0.2
-    if agent.id in ids:
-        portrayal["Color"] = "black"
-    if agent.id == 100:
-        portrayal["Color"] = "red"
-    if agent.id == 2:
-        portrayal["Color"] = "gold"
-    if agent.id in [1004,1005,1006]:
-        portrayal["Color"] = "silver"
+   # if agent.id in ids:
+   #     portrayal["Color"] = "black"
+   # if agent.id == 100:
+   #     portrayal["Color"] = "red"
+   # if agent.id == 2:
+   #     portrayal["Color"] = "gold"
+
 
     return portrayal
 
