@@ -287,9 +287,9 @@ class covid_Model(Model):
         self.running = True
 
     def step(self):
-        l = len([a for a in self.schedule.agents if isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent) or isinstance(a,ac.canteen_Agent)])
-        if l == 0:
-            return
+      #  l = len([a for a in self.schedule.agents if isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent) or isinstance(a,ac.canteen_Agent)])
+       # if l == 0:
+        #    return
         #Every 10th timestep add asking student
         #print("# TAs",len(self.TAs))
         if not self.setUpType == 1 and self.schedule.time > 2 and (self.schedule.time) % 10 == 0:
@@ -335,6 +335,7 @@ class covid_Model(Model):
 
         if self.minute_count % 540 == 0:
             self.day_count += 1
+            print(self.day_count,self.setUpType,"infected now",find_status(self,"infected"))
             self.minute_count = 0
             self.hour_count = 0
 
