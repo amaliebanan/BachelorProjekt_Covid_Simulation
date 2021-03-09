@@ -307,12 +307,12 @@ class covid_Agent(Agent):
         self.mask = 0 #0 for False, 1 for True
         self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
 
-        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,560))))
+        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,540))))
         self.exposed = exposed
         self.id = id
         self.coords = ()
         self.moving_to_door = 0
-        self.exposed = exposed
+        self.exposed = max(1100,abs(round(np.random.normal(1620,540))))
         self.TA = ()
         self.door = ()
         self.courses = [0,0]
@@ -355,12 +355,13 @@ class TA(Agent):
         super().__init__(id,model)
         self.infected = 0 #0 for False, 1 for True
         self.recovered = 0 #0 for False, 1 for True
+        self.id = id
         self.mask = 1 #0 for False, 1 for True
         self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
 
-        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,560)))) # Agents are asymptomatic for 5 days
-        self.exposed = exposed
-        self.id = id
+        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,540)))) # Agents are asymptomatic for 5 days
+        self.exposed = max(1100,abs(round(np.random.normal(1620,540))))
+
 
         self.timeToTeach = 5
         self.courses = ()
@@ -419,10 +420,7 @@ class TA(Agent):
 
 
       if self.infected == 1:
-        infect(self)
-
-        #Update infection status
-        updateInfectionStatus(self)
+         infect(self)
 
       self.move()
 
@@ -433,10 +431,10 @@ class canteen_Agent(Agent):
         self.recovered = 0 #0 for False, 1 for True
         self.mask = 0 #0 for False, 1 for True
         self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
-        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,560))))
+        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,540))))
         self.id = id
         self.door = ()
-        self.exposed = exposed
+        self.exposed = max(1100,abs(round(np.random.normal(1620,540))))
         self.courses = ()
         self.classrooms = ()
         self.moving_to_door = 0

@@ -207,20 +207,28 @@ def make_classrooms_fit_to_grid(list_of_setuptypes,model):
         seats.append(class_room)
     return seats
 
-def update_exposed_and_asympomatic_status(self):
+def remove_agents_having_symptoms(self,agent):
+    self.removed_agents.append(agent)
+    self.schedule.remove(agent)
+    self.grid.remove_agent(agent)
+
+
+def update_status_infected_agents(self):
     agents = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent)
               or isinstance(a,ac.canteen_Agent)) and a.infected == 1]
     for a in agents:
         a.asymptomatic = max(0,a.asymptomatic-1)
+        if a.asymptomatic == 0:
+            remove_agents_having_symptoms(self,a)
         a.exposed = max(0,a.exposed-1)    #If already 0 stay there, if larger than 0 subtract one
+        a.infection_period = max(0,a.infection_period-1)
 
-def remove_agents_having_symptoms(self):
-    agents = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent)
-              or isinstance(a,ac.canteen_Agent)) and a.asymptomatic == 0]
-    for a in agents:
-        self.schedule.remove(a)
-        self.grid.remove_agent(a)
-
+def update_infection_period_removed_agents(self):
+    for agent in self.removed_agents:
+        agent.infection_period -= 1
+        if agent.infection_period == 0:
+            agent.recovered = 1
+            self.recovered_agents.append(agent)
 class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
         self.n_agents = N
@@ -232,7 +240,8 @@ class covid_Model(Model):
         self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", [ac.covid_Agent, ac.canteen_Agent, ac.TA]),
                                                             "Agent_count": lambda m: count_agents(self)})
 
-
+        self.removed_agents = []
+        self.recovered_agents = []
         #Counting minutes and days
         self.minute_count = 0
         self.hour_count = 0
@@ -315,13 +324,11 @@ class covid_Model(Model):
                     TAs_students = ta.students
                     randomStudent = self.random.choice(TAs_students)
                     randomStudent.hasQuestion = 1
-                  #  self.schedule.remove(randomStudent)
-                  #  student_with_Question = randomStudent
-                  #  student_with_Question.hasQuestion = 1
-                  #  self.schedule.add(student_with_Question)
 
         self.schedule.step()
         self.datacollector.collect(self)
+
+
 
         countCanteen =len([a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent)])
         countCovid=len([a for a in self.schedule.agents if isinstance(a,ac.covid_Agent)])
@@ -358,5 +365,6 @@ class covid_Model(Model):
 
        # countIned=[a.asymptomatic for a in self.schedule.agents if (isinstance(a,ac.canteen_Agent) or isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent))]
        # print(countIned)
-        update_exposed_and_asympomatic_status(self)
-        remove_agents_having_symptoms(self)
+        update_status_infected_agents(self)
+        if len(self.removed_agents) > 0:
+            update_infection_period_removed_agents(self)

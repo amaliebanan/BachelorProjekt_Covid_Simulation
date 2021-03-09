@@ -53,9 +53,9 @@ def covid_draw(agent):
             portrayal["Color"] = "black"
         if agent.hasQuestion == 1 and agent.infected == 0:
             portrayal["Color"] = "Blue"
-    if agent.id in [1001,1002,1003,1004,1005,1006]:
-        portrayal["Color"] = "silver"
-    if isinstance(agent,ac.TA):
+   # if agent.id in [1001,1002,1003,1004,1005,1006]:
+   #     portrayal["Color"] = "silver"
+    if isinstance(agent,ac.TA) or agent.id in [1001,1002,1003,1004,1005,1006]:
         if agent.infected == 0:
             portrayal["Color"] = "Orange"
             portrayal["scale"] = 0.9
