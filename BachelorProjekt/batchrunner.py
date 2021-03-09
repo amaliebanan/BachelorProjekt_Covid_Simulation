@@ -9,37 +9,44 @@ from multiprocessing import Pool
 
 fixed_params = {"width": 20, "height": 33, "setUpType": [4,4,4]}
 variable_params = {"N": range(25,26,1)} # 25 students
-iterationer = 10
-skridt = 540*45
 
-"Below is to plot infected vs timestep for a single set up type"
+iterationer = 1
+skridt = 540*3
+
+
+"Below is to plot infected vs timestep and susceptible vs timestep for a single set up type"
 
 def plot_infected(fix_par, var_par, model, iter, steps):
     """
     :param iter: number of iterations to run
     :param steps: number of timesteps
-    :return: returns a plot of mean number of infected by timesteps
+    :return: returns a plot of mean number of infected by timesteps and mean number of susceptible by timesteps
     """
     batch_run = BatchRunner(model,
     variable_parameters=var_par,
     fixed_parameters=fix_par,
     iterations=iter,
     max_steps=steps,
-    model_reporters={"infected": lambda m: find_status(m,"infected")})
+    model_reporters={"infected": lambda m: find_status(m,"infected")}, )
     batch_run.run_all() #run batchrunner
 
     data_list = list(batch_run.get_collector_model().values()) # saves batchrunner data in a list
 
     sum_of_infected = [0]*(steps+1) #makes list for y-values
+    num_of_susceptible = [0]*(steps+1)
     for i in range(len(data_list)):
         for j in range(len(data_list[i]["infected"])):
             sum_of_infected[j]+=data_list[i]["infected"][j] #at the right index add number of infected
+            num_of_susceptible[j] += data_list[i]["Agent_count"][j]-data_list[i]["infected"][j] #number of susceptible at each time step
     sum_of_infected =[number / iter for number in sum_of_infected] #divide list with number of iterations to get avg
+    num_of_susceptible = [number / iter for number in num_of_susceptible]
     time = [i for i in range(0,steps+1)] #makes list of x-values for plotting
-    plt.plot(time, sum_of_infected)
+    plt.plot(time, sum_of_infected, label= 'Number of Infected', color = 'Green')
+    plt.plot(time, num_of_susceptible, label= 'Number of Susceptible', color = 'Green', linestyle='dashed')
     plt.xlabel('Tidsskridt')
     plt.ylabel('Gennemsnit antal smittede')
     plt.title('Klasselokaleopstilling %s '%fix_par['setUpType']+ ' ved %s simulationer' %iter)
+    plt.legend()
     return
 
 
@@ -96,14 +103,18 @@ def list_of_infected(j):
         for k in range(len(data_list[i]["infected"])):
             temp_list.append(data_list[i]["infected"][k]) #appends number of infected
         max_number_of_infected.append(max(temp_list)) #saves max of temp_list
-    print("Gennemsnitligt er antallet af max smittede for setup type %s " %[j,j,j], "is: ", np.mean(max_number_of_infected))
+    print("Gennemsnitligt er antallet af max smittede for setup type %s " %[j,j,j], "er: ", np.mean(max_number_of_infected))
     #rest of code is to get y-values for the plot
     sum_of_infected = [0]*(skridt+1) #makes list for y-values
+    num_of_susceptible = [0]*(skridt+1)
     for i in range(len(data_list)):
         for j in range(len(data_list[i]["infected"])):
             sum_of_infected[j]+=data_list[i]["infected"][j]
+            num_of_susceptible[j] += data_list[i]["Agent_count"][j]-data_list[i]["infected"][j] #number of susceptible at each time step
     avg_infected =[number / iterationer for number in sum_of_infected] #avg number of infected
-    return avg_infected
+    num_of_susceptible = [number / iterationer for number in num_of_susceptible]
+
+    return avg_infected, num_of_susceptible
 
 
 "uncomment below to run list_of_infected function with different set up types. Change line 12 and 13 to change number of iterations and timesteps"
@@ -113,12 +124,13 @@ pool.close() #closes the pools
 
 "Uncomment below for plotting the three plots for comparing"
 time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
+colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
 for i in range(1,4,1):
-    plt.plot(time, results[i-1], label= [i+1,i+1,i+1]) #makes the three different plots
+    plt.plot(time, results[i-1][0], label= [i+1,i+1,i+1], color=colors[i-1]) #makes the three different plots
+    plt.plot(time, results[i-1][1], color=colors[i-1], linestyle='dashed')
 plt.xlabel('Tidsskridt')
 plt.ylabel('Gennemsnit antal smittede')
 plt.title('%s simulationer' %iterationer)
 plt.legend()
 
 plt.show()
-
