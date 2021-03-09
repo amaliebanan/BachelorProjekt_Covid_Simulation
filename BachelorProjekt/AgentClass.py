@@ -6,11 +6,13 @@ import random
 import sys
 from Model import find_status, make_classrooms_fit_to_grid, covid_Model
 
-infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
+
 incubation = 2700 #5 days = 540*5 minutes at school
 asymptomatic = 2700 #Agents are asymptomatic for 5 days
 exposed = 1620 #Du er smittet, men smitter ikke videre før den er på 0. Varer 3 dage.
 other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
+ids = [i for i in range(0,78)]
+
 #From sugerscape_cg
 ##Helper functions
 def getDistance(pos1,pos2):
@@ -29,6 +31,11 @@ def angle(v1, v2):
   angle_in_radians = math.acos(dotproduct(v1, v2) / (length(v1) * length(v2)))
   angle_in_degrees = (angle_in_radians*180)/math.pi
   return angle_in_degrees
+def intersect(list1,list2):
+    list3 = [v for v in list1 if v in list2]
+    if list3 == []:
+        return False        #Intersection is the empty set
+    else: return True       #Intersection is not the empty set
 
 #Moving function
 def wonder(self):
@@ -98,15 +105,6 @@ def infect(self):
             elif p_over_2 == 1:
                 agent.infected = 1
 
-#Check if a person has symptoms
-def hasSymptoms(self):
-    self.asymptomatic -= 1
-    if self.asymptomatic == 0:
-        self.model.schedule.remove(self)
-        self.model.grid.remove_agent(self)
-        return True
-    else: return False
-
 #Update infection status
 def updateInfectionStatus(self):
     self.infection_period -= 1
@@ -147,7 +145,6 @@ def canteen_to_class(self):
 
 #Turn class-object to canteen-object
 def class_to_canteen(self):
-
     c_agent = canteen_Agent(self.id,self.model)
 
     #Set up canteen agent to have same paramters as prior class-agent
@@ -173,10 +170,10 @@ def class_to_canteen(self):
     self.model.grid.remove_agent(self)
     self.model.schedule.add(c_agent)
 
-
     #If it is a TA->Class->Canteen, we cannot remove TA from its own list of students.
     if self.TA is not ():
         self.TA.students.remove(self)
+   #     self.TA.enrolled_students.remove(self)
 
     return c_agent
 
@@ -211,6 +208,7 @@ def canteen_to_TA(self):
     c_agent.pos,c_agent.door = self.pos, self.door
 
     c_agent.students = [0] ##Dummy list, when all students are in class we update the TA's list of students
+    c_agent.enrolled_students = [0] ##Dummy list
 
     self.model.TAs.append(c_agent)
 
@@ -298,8 +296,8 @@ class covid_Agent(Agent):
         self.infected = 0 #0 for False, 1 for True
         self.recovered = 0 #0 for False, 1 for True
         self.mask = 0 #0 for False, 1 for True
+        self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
 
-        self.infection_period = infection_period
         self.asymptomatic = asymptomatic
         self.exposed = exposed
         self.id = id
@@ -328,18 +326,17 @@ class covid_Agent(Agent):
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
         if self.infected == 1:
-            #Infect if agent should go home
-          #  if hasSymptoms(self):
-           #     return
             #Try to infect
             infect(self)
             #Update infection status
             updateInfectionStatus(self)
 
         ##MOVE###
-        if self.model.minute_count > 2 and self.model.minute_count in self.model.class_times and self.model.minute_count%2 == 0:
-            self.moving_to_door = 1
-        elif self.model.day_count>0 and self.model.minute_count in self.model.class_times+[0] and self.model.minute_count%2 == 0:
+        if self.model.day_count == 0:
+            if self.model.minute_count in self.model.class_times and self.model.minute_count%2 == 0:
+                self.moving_to_door = 1
+
+        elif self.model.day_count > 0 and self.model.minute_count in self.model.class_times+[0] and self.model.minute_count%2 == 0:
             self.moving_to_door = 1
 
         self.move(True)
@@ -350,7 +347,8 @@ class TA(Agent):
         self.infected = 0 #0 for False, 1 for True
         self.recovered = 0 #0 for False, 1 for True
         self.mask = 1 #0 for False, 1 for True
-        self.infection_period = infection_period
+        self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
+
         self.asymptomatic = asymptomatic # Agents are asymptomatic for 5 days
         self.exposed = exposed
         self.id = id
@@ -358,12 +356,11 @@ class TA(Agent):
         self.timeToTeach = 5
         self.courses = ()
         self.door = ()
+        self.enrolled_students = ()
         self.students = []
         self.coords = ()
 
         self.students_classroom = []
-
-
 
     def move_to_student(self,student):
 
@@ -383,16 +380,19 @@ class TA(Agent):
             self.timeToTeach -= 1
 
     def connect_TA_and_students(self):
-        self.students = [a for a in self.model.schedule.agents if isinstance(a,covid_Agent) and a.door == self.door]
+        ss = [a for a in self.model.schedule.agents if isinstance(a,covid_Agent) and a.door == self.door]
+        if self.id in [1001,1002,1003]:
+            self.students = [a for a in ss if a.id in range(0,78)]
+        elif self.id in [1004,1005,1006]:
+            self.students = [a for a in ss if a.id not in range(0,78)]
+
         for s in self.students:
             s.TA = self
-
-
 
     def move(self):
         questionStatus = find_status(self.model,"hasQuestion",[covid_Agent],self.students)
 
-        if questionStatus > 0 and len(self.students) >15:  #Class is started and somebody a question
+        if questionStatus > 0 and len(self.students) > 15:  #Class is started and somebody a question
             for s in self.students:
                 if s.hasQuestion == 1:
                     self.move_to_student(s)
@@ -401,16 +401,15 @@ class TA(Agent):
             wonder(self)
 
     def step(self):
+
+      self.connect_TA_and_students()
+
       if len(self.students) == 0:
           TA_to_class(self)
           return
-      self.connect_TA_and_students()
+
 
       if self.infected == 1:
-        #Infect if agent should go home
-       # if hasSymptoms(self):
-        #    return
-
         infect(self)
 
         #Update infection status
@@ -424,12 +423,11 @@ class canteen_Agent(Agent):
         self.infected = 0 #0 for False, 1 for True
         self.recovered = 0 #0 for False, 1 for True
         self.mask = 0 #0 for False, 1 for True
-        self.infection_period = infection_period
+        self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
         self.asymptomatic = asymptomatic
         self.id = id
         self.door = ()
         self.exposed = exposed
-        self.just_finished_class = 1
         self.courses = ()
         self.classrooms = ()
         self.moving_to_door = 0
@@ -446,10 +444,16 @@ class canteen_Agent(Agent):
         else: wonder(self)
 
     def step(self):
-        if (self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 1 and self.next_to_attend_class is True):
+        if self.infected == 1:
+            infect(self)
+
+        if self.model.day_count == 0:
+            if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 1 and self.next_to_attend_class is True:
+                self.moving_to_door = 1
+        elif (self.model.minute_count == 0 or (self.model.minute_count in self.model.class_times+[0] and self.model.minute_count%2 == 1))\
+                and self.next_to_attend_class is True:
             self.moving_to_door = 1
-        elif self.model.day_count > 0 and self.model.minute_count == 0 and self.next_to_attend_class is True:
-            self.moving_to_door = 1
+
         if self.moving_to_door == 1 and self.model.setUpType is not 1:
             self.move(True)
         else: self.move()

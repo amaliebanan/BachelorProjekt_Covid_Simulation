@@ -85,7 +85,7 @@ def max_infected(fix_par, var_par, model, iter, steps):
 def list_of_infected(j):
     """
     :param j: j is the setup type. eg j=2 => setup type [2,2,2]
-    :return: returns a list of touples of lists of y-values for plotting
+    :return: returns a list of y-values for plotting
     """
     batch_run = BatchRunner(covid_Model,
         variable_parameters=variable_params,
