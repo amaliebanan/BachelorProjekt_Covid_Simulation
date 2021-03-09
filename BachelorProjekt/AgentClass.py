@@ -86,24 +86,33 @@ def infect(self):
         p_1_til_2 = np.random.poisson(0.22450/100) #Mellem 1 og 2 meters afstand
         p_over_2 = np.random.poisson(0.2199651/100) #Over 2 meters afstand
 
-        for agent in closest_neighbors:
-            distance = getDistance(self.pos,agent.pos)
-            agent_status = agent.infected
-            agent_recovered_status = agent.recovered
 
-            if agent_recovered_status == 1 or agent_status == 1: # kan ikke blive smittet, da den er immun eller allerede infected
-                continue
-            elif distance <= 0.1:
-                if pTA == 1:
+        sum = pTA+p_1+p_1_til_2+p_over_2
+        if sum>0:
+     #       print(self.id,self.pos,pTA,p_1,p_1_til_2,p_over_2)
+            for agent in closest_neighbors:
+    #            print(self.id,agent.pos)
+                distance = getDistance(self.pos,agent.pos)
+                agent_status = agent.infected
+                agent_recovered_status = agent.recovered
+
+                if agent_recovered_status == 1 or agent_status == 1: # kan ikke blive smittet, da den er immun eller allerede infected
+                    continue
+                elif distance <= 0.1:
+                    if pTA == 1:
+                        agent.infected = 1
+                        print("PTA",self.pos,"infected",agent.pos)
+                elif distance > 0.5 and distance <= 1.0:
+                    if p_1 == 1:
+                        agent.infected = 1
+                        print("under1",self.pos,"infected",agent.pos)
+                elif distance > 1.0 and distance <= 2.0:
+                    if p_1_til_2 == 1:
+                        agent.infected = 1
+                        print("1til2",self.pos,"infected",agent.pos)
+                elif p_over_2 == 1:
                     agent.infected = 1
-            elif distance > 0.5 and distance <= 1.0:
-                if p_1 == 1:
-                    agent.infected = 1
-            elif distance > 1.0 and distance <= 2.0:
-                if p_1_til_2 == 1:
-                    agent.infected = 1
-            elif p_over_2 == 1:
-                agent.infected = 1
+                    print("over2",self.pos,"infected",agent.pos)
 
 #Update infection status
 def updateInfectionStatus(self):

@@ -307,10 +307,10 @@ class covid_Model(Model):
         self.schedule.step()
         self.datacollector.collect(self)
 
-        countCanteen =len([a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.id not in [1003,1001,1002]])
+        countCanteen =len([a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent)])
         countCovid=len([a for a in self.schedule.agents if isinstance(a,ac.covid_Agent)])
-        countTA=len([a for a in self.schedule.agents if a.id in [1001,1003,1002]])
-
+        countTA=len([a for a in self.schedule.agents if isinstance(a,ac.TA)])
+        print("så mange er der canteen:",countCanteen,"class",countCovid,"TA",countTA)
     #print(self.minute_count)
         if self.day_count>0 and self.minute_count in [90,220,390,520]:
          #   print("its knoooowwwww",self.minute_count)
@@ -335,9 +335,10 @@ class covid_Model(Model):
 
         if self.minute_count % 540 == 0:
             self.day_count += 1
-            print(self.day_count,self.setUpType,"infected now",find_status(self,"infected"))
+        #    print(self.day_count,self.setUpType,"infected now",find_status(self,"infected"))
             self.minute_count = 0
             self.hour_count = 0
+
 
         update_exposed_and_asympomatic_status(self)
         introduce_recovered_agents(self)
