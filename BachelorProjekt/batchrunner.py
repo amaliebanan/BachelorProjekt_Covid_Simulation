@@ -9,9 +9,8 @@ from multiprocessing import Pool
 
 fixed_params = {"width": 20, "height": 33, "setUpType": [4,4,4]}
 variable_params = {"N": range(25,26,1)} # 25 students
-
 iterationer = 1
-skridt = 540*3
+skridt = 540*20
 
 
 "Below is to plot infected vs timestep and susceptible vs timestep for a single set up type"
@@ -119,7 +118,7 @@ def list_of_infected(j):
 
 "uncomment below to run list_of_infected function with different set up types. Change line 12 and 13 to change number of iterations and timesteps"
 pool = mp.Pool(mp.cpu_count()) #opens pools for running parallel programs
-results=pool.map(list_of_infected, [2,3,4]) #runs the list_of_infected function for j={2,3,4}
+results=pool.map(list_of_infected, [3,4,5]) #runs the list_of_infected function for j={2,3,4}
 pool.close() #closes the pools
 
 "Uncomment below for plotting the three plots for comparing"
@@ -134,3 +133,4 @@ plt.title('%s simulationer' %iterationer)
 plt.legend()
 
 plt.show()
+

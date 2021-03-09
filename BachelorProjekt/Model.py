@@ -111,8 +111,9 @@ def set_canteen_agents_next_to_attend_class(self):
      for agent in soon_to_be_TAs:
          canteens_agents.append(agent)
 
-
      going_to_class_next_agents = canteens_agents
+
+     not_TAs = [a for a in going_to_class_next_agents if isinstance(a,ac.canteen_Agent)]
 
 
      for agent in going_to_class_next_agents:
@@ -120,7 +121,6 @@ def set_canteen_agents_next_to_attend_class(self):
              print(self.minute_count,self.setUpType,agent.id,agent.pos)
          if isinstance(agent,ac.canteen_Agent):
                 agent.next_to_attend_class = not agent.next_to_attend_class
-
 #Set up the grid accordingly
 #Add walls, doors, TAs and classrooms
 def setUp(N,model,setUpType,i):
@@ -139,6 +139,8 @@ def setUp(N,model,setUpType,i):
         listOfPositions = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_3]
     elif setUpType == 4: #4-people table with correct direction added
         listOfPositions = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_4]
+    elif setUpType == 5:
+         listOfPositions = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_5]
     if setUpType is not 1:
 
         #Add door(s) to model and grid
@@ -271,6 +273,18 @@ class covid_Model(Model):
                            ((4,1),dir['E']),((4,2),dir['E']),((5,1),dir['N']),((5,2),dir['S']),((6,1),dir['N']),((6,2),dir['S']),
                            ((4,4),dir['N']),((4,5),dir['S']),((5,4),dir['N']),((5,5),dir['S']),
                            ((4,7),dir['N']),((4,8),dir['S']),((5,7),dir['N']),((5,8),dir['S'])]
+        self.classroom_5 = [((0,0),dir['N']),((0,1),dir['S']),((0,3),dir['N']),((0,4),dir['S']),
+                           ((0,6),dir['N']),((0,7),dir['S']),((0,9),dir['N']),((2,0),dir['S']),
+                           ((2,2),dir['N']),((2,3),dir['S']),((2,5),dir['N']),((2,6),dir['S']),
+                           ((2,8),dir['E']),((2,9),dir['E']),((4,0),dir['N']),((4,1),dir['S']),((4,3),dir['N']),((4,4),dir['S']),
+                           ((4,6),dir['N']),((4,7),dir['S']),((4,9),dir['N']),((6,0),dir['S']),
+                           ((6,2),dir['N']),((6,4),dir['S']),((6,6),dir['N']),((6,8),dir['S'])]
+        self.classroom_56 = [((1,0),dir['N']),((1,1),dir['S']),((1,3),dir['N']),((1,4),dir['S']),
+                           ((1,6),dir['N']),((1,7),dir['S']),((1,9),dir['N']),((3,0),dir['S']),
+                           ((3,2),dir['N']),((3,3),dir['S']),((3,5),dir['N']),((3,6),dir['S']),
+                           ((3,8),dir['E']),((3,9),dir['E']),((5,0),dir['N']),((5,1),dir['S']),((5,3),dir['N']),((5,4),dir['S']),
+                           ((5,6),dir['N']),((5,7),dir['S']),((5,9),dir['N']),((0,5),dir['S']),
+                           ((0,2),dir['N']),((6,8),dir['S']),((6,2),dir['N']),((0,8),dir['S'])]
         self.seats = []
         self.seat = ()
 
@@ -299,10 +313,11 @@ class covid_Model(Model):
                 if len(ta.students)>1:
                     TAs_students = ta.students
                     randomStudent = self.random.choice(TAs_students)
-                    self.schedule.remove(randomStudent)
-                    student_with_Question = randomStudent
-                    student_with_Question.hasQuestion = 1
-                    self.schedule.add(student_with_Question)
+                    randomStudent.hasQuestion = 1
+                  #  self.schedule.remove(randomStudent)
+                  #  student_with_Question = randomStudent
+                  #  student_with_Question.hasQuestion = 1
+                  #  self.schedule.add(student_with_Question)
 
         self.schedule.step()
         self.datacollector.collect(self)
@@ -310,10 +325,11 @@ class covid_Model(Model):
         countCanteen =len([a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent)])
         countCovid=len([a for a in self.schedule.agents if isinstance(a,ac.covid_Agent)])
         countTA=len([a for a in self.schedule.agents if a.id in [1001,1003,1002]])
+        countInfected=len([a for a in self.schedule.agents if (isinstance(a,ac.canteen_Agent) or isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent)) and a.infected ==1])
 
-        if self.day_count>0 and self.minute_count in [0,220,390]:
+        if self.day_count>0 and self.minute_count in [110,220,390,539]:
             set_canteen_agents_next_to_attend_class(self)
-        elif self.minute_count in [220,390]:
+        elif self.minute_count in [220,390,539]:
             set_canteen_agents_next_to_attend_class(self)
 
 
@@ -322,9 +338,11 @@ class covid_Model(Model):
          #  self.running = False
 
         #Time count
+        #print(self.day_count,self.minute_count,countInfected)
         self.minute_count += 1
         if self.minute_count % 60 == 0:
             self.hour_count += 1
+
 
             #Reset list of seats so new agents can pop from original list of seats in classrooms
             self.seats = []
@@ -332,6 +350,7 @@ class covid_Model(Model):
                 self.seats.append(random.sample(list,k=len(list)))
 
         if self.minute_count % 540 == 0:
+         #   print(self.day_count,countInfected)
             self.day_count += 1
             self.minute_count = 0
             self.hour_count = 0

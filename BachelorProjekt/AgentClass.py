@@ -101,18 +101,18 @@ def infect(self):
                 elif distance <= 0.1:
                     if pTA == 1:
                         agent.infected = 1
-                        print("PTA",self.pos,"infected",agent.pos)
+           #             print("PTA",self.pos,"infected",agent.pos)
                 elif distance > 0.5 and distance <= 1.0:
                     if p_1 == 1:
                         agent.infected = 1
-                        print("under1",self.pos,"infected",agent.pos)
+            #            print("under1",self.pos,"infected",agent.pos)
                 elif distance > 1.0 and distance <= 2.0:
                     if p_1_til_2 == 1:
                         agent.infected = 1
-                        print("1til2",self.pos,"infected",agent.pos)
+             #           print("1til2",self.pos,"infected",agent.pos)
                 elif p_over_2 == 1:
                     agent.infected = 1
-                    print("over2",self.pos,"infected",agent.pos)
+              #      print("over2",self.pos,"infected",agent.pos)
 
 #Update infection status
 def updateInfectionStatus(self):
@@ -459,7 +459,7 @@ class canteen_Agent(Agent):
         if self.model.day_count == 0:
             if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 1 and self.next_to_attend_class is True:
                 self.moving_to_door = 1
-        elif (self.model.minute_count == 0 or (self.model.minute_count in self.model.class_times+[0] and self.model.minute_count%2 == 1))\
+        elif (self.model.minute_count == 0 or (self.model.minute_count in self.model.class_times+[1] and self.model.minute_count%2 == 1))\
                 and self.next_to_attend_class is True:
             self.moving_to_door = 1
 
