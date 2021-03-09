@@ -32,6 +32,13 @@ def find_status(model,parameter,agent_type=None,list=None):
                 agents_status.append(getattr(agent,parameter))
     return sum(agents_status)
 
+def count_agents(model):
+    Agents = []
+    for agent in model.schedule.agents:
+        if not isinstance(agent, ac.door) and not isinstance(agent,ac.wall):
+            Agents.append(agent)
+    return len(Agents)
+
 def add_init_infected_to_grid(self,n):
     i = 0
     positives = []
@@ -219,7 +226,9 @@ class covid_Model(Model):
         self.schedule = RandomActivation(self)
         self.setUpType = setUpType
         self.status = find_status(self,"infected",[ac.covid_Agent])
-        self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", [ac.covid_Agent, ac.canteen_Agent, ac.TA])})
+        self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", [ac.covid_Agent, ac.canteen_Agent, ac.TA]),
+                                                            "Agent_count": lambda m: count_agents(self)})
+
 
         #Counting minutes and days
         self.minute_count = 0
@@ -327,6 +336,6 @@ class covid_Model(Model):
             self.minute_count = 0
             self.hour_count = 0
 
-        print(find_status(self,"infected"))
+        #print(find_status(self,"infected"))
         update_exposed_and_asympomatic_status(self)
         remove_agents_having_symptoms(self)
