@@ -37,7 +37,7 @@ def intersect(list1,list2):
         return False        #Intersection is the empty set
     else: return True       #Intersection is not the empty set
 
-#Moving function
+#Wander around function
 def wonder(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
     possible_empty_steps = []
@@ -73,6 +73,8 @@ def checkDirection(agent,neighbor):
 def infect(self):
         if self.exposed != 0:   #Agent smitter ikke endnu.
             return
+        if self.is_home_sick == 1: #Agenten er derhjemme og kan ikke smitte
+            return
         all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
         closest_neighbors = []
 
@@ -88,10 +90,8 @@ def infect(self):
 
 
         sum = pTA+p_1+p_1_til_2+p_over_2
-        if sum>0:
-     #       print(self.id,self.pos,pTA,p_1,p_1_til_2,p_over_2)
+        if sum > 0:
             for agent in closest_neighbors:
-    #            print(self.id,agent.pos)
                 distance = getDistance(self.pos,agent.pos)
                 agent_status = agent.infected
                 agent_recovered_status = agent.recovered
@@ -101,30 +101,38 @@ def infect(self):
                 elif distance <= 0.1:
                     if pTA == 1:
                         agent.infected = 1
-           #             print("PTA",self.pos,"infected",agent.pos)
+                        self.model.infected_agents.append(agent)
                 elif distance > 0.5 and distance <= 1.0:
                     if p_1 == 1:
                         agent.infected = 1
-            #            print("under1",self.pos,"infected",agent.pos)
+                        self.model.infected_agents.append(agent)
                 elif distance > 1.0 and distance <= 2.0:
                     if p_1_til_2 == 1:
                         agent.infected = 1
-             #           print("1til2",self.pos,"infected",agent.pos)
+                        self.model.infected_agents.append(agent)
                 elif p_over_2 == 1:
                     agent.infected = 1
-              #      print("over2",self.pos,"infected",agent.pos)
+                    self.model.infected_agents.append(agent)
 
-#Update infection status
-def updateInfectionStatus(self):
-    self.infection_period -= 1
-    if self.infection_period == 0:
-        self.infected = 0
-        if np.random.poisson(1/100) == 1:
-            self.recovered = 0
-            self.infection_period = 9
-        else:
-            self.recovered = 1
+###CHANGING OBJECT-TYPE###
+#Get all essential parameters transfered
+def change_obj_params(new,old):
+    new.id = old.id
+    new.pos = old.pos
+    new.coords = old.coords
 
+    new.infected, new.recovered, new.mask, new.is_home_sick = old.infected, old.recovered, old.mask, old.is_home_sick
+
+    new.infection_period = old.infection_period
+    new.asymptomatic = old.asymptomatic
+    new.exposed = old.asymptomatic
+
+    new.courses = old.courses
+
+    old.model.schedule.remove(old)
+    old.model.grid.remove_agent(old)
+    old.model.schedule.add(new)
+    old.model.grid.place_agent(new,new.pos)
 ###CHANGING OBJECT-TYPE###
 
 #Turn canteen-object to class-object
@@ -134,7 +142,9 @@ def canteen_to_class(self):
     #Set up canteen agent to have same paramters as prior class-agent
     c_agent.infected, c_agent.recovered, c_agent.exposed, c_agent.asymptomatic, c_agent.mask = \
         self.infected, self.recovered, self.exposed, self.asymptomatic, self.mask
-    c_agent.courses, c_agent.classrooms = self.courses, self.classrooms
+    c_agent.is_home_sick = self.is_home_sick
+    c_agent.infection_period = self.infection_period
+    c_agent.courses = self.courses
     c_agent.pos = self.pos
     c_agent.moving_to_door = 0
 
@@ -160,6 +170,8 @@ def class_to_canteen(self):
     c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.asymptomatic, c_agent.mask = \
         self.infected, self.recovered, self.exposed,self.asymptomatic,self.mask
     c_agent.pos, c_agent.TA = self.pos, self.TA
+    c_agent.is_home_sick = self.is_home_sick
+    c_agent.infection_period = self.infection_period
 
     #Get the correct door (based on the next course the agent will attend)
     x,y = self.courses
@@ -181,8 +193,9 @@ def class_to_canteen(self):
 
     #If it is a TA->Class->Canteen, we cannot remove TA from its own list of students.
     if self.TA is not ():
-        self.TA.students.remove(self)
-   #     self.TA.enrolled_students.remove(self)
+        #If student is present
+        if self.is_home_sick == 0:
+            self.TA.students.remove(self)
 
     return c_agent
 
@@ -193,7 +206,8 @@ def TA_to_class(self):
     c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.asymptomatic, c_agent.mask = \
         self.infected, self.recovered, self.exposed,self.asymptomatic,self.mask
     c_agent.door, c_agent.moving_to_door = self.door, 1
-
+    c_agent.is_home_sick = self.is_home_sick
+    c_agent.infection_period = self.infection_period
     if self.courses == (): #First time, we need to initialize TA's courses
         c_agent.courses = [0,0]
     else: c_agent.courses = self.courses
@@ -210,7 +224,8 @@ def TA_to_class(self):
 #Turn canteen-object to TA-object
 def canteen_to_TA(self):
     c_agent = TA(self.id,self.model)
-
+    c_agent.is_home_sick = self.is_home_sick
+    c_agent.infection_period = self.infection_period
     #Set up TA agent to have same paramters as prior canteen-agent
     c_agent.infected, c_agent.recovered, c_agent.exposed, c_agent.asymptomatic, c_agent.mask = \
         self.infected, self.recovered, self.exposed,self.asymptomatic, self.mask
@@ -299,24 +314,55 @@ def move_to_specific_pos(self,pos_):
 
     self.model.grid.move_agent(self,(x_,y_))
 
+def send_agent_home(self):
+    self.is_home_sick = 1
+    self.model.agents_at_home.append(self)
+
+def send_agent_back_to_school(self):
+    newList = [a for a in self.model.agents_at_home if a.id != self.id]
+    self.model.agents_at_home = newList
+    self.is_home_sick = 0
+    self.recovered = 1
+    self.infected = 0
+
+def update_infection_parameters(self):
+    if self.recovered == 1:
+        return              #Agent is recovered
+    if self.is_home_sick == 1: #Agent is already home. Just update infection period
+        self.infection_period = max(0,self.infection_period-1)
+        if self.infection_period == 0:
+            send_agent_back_to_school(self)
+        return
+    self.asymptomatic = max(0,self.asymptomatic-1)
+    if self.asymptomatic == 0:
+        send_agent_home(self)
+    self.exposed = max(0,self.exposed-1)    #If already 0 stay there, if larger than 0 subtract one
+    self.infection_period = max(0,self.infection_period-1)
+
 class covid_Agent(Agent):
     def __init__(self, id, model):
         super().__init__(id, model)
-        self.infected = 0 #0 for False, 1 for True
-        self.recovered = 0 #0 for False, 1 for True
-        self.mask = 0 #0 for False, 1 for True
-        self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
-
-        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,540))))
-        self.exposed = exposed
         self.id = id
+        self.model = model
         self.coords = ()
-        self.moving_to_door = 0
+
+        self.infected = 0
+        self.recovered = 0
+        self.mask = 0
+        self.is_home_sick = 0
+        self.off_school = 0
+
+        self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
+        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,540))))
         self.exposed = max(1100,abs(round(np.random.normal(1620,540))))
-        self.TA = ()
+
+
+        self.moving_to_door = 0
         self.door = ()
         self.courses = [0,0]
-        self.classrooms = [0,0]
+
+
+        self.TA = ()
         self.seat = ()
 
         #Relevant for classroom only
@@ -327,8 +373,10 @@ class covid_Agent(Agent):
         if timestep is True:
             if self.moving_to_door == 1: #Agents go to door
                 move_to_specific_pos(self,self.door.pos)
+         #       move_to_specific_pos(self,self.door.pos)
             elif self.moving_to_door == 0: #Agents go to seat
                 move_to_specific_pos(self,self.seat)
+               # move_to_specific_pos(self,self.seat)
         else: wonder(self)
 
 
@@ -337,8 +385,7 @@ class covid_Agent(Agent):
         if self.infected == 1:
             #Try to infect
             infect(self)
-            #Update infection status
-            updateInfectionStatus(self)
+            update_infection_parameters(self)
 
         ##MOVE###
         if self.model.day_count == 0:
@@ -353,24 +400,24 @@ class covid_Agent(Agent):
 class TA(Agent):
     def __init__(self,id,model):
         super().__init__(id,model)
-        self.infected = 0 #0 for False, 1 for True
-        self.recovered = 0 #0 for False, 1 for True
         self.id = id
-        self.mask = 1 #0 for False, 1 for True
-        self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
+        self.infected = 0
+        self.recovered = 0
+        self.mask = 1
+        self.is_home_sick = 0
+        self.off_school = 0
 
-        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,540)))) # Agents are asymptomatic for 5 days
+        self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
+        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,540)))) #Agents are asymptomatic for 5 days
         self.exposed = max(1100,abs(round(np.random.normal(1620,540))))
 
 
         self.timeToTeach = 5
         self.courses = ()
         self.door = ()
-        self.enrolled_students = ()
         self.students = []
         self.coords = ()
 
-        self.students_classroom = []
 
     def move_to_student(self,student):
 
@@ -391,11 +438,14 @@ class TA(Agent):
 
     def connect_TA_and_students(self):
         ss = [a for a in self.model.schedule.agents if isinstance(a,covid_Agent) and a.door == self.door]
-        if self.id in [1001,1002,1003]:
-            self.students = [a for a in ss if a.id in range(0,78)]
-        elif self.id in [1004,1005,1006]:
-            self.students = [a for a in ss if a.id not in range(0,78)]
 
+        #Get the correct students
+        if self.id in [1001,1002,1003]:
+            self.students = [a for a in ss if a.id in range(0,78) and a.is_home_sick != 1]
+        elif self.id in [1004,1005,1006]:
+            self.students = [a for a in ss if a.id not in range(0,78) and a.is_home_sick != 1]
+
+        #Apply TA to students
         for s in self.students:
             s.TA = self
 
@@ -421,38 +471,45 @@ class TA(Agent):
 
       if self.infected == 1:
          infect(self)
+         update_infection_parameters(self)
 
       self.move()
 
 class canteen_Agent(Agent):
     def __init__(self, id, model):
         super().__init__(id, model)
-        self.infected = 0 #0 for False, 1 for True
-        self.recovered = 0 #0 for False, 1 for True
-        self.mask = 0 #0 for False, 1 for True
+        #Person parameters
+        self.id = id
+        self.infected = 0
+        self.recovered = 0
+        self.mask = 0
+        self.is_home_sick = 0
+        self.off_school = 0
+        self.coords = ()
+
+        #Infection parameters
         self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
         self.asymptomatic = max(1500,abs(round(np.random.normal(2700,540))))
-        self.id = id
-        self.door = ()
         self.exposed = max(1100,abs(round(np.random.normal(1620,540))))
-        self.courses = ()
-        self.classrooms = ()
-        self.moving_to_door = 0
-        self.just_created = 0
+
+        #Class-schedule parameters
         self.next_to_attend_class = False
+        self.door = ()
+        self.courses = ()
+        self.moving_to_door = 0
         self.TA = ()
 
-        #Relevant for classroom only
-        self.hasQuestion = 0
 
     def move(self,timestep=False):
         if timestep is True: #Agents go to door
             move_to_specific_pos(self,self.door.pos)
+#            move_to_specific_pos(self,self.door.pos)
         else: wonder(self)
 
     def step(self):
         if self.infected == 1:
             infect(self)
+            update_infection_parameters(self)
 
         if self.model.day_count == 0:
             if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 1 and self.next_to_attend_class is True:

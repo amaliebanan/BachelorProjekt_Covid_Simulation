@@ -50,10 +50,12 @@ def add_init_infected_to_grid(self,n):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent
             positive_agent.infected = 1
+            positive_agent.infection_period = 200
             positive_agent.exposed = 0
-            positive_agent.asymptomatic = 1040
+            positive_agent.asymptomatic = 100
             self.schedule.add(positive_agent)
-            positives.append(randomAgent.pos)
+            positives.append(randomAgent.pos) # To keep track of initial positives
+            self.infected_agents.append(positive_agent)
             i+=1
         else: pass
 
@@ -206,12 +208,11 @@ def make_classrooms_fit_to_grid(list_of_setuptypes,model):
         class_room = [(x,y+j*11) for ((x,y),z) in getattr(model,number)]
         seats.append(class_room)
     return seats
-
+'''
 def remove_agents_having_symptoms(self,agent):
+    print("HEJ",agent.id,agent.is_home,agent.infection_period)
+    agent.is_home = 1
     self.removed_agents.append(agent)
-    self.schedule.remove(agent)
-    self.grid.remove_agent(agent)
-
 
 def update_status_infected_agents(self):
     agents = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent)
@@ -229,6 +230,8 @@ def update_infection_period_removed_agents(self):
         if agent.infection_period == 0:
             agent.recovered = 1
             self.recovered_agents.append(agent)
+            print(agent.id,agent.recovered)
+'''
 class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
         self.n_agents = N
@@ -240,23 +243,16 @@ class covid_Model(Model):
         self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", [ac.covid_Agent, ac.canteen_Agent, ac.TA]),
                                                             "Agent_count": lambda m: count_agents(self)})
 
-        self.removed_agents = []
+        self.agents_at_home = []
         self.recovered_agents = []
+        self.infected_agents = []
+
         #Counting minutes and days
         self.minute_count = 0
         self.hour_count = 0
         self.day_count = 0
         self.door = ()
 
-
-        #minute%120 == 0: 1,2,3 go to out of class
-        #minute%135 == 0: 4,5,6 go to class
-        #minute%240 == 0: 4,5,6 go out of class
-        #minute%315 == 0: 1,2,3 go to class
-        #minute%520 == 0: 1,2,3 go out of class
-        #minute%535 == 0: 4,5,6 go to class
-        #minute%620 == 0: 4,5,6 go out of class
-       # self.class_times = [0+520*self.day_count,120+540*self.day_count,135+540*self.day_count, 240+540*self.day_count,315+540*self.day_count,420+540*self.day_count,435+540*self.day_count,540+540*self.day_count]
         self.class_times = [120,135,240,315,420,435,540]
 
         self.other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
@@ -365,6 +361,6 @@ class covid_Model(Model):
 
        # countIned=[a.asymptomatic for a in self.schedule.agents if (isinstance(a,ac.canteen_Agent) or isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent))]
        # print(countIned)
-        update_status_infected_agents(self)
-        if len(self.removed_agents) > 0:
-            update_infection_period_removed_agents(self)
+
+
+        #update_status_infected_agents(self)

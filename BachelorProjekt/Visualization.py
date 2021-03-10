@@ -7,6 +7,7 @@ from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 
 ids = [i for i in range(0,78)]
+
 class infected_Element(TextElement):
     '''
     Display a text count of how many happy agents there are. FROM MESA-EXAMPLES
@@ -39,22 +40,24 @@ def covid_draw(agent):
     if agent is None:
         return
     portrayal = {"Shape": "circle", "r": 0.8, "Filled": "true", "Layer": 0}
+
     if isinstance(agent,ac.covid_Agent) or isinstance(agent,ac.canteen_Agent):
+        if agent.recovered == 1:
+            portrayal["Color"] = "purple"
         if agent.infected == 0:
             portrayal["Color"] = "green"
         if agent.infected == 1 and agent.exposed == 0:
                 portrayal["Shape"] = "resources/corona.png"
                 portrayal["scale"] = 0.9
-        if agent.infected == 1 and agent.exposed >0:
+        if agent.infected == 1 and agent.exposed > 0:
                 portrayal["Shape"] = "resources/exposed.png"
                 portrayal["scale"] = 0.9
 
-        if agent.hasQuestion == 1 and agent.infected == 1:
-            portrayal["Color"] = "black"
-        if agent.hasQuestion == 1 and agent.infected == 0:
-            portrayal["Color"] = "Blue"
-   # if agent.id in [1001,1002,1003,1004,1005,1006]:
-   #     portrayal["Color"] = "silver"
+        if isinstance(agent,ac.covid_Agent) and agent.hasQuestion == 1:
+            if agent.infected == 1:
+                portrayal["Color"] = "black"
+            if agent.infected == 0:
+                portrayal["Color"] = "Blue"
     if isinstance(agent,ac.TA) or agent.id in [1001,1002,1003,1004,1005,1006]:
         if agent.infected == 0:
             portrayal["Color"] = "Orange"
@@ -62,6 +65,17 @@ def covid_draw(agent):
         elif agent.infected == 1:
             portrayal["Color"] = "Pink"
             portrayal["scale"] = 0.9
+
+    if (isinstance(agent,ac.TA) or isinstance(agent,ac.covid_Agent) or isinstance(agent,ac.canteen_Agent)):
+            if agent.is_home_sick == 1:
+                portrayal["Shape"] = "resources/white.jpg"
+                portrayal["scale"] = 0.9
+            if agent.recovered == 1:
+                portrayal["Shape"] = "resources/healthy.png"
+                portrayal["scale"] = 0.9
+            if agent.off_school == 1:
+                portrayal["Shape"] = "resources/white.jpg"
+                portrayal["scale"] = 0.9
     if isinstance(agent,ac.door):
         portrayal["Shape"] = "resources/door.png"
         portrayal["scale"] = 0.9
@@ -74,14 +88,6 @@ def covid_draw(agent):
         elif agent.orientation == 'h':
             portrayal["w"] = 1
             portrayal["h"] = 0.2
-   # if agent.id in ids:
-   #     portrayal["Color"] = "black"
-   # if agent.id == 100:
-   #     portrayal["Color"] = "red"
-   # if agent.id == 2:
-   #     portrayal["Color"] = "gold"
-
-
     return portrayal
 
 agentsN = 25
