@@ -219,7 +219,8 @@ class covid_Model(Model):
         self.setUpType = setUpType
         self.status = find_status(self,"infected",[ac.covid_Agent])
         self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", [ac.covid_Agent, ac.canteen_Agent, ac.TA]),
-                                                            "Agent_count": lambda m: count_agents(self)})
+                                                            "Agent_count": lambda m: count_agents(self),
+                                                            "recovered": lambda m: find_status(self, "recovered", [ac.covid_Model, ac.canteen_Agent, ac.TA])})
 
         self.agents_at_home = []
         self.recovered_agents = []
@@ -309,12 +310,12 @@ class covid_Model(Model):
         elif self.minute_count in [220,390,539]:
             set_canteen_agents_next_to_attend_class(self)
 
-        first_third_class = [a for a in self.schedule.agents if a.id in range(0,78)]
+        first_third_class = [a for a in self.schedule.agents if a.id in range(0,(self.n_agents+1)*len(self.setUpType))]
         first_third_TAs = [a for a in self.schedule.agents if a.id in [1001,1002,1003]]
-        second_fourth_class = [a for a in self.schedule.agents if a.id in range(78,156)]
+        second_fourth_class = [a for a in self.schedule.agents if a.id in range((self.n_agents+1)*len(self.setUpType),2*(self.n_agents+1)*len(self.setUpType))]
         second_fourth_TAs = [a for a in self.schedule.agents if a.id in [1004,1005,1006]]
-        minutes = [x for x in range(0,45)]
 
+        minutes = [x for x in range(0,45)]
         if self.minute_count in minutes:
             for a in second_fourth_class+second_fourth_TAs:
                 a.off_school = 1

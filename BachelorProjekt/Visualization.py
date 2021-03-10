@@ -98,7 +98,6 @@ def covid_draw(agent):
     if agent.id in range(52,78):
         portrayal["Color"] = "purple"
         portrayal["scale"] = 0.9
-
     if agent.id in range(78,104):
         portrayal["Color"] = "black"
         portrayal["scale"] = 0.9

@@ -109,7 +109,7 @@ def list_of_infected(j):
     for i in range(len(data_list)):
         for j in range(len(data_list[i]["infected"])):
             sum_of_infected[j]+=data_list[i]["infected"][j]
-            num_of_susceptible[j] += data_list[i]["Agent_count"][j]-data_list[i]["infected"][j] #number of susceptible at each time step
+            num_of_susceptible[j] += data_list[i]["Agent_count"][j]-(data_list[i]["infected"][j]+data_list[i]["recovered"][j]) #number of susceptible at each time step
     avg_infected =[number / iterationer for number in sum_of_infected] #avg number of infected
     num_of_susceptible = [number / iterationer for number in num_of_susceptible]
 

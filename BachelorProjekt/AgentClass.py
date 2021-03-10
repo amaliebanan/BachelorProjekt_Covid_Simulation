@@ -504,8 +504,9 @@ class canteen_Agent(Agent):
 
     def step(self):
         if self.infected == 1:
-            infect(self)
-            update_infection_parameters(self)
+            if self.off_school == 0:
+                infect(self)
+                update_infection_parameters(self)
 
         if self.model.day_count == 0:
             if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 1 and self.next_to_attend_class is True:
