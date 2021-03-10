@@ -243,6 +243,16 @@ def canteen_to_TA(self):
     return c_agent
 
 def move_to_specific_pos(self,pos_):
+    if self.id in [1001,1002,1003,1004,1005,1006]:
+        if isinstance(self,canteen_Agent):
+            newAgent = canteen_to_TA(self)
+            #"push" agent through door
+            x,y = pos_                      #Door position
+            newY = random.randint(-1, 1)
+            newAgent.pos = x-1,y+newY
+            self.model.grid.place_agent(newAgent, newAgent.pos)
+            return
+
     possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
     possible_empty_steps = [cell for cell in possible_steps if self.model.grid.is_cell_empty(cell)]
 
@@ -266,15 +276,6 @@ def move_to_specific_pos(self,pos_):
                 return
 
             elif isinstance(self,canteen_Agent):
-                if self.id in [1001,1002,1003,1004,1005,1006]:
-                    newAgent = canteen_to_TA(self)
-                    #"push" agent through door
-                    x,y = pos_                      #Door position
-                    newY = random.randint(-1, 1)
-                    newAgent.pos = x-1,y+newY
-                    self.model.grid.place_agent(newAgent, newAgent.pos)
-                    return
-                else:
                     newAgent,seat_ = canteen_to_class(self)
                     #"push" agent through door
                     x,y = pos_                      #Door position
@@ -406,6 +407,7 @@ class TA(Agent):
         self.recovered = 0
         self.mask = 1
         self.is_home_sick = 0
+        self.time_remaining = 105
 
         self.infection_period = max(5*540,abs(round(np.random.normal(9,1))*540))#How long are they sick?
         self.asymptomatic = min(max(3*540,abs(round(np.random.normal(5,1)))*540),self.infection_period) #Agents are asymptomatic for 5 days
@@ -461,10 +463,11 @@ class TA(Agent):
             wonder(self)
 
     def step(self):
-
+      self.time_remaining -=1
       self.connect_TA_and_students()
+     # print(self.model.minute_count, self.id, self.time_remaining)
 
-      if len(self.students) == 0:
+      if self.time_remaining <= 0 and len(self.students)<5:
           TA_to_class(self)
           return
 

@@ -363,7 +363,7 @@ class covid_Model(Model):
 
         #Time count
         self.minute_count += 1
-        if self.minute_count % 60 == 0:
+        if self.minute_count % 59 == 0:
             self.hour_count += 1
             #Reset list of seats so new agents can pop from original list of seats in classrooms
             self.seats = []
@@ -375,12 +375,16 @@ class covid_Model(Model):
             self.minute_count = 0
             self.hour_count = 0
 
-            if self.day_count%5 == 0: ##WEEKEND
+            if self.day_count%4 == 0: ##WEEKEND
                 print(self.day_count)
                 weekend(self)
 
-        infected_agents = [a for a in self.schedule.agents if (isinstance(a, ac.TA) or isinstance(a,ac.covid_Agent) or isinstance(a,ac.canteen_Agent)) and a.infected == 1]
-     #   print("så mange er infeected",len(infected_agents))
+        if self.minute_count in [119,239,419,539]:
+            TAs = [a.id for a in self.schedule.agents if (isinstance(a, ac.TA))]
+            if len(TAs) < 3:
+                all_tas = [a for a in self.schedule.agents if a.id in [1001,1002,1003,1004,1005,1006]]
+                all_tas_pos = [a.pos for a in all_tas]
+                all_tas_id = [a.id for a in all_tas]
+                print(self.day_count,self.minute_count,len(TAs),TAs)
+                print(all_tas_pos,all_tas_id)
 
-
-        #update_status_infected_agents(self)
