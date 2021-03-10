@@ -193,7 +193,7 @@ def class_to_canteen(self):
     if self.TA is not ():
         students = self.TA.students
         #If student is present
-        if self.is_home_sick == 0:
+        if self in students and self.is_home_sick == 0:
             students.remove(self)
         self.TA.students = students
 
@@ -316,15 +316,16 @@ def move_to_specific_pos(self,pos_):
 
 def send_agent_home(self):
     self.is_home_sick = 1
+    self.infected = 0
+    self.recovered = 1
     self.model.agents_at_home.append(self)
 
 def send_agent_back_to_school(self):
-    newList = [a for a in self.model.agents_at_home if a.id != self.id]
-    self.model.agents_at_home = newList
+    newList_at_home = [a for a in self.model.agents_at_home if a.id != self.id]
+    self.model.agents_at_home = newList_at_home
+
     self.model.recovered_agents.append(self)
     self.is_home_sick = 0
-    self.recovered = 1
-    self.infected = 0
 
 def update_infection_parameters(self):
     if self.recovered == 1:
@@ -352,9 +353,9 @@ class covid_Agent(Agent):
         self.mask = 0
         self.is_home_sick = 0
 
-        self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
-        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,540))))
-        self.exposed = max(1100,abs(round(np.random.normal(1620,540))))
+        self.infection_period = max(5*540,abs(round(np.random.normal(9,1))*540))#How long are they sick?
+        self.asymptomatic = min(max(3*540,abs(round(np.random.normal(5,1)))*540),self.infection_period) #Agents are asymptomatic for 5 days
+        self.exposed = self.asymptomatic-2*540
 
 
         self.moving_to_door = 0
@@ -406,9 +407,9 @@ class TA(Agent):
         self.mask = 1
         self.is_home_sick = 0
 
-        self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
-        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,540)))) #Agents are asymptomatic for 5 days
-        self.exposed = max(1100,abs(round(np.random.normal(1620,540))))
+        self.infection_period = max(5*540,abs(round(np.random.normal(9,1))*540))#How long are they sick?
+        self.asymptomatic = min(max(3*540,abs(round(np.random.normal(5,1)))*540),self.infection_period) #Agents are asymptomatic for 5 days
+        self.exposed = self.asymptomatic-2*540
 
 
         self.timeToTeach = 5
@@ -486,9 +487,9 @@ class canteen_Agent(Agent):
         self.coords = ()
 
         #Infection parameters
-        self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
-        self.asymptomatic = max(1500,abs(round(np.random.normal(2700,540))))
-        self.exposed = max(1100,abs(round(np.random.normal(1620,540))))
+        self.infection_period = max(5*540,abs(round(np.random.normal(9,1))*540))#How long are they sick?
+        self.asymptomatic = min(max(3*540,abs(round(np.random.normal(5,1)))*540),self.infection_period) #Agents are asymptomatic for 5 days
+        self.exposed = self.asymptomatic-2*540
 
         #Class-schedule parameters
         self.next_to_attend_class = False

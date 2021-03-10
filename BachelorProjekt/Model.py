@@ -210,6 +210,30 @@ def make_classrooms_fit_to_grid(list_of_setuptypes,model):
         seats.append(class_room)
     return seats
 
+def weekend(self):
+    infected_agents = [a for a in self.schedule.agents if (isinstance(a, ac.TA) or isinstance(a,ac.covid_Agent) or isinstance(a,ac.canteen_Agent)) and a.infected == 1]
+    print("før",len(infected_agents))
+    ids_to_remove = []
+    for a in infected_agents:
+        a.asymptomatic = max(0,a.asymptomatic-2*540)  #Træk 2 dage fra asymtom
+        a.infection_period = max(0,a.infection_period-2*540) #Træk 2 dage fra infektionsperiode
+        a.exposed = max(0,a.exposed-2*540) #Træk 2 dage fra exposed
+       # print("JEG ER , AIE",a.id, a.asymptomatic,a.infection_period,a.exposed)
+        if a.is_home_sick == 1: #Agenten er hjemme, skal den tilbage nu?
+            print("JEG ER HJEMME",a.id, a.asymptomatic,a.infection_period,a.exposed)
+            if a.infection_period == 0:
+                print("MEN JEG MÅ KOMME TILBAGE",a.id)
+                ac.send_agent_back_to_school(a) #Agenten er rask og skal tilbage i skole
+                ids_to_remove.append(a.id)
+                continue
+        elif a.asymptomatic == 0: #Agenten har symptomer nu og skal blive hjemme
+            print("Jeg skal hjem nu!",a.id, a.asymptomatic,a.infection_period,a.exposed)
+            ac.send_agent_home(a)
+            ids_to_remove.append(a.id)
+            continue
+    infected_agents = [a for a in self.infected_agents if a.id not in ids_to_remove]
+    print("efter",len(infected_agents))
+
 class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
         self.n_agents = N
@@ -220,7 +244,8 @@ class covid_Model(Model):
         self.status = find_status(self,"infected",[ac.covid_Agent])
         self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", [ac.covid_Agent, ac.canteen_Agent, ac.TA]),
                                                             "Agent_count": lambda m: count_agents(self),
-                                                            "recovered": lambda m: find_status(self, "recovered", [ac.covid_Agent, ac.canteen_Agent, ac.TA])})
+                                                            "recovered": lambda m: find_status(self, "recovered", [ac.covid_Agent, ac.canteen_Agent, ac.TA]),
+                                                            "Home":lambda m: find_status(self, "is_home_sick", [ac.covid_Agent, ac.canteen_Agent, ac.TA])})
 
         self.agents_at_home = []
         self.recovered_agents = []
@@ -349,8 +374,13 @@ class covid_Model(Model):
             self.day_count += 1
             self.minute_count = 0
             self.hour_count = 0
+
             if self.day_count%5 == 0: ##WEEKEND
-                print("hej")
+                print(self.day_count)
+                weekend(self)
+
+        infected_agents = [a for a in self.schedule.agents if (isinstance(a, ac.TA) or isinstance(a,ac.covid_Agent) or isinstance(a,ac.canteen_Agent)) and a.infected == 1]
+     #   print("så mange er infeected",len(infected_agents))
 
 
         #update_status_infected_agents(self)
