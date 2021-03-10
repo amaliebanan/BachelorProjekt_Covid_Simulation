@@ -8,7 +8,7 @@ import numpy as np
 from mesa.datacollection import DataCollector
 
 init_positive_agents = 2
-init_canteen_agents = 84
+init_canteen_agents = 85
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
 
@@ -220,7 +220,7 @@ class covid_Model(Model):
         self.status = find_status(self,"infected",[ac.covid_Agent])
         self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", [ac.covid_Agent, ac.canteen_Agent, ac.TA]),
                                                             "Agent_count": lambda m: count_agents(self),
-                                                            "recovered": lambda m: find_status(self, "recovered", [ac.covid_Model, ac.canteen_Agent, ac.TA])})
+                                                            "recovered": lambda m: find_status(self, "recovered", [ac.covid_Agent, ac.canteen_Agent, ac.TA])})
 
         self.agents_at_home = []
         self.recovered_agents = []
@@ -349,6 +349,8 @@ class covid_Model(Model):
             self.day_count += 1
             self.minute_count = 0
             self.hour_count = 0
+            if self.day_count%5 == 0: ##WEEKEND
+                print("hej")
 
 
         #update_status_infected_agents(self)

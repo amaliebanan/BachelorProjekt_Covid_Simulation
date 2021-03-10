@@ -83,34 +83,31 @@ def infect(self):
                 if isinstance(neighbor,covid_Agent) or isinstance(neighbor,TA) or isinstance(neighbor,canteen_Agent):
                     closest_neighbors.append(neighbor)
 
-        pTA = np.random.poisson(2.5/100) #TA står meget tæt og snakker højt
-        p_1 = np.random.poisson(0.25/100) #Indenfor 1 meters afstand
-        p_1_til_2 = np.random.poisson(0.22450/100) #Mellem 1 og 2 meters afstand
-        p_over_2 = np.random.poisson(0.2199651/100) #Over 2 meters afstand
+        for agent in closest_neighbors:
+            distance = getDistance(self.pos,agent.pos)
+            agent_status = agent.infected
+            agent_recovered_status = agent.recovered
 
-
-        sum = pTA+p_1+p_1_til_2+p_over_2
-        if sum > 0:
-            for agent in closest_neighbors:
-                distance = getDistance(self.pos,agent.pos)
-                agent_status = agent.infected
-                agent_recovered_status = agent.recovered
-
-                if agent_recovered_status == 1 or agent_status == 1: # kan ikke blive smittet, da den er immun eller allerede infected
-                    continue
-                elif distance <= 0.1:
-                    if pTA == 1:
-                        agent.infected = 1
-                        self.model.infected_agents.append(agent)
-                elif distance > 0.5 and distance <= 1.0:
-                    if p_1 == 1:
-                        agent.infected = 1
-                        self.model.infected_agents.append(agent)
-                elif distance > 1.0 and distance <= 2.0:
-                    if p_1_til_2 == 1:
-                        agent.infected = 1
-                        self.model.infected_agents.append(agent)
-                elif p_over_2 == 1:
+            if agent_recovered_status == 1 or agent_status == 1: # kan ikke blive smittet, da den er immun eller allerede infected
+                continue
+            elif distance <= 0.1:
+                pTA = np.random.poisson(2.5/100) #TA står meget tæt og snakker højt
+                if pTA == 1:
+                    agent.infected = 1
+                    self.model.infected_agents.append(agent)
+            elif distance > 0.5 and distance <= 1.0:
+                p_1 = np.random.poisson(0.25/100) #Indenfor 1 meters afstand
+                if p_1 == 1:
+                    agent.infected = 1
+                    self.model.infected_agents.append(agent)
+            elif distance > 1.0 and distance <= 2.0:
+                p_1_til_2 = np.random.poisson(0.22450/100) #Mellem 1 og 2 meters afstand
+                if p_1_til_2 == 1:
+                    agent.infected = 1
+                    self.model.infected_agents.append(agent)
+            elif distance>2.0:
+                p_over_2 = np.random.poisson(0.2199651/100) #Over 2 meters afstand
+                if p_over_2 == 1:
                     agent.infected = 1
                     self.model.infected_agents.append(agent)
 
@@ -192,10 +189,13 @@ def class_to_canteen(self):
     self.model.schedule.add(c_agent)
 
     #If it is a TA->Class->Canteen, we cannot remove TA from its own list of students.
+
     if self.TA is not ():
+        students = self.TA.students
         #If student is present
         if self.is_home_sick == 0:
-            self.TA.students.remove(self)
+            students.remove(self)
+        self.TA.students = students
 
     return c_agent
 
@@ -321,6 +321,7 @@ def send_agent_home(self):
 def send_agent_back_to_school(self):
     newList = [a for a in self.model.agents_at_home if a.id != self.id]
     self.model.agents_at_home = newList
+    self.model.recovered_agents.append(self)
     self.is_home_sick = 0
     self.recovered = 1
     self.infected = 0
