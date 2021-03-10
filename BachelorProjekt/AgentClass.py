@@ -350,7 +350,6 @@ class covid_Agent(Agent):
         self.recovered = 0
         self.mask = 0
         self.is_home_sick = 0
-        self.off_school = 0
 
         self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
         self.asymptomatic = max(1500,abs(round(np.random.normal(2700,540))))
@@ -405,7 +404,6 @@ class TA(Agent):
         self.recovered = 0
         self.mask = 1
         self.is_home_sick = 0
-        self.off_school = 0
 
         self.infection_period = abs(round(np.random.normal(9,4)))*540 #How long are they sick?
         self.asymptomatic = max(1500,abs(round(np.random.normal(2700,540)))) #Agents are asymptomatic for 5 days
@@ -468,7 +466,6 @@ class TA(Agent):
           TA_to_class(self)
           return
 
-
       if self.infected == 1:
          infect(self)
          update_infection_parameters(self)
@@ -503,7 +500,6 @@ class canteen_Agent(Agent):
     def move(self,timestep=False):
         if timestep is True: #Agents go to door
             move_to_specific_pos(self,self.door.pos)
-#            move_to_specific_pos(self,self.door.pos)
         else: wonder(self)
 
     def step(self):

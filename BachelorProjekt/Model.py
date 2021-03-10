@@ -50,9 +50,8 @@ def add_init_infected_to_grid(self,n):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent
             positive_agent.infected = 1
-            positive_agent.infection_period = 200
             positive_agent.exposed = 0
-            positive_agent.asymptomatic = 100
+            positive_agent.asymptomatic = 1040
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
             self.infected_agents.append(positive_agent)
@@ -74,6 +73,7 @@ def add_init_cantine_agents_to_grid(self,N,n):
             next_door = [a for a in self.schedule.agents if isinstance(a,ac.door) and a.id == next_door_id]
             newAgent.door = next_door[0]
             newAgent.next_to_attend_class = True
+            newAgent.off_school = 1
             self.grid.place_agent(newAgent, (max(x,9),y))
             id_+=1
             counter+=1
@@ -89,6 +89,7 @@ def add_init_cantine_agents_to_grid(self,N,n):
         next_door = [a for a in self.schedule.agents if isinstance(a,ac.door) and a.id == next_door_id]
         newAgent.next_to_attend_class = True
         newAgent.door = next_door[0]
+        newAgent.off_school = 1
         self.grid.place_agent(newAgent, (max(x,9),y))
 
 
@@ -208,30 +209,7 @@ def make_classrooms_fit_to_grid(list_of_setuptypes,model):
         class_room = [(x,y+j*11) for ((x,y),z) in getattr(model,number)]
         seats.append(class_room)
     return seats
-'''
-def remove_agents_having_symptoms(self,agent):
-    print("HEJ",agent.id,agent.is_home,agent.infection_period)
-    agent.is_home = 1
-    self.removed_agents.append(agent)
 
-def update_status_infected_agents(self):
-    agents = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent)
-              or isinstance(a,ac.canteen_Agent)) and a.infected == 1]
-    for a in agents:
-        a.asymptomatic = max(0,a.asymptomatic-1)
-        if a.asymptomatic == 0:
-            remove_agents_having_symptoms(self,a)
-        a.exposed = max(0,a.exposed-1)    #If already 0 stay there, if larger than 0 subtract one
-        a.infection_period = max(0,a.infection_period-1)
-
-def update_infection_period_removed_agents(self):
-    for agent in self.removed_agents:
-        agent.infection_period -= 1
-        if agent.infection_period == 0:
-            agent.recovered = 1
-            self.recovered_agents.append(agent)
-            print(agent.id,agent.recovered)
-'''
 class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
         self.n_agents = N
@@ -326,15 +304,31 @@ class covid_Model(Model):
 
 
 
-        countCanteen =len([a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent)])
-        countCovid=len([a for a in self.schedule.agents if isinstance(a,ac.covid_Agent)])
-        countTA=len([a for a in self.schedule.agents if a.id in [1001,1003,1002]])
-        countInfected=len([a for a in self.schedule.agents if (isinstance(a,ac.canteen_Agent) or isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent)) and a.infected ==1])
-
         if self.day_count>0 and self.minute_count in [110,220,390,539]:
             set_canteen_agents_next_to_attend_class(self)
         elif self.minute_count in [220,390,539]:
             set_canteen_agents_next_to_attend_class(self)
+
+        first_third_class = [a for a in self.schedule.agents if a.id in range(0,78)]
+        first_third_TAs = [a for a in self.schedule.agents if a.id in [1001,1002,1003]]
+        second_fourth_class = [a for a in self.schedule.agents if a.id in range(78,156)]
+        second_fourth_TAs = [a for a in self.schedule.agents if a.id in [1004,1005,1006]]
+        minutes = [x for x in range(0,45)]
+
+        if self.minute_count in minutes:
+            for a in second_fourth_class+second_fourth_TAs:
+                a.off_school = 1
+            for a in first_third_class:
+                a.off_school = 0
+
+        if self.minute_count == 120:
+             for a in second_fourth_class+second_fourth_TAs:
+                a.off_school = 0
+
+        if self.minute_count == 435:
+            for a in first_third_class+first_third_TAs:
+                a.off_school = 1
+
 
 
         #Terminate model when everyone is healthy
@@ -342,25 +336,18 @@ class covid_Model(Model):
          #  self.running = False
 
         #Time count
-        #print(self.day_count,self.minute_count,countInfected)
         self.minute_count += 1
         if self.minute_count % 60 == 0:
             self.hour_count += 1
-
-
             #Reset list of seats so new agents can pop from original list of seats in classrooms
             self.seats = []
             for list in self.seat:
                 self.seats.append(random.sample(list,k=len(list)))
 
         if self.minute_count % 540 == 0:
-         #   print(self.day_count,countInfected)
             self.day_count += 1
             self.minute_count = 0
             self.hour_count = 0
-
-       # countIned=[a.asymptomatic for a in self.schedule.agents if (isinstance(a,ac.canteen_Agent) or isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent))]
-       # print(countIned)
 
 
         #update_status_infected_agents(self)

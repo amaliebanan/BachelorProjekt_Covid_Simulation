@@ -73,7 +73,8 @@ def covid_draw(agent):
             if agent.recovered == 1:
                 portrayal["Shape"] = "resources/healthy.png"
                 portrayal["scale"] = 0.9
-            if agent.off_school == 1:
+    if isinstance(agent,ac.canteen_Agent):
+          if agent.off_school == 1:
                 portrayal["Shape"] = "resources/white.jpg"
                 portrayal["scale"] = 0.9
     if isinstance(agent,ac.door):
@@ -88,6 +89,25 @@ def covid_draw(agent):
         elif agent.orientation == 'h':
             portrayal["w"] = 1
             portrayal["h"] = 0.2
+    if agent.id in range(0,26):
+        portrayal["Color"] = "Silver"
+        portrayal["scale"] = 0.9
+    if agent.id in range(26,52):
+        portrayal["Color"] = "gold"
+        portrayal["scale"] = 0.9
+    if agent.id in range(52,78):
+        portrayal["Color"] = "purple"
+        portrayal["scale"] = 0.9
+
+    if agent.id in range(78,104):
+        portrayal["Color"] = "black"
+        portrayal["scale"] = 0.9
+    if agent.id in range(104,130):
+        portrayal["Color"] = "grey"
+        portrayal["scale"] = 0.9
+    if agent.id in range(130,156):
+        portrayal["Color"] = "green"
+        portrayal["scale"] = 0.9
     return portrayal
 
 agentsN = 25
