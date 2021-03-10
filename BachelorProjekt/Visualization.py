@@ -72,19 +72,6 @@ def covid_draw(agent):
         elif agent.infected == 1:
             portrayal["Color"] = "Pink"
             portrayal["scale"] = 0.9
-
-
-    if (isinstance(agent,ac.TA) or isinstance(agent,ac.covid_Agent) or isinstance(agent,ac.canteen_Agent)):
-            if agent.is_home_sick == 1:
-                portrayal["Shape"] = "resources/white.jpg"
-                portrayal["scale"] = 0.9
-            if agent.recovered == 1:
-                portrayal["Shape"] = "resources/healthy.png"
-                portrayal["scale"] = 0.9
-    if isinstance(agent,ac.canteen_Agent):
-          if agent.off_school == 1:
-                portrayal["Shape"] = "resources/white.jpg"
-                portrayal["scale"] = 0.9
     if isinstance(agent,ac.door):
         portrayal["Shape"] = "resources/door.png"
         portrayal["scale"] = 0.9
@@ -115,6 +102,17 @@ def covid_draw(agent):
     if agent.id in range(130,156):
         portrayal["Color"] = "green"
         portrayal["scale"] = 0.9
+    if (isinstance(agent,ac.TA) or isinstance(agent,ac.covid_Agent) or isinstance(agent,ac.canteen_Agent)):
+            if agent.is_home_sick == 1:
+                portrayal["Shape"] = "resources/white.jpg"
+                portrayal["scale"] = 0.9
+            if agent.recovered == 1:
+                portrayal["Shape"] = "resources/healthy.png"
+                portrayal["scale"] = 0.9
+    if isinstance(agent,ac.canteen_Agent):
+          if agent.off_school == 1:
+                portrayal["Shape"] = "resources/white.jpg"
+                portrayal["scale"] = 0.9
     return portrayal
 
 agentsN = 25

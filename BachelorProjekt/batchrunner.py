@@ -10,8 +10,8 @@ from multiprocessing import Pool
 
 fixed_params = {"width": 20, "height": 33, "setUpType": [4,4,4]}
 variable_params = {"N": range(25,26,1)} # 25 students
-iterationer = 1
-skridt = 540*10
+iterationer = 3
+skridt = 540*15
 
 
 "Below is to plot infected vs timestep and susceptible vs timestep for a single set up type"
@@ -110,7 +110,7 @@ def list_of_infected(j):
     num_of_recovered = [0]*(skridt+1) #makes list for y-values for Recovered
     for i in range(len(data_list)):
         for j in range(len(data_list[i]["infected"])):
-            num_of_infected[j]+=data_list[i]["infected"][j]
+            num_of_infected[j]+=data_list[i]["infected"][j]-data_list[i]["Home"][j]
             num_of_susceptible[j] += data_list[i]["Agent_count"][j]-(data_list[i]["infected"][j]+data_list[i]["recovered"][j]) #number of susceptible at each time step
             num_of_recovered[j] += data_list[i]["recovered"][j]
     num_of_infected =[number / iterationer for number in num_of_infected] #avg number of infected

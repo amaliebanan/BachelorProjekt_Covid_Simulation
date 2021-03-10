@@ -7,9 +7,7 @@ import sys
 from Model import find_status, make_classrooms_fit_to_grid, covid_Model
 
 
-incubation = 2700 #5 days = 540*5 minutes at school
-#asymptomatic = 2700 #Agents are asymptomatic for 5 days
-exposed = 1620 #Du er smittet, men smitter ikke videre før den er på 0. Varer 3 dage.
+day_length = 525
 other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
 ids = [i for i in range(0,78)]
 
@@ -73,8 +71,9 @@ def checkDirection(agent,neighbor):
 def infect(self):
         if self.exposed != 0:   #Agent smitter ikke endnu.
             return
-        if self.is_home_sick == 1: #Agenten er derhjemme og kan ikke smitte
+        if (self.is_home_sick == 1) or (isinstance(self,canteen_Agent) and self.off_school == 1): #Agenten er derhjemme og kan ikke smitte
             return
+
         all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
         closest_neighbors = []
 
@@ -317,8 +316,6 @@ def move_to_specific_pos(self,pos_):
 
 def send_agent_home(self):
     self.is_home_sick = 1
-    self.infected = 0
-    self.recovered = 1
     self.model.agents_at_home.append(self)
 
 def send_agent_back_to_school(self):
@@ -327,15 +324,18 @@ def send_agent_back_to_school(self):
 
     self.model.recovered_agents.append(self)
     self.is_home_sick = 0
+    self.infected = 0
+    self.recovered = 1
 
 def update_infection_parameters(self):
-    if self.recovered == 1:
-        return              #Agent is recovered
     if self.is_home_sick == 1: #Agent is already home. Just update infection period
         self.infection_period = max(0,self.infection_period-1)
         if self.infection_period == 0:
             send_agent_back_to_school(self)
         return
+    if self.recovered == 1:
+        return              #Agent is recovered
+
     self.asymptomatic = max(0,self.asymptomatic-1)
     if self.asymptomatic == 0:
         send_agent_home(self)
@@ -354,9 +354,10 @@ class covid_Agent(Agent):
         self.mask = 0
         self.is_home_sick = 0
 
-        self.infection_period = max(5*540,abs(round(np.random.normal(9,1))*540))#How long are they sick?
-        self.asymptomatic = min(max(3*540,abs(round(np.random.normal(5,1)))*540),self.infection_period) #Agents are asymptomatic for 5 days
-        self.exposed = self.asymptomatic-2*540
+        self.infection_period = max(5*day_length,abs(round(np.random.normal(9,1))*day_length))#How long are they sick?
+        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5,1)))*day_length),self.infection_period) #Agents are asymptomatic for 5 days
+        self.exposed = self.asymptomatic-2*day_length
+
 
 
         self.moving_to_door = 0
@@ -388,13 +389,15 @@ class covid_Agent(Agent):
             #Try to infect
             infect(self)
             update_infection_parameters(self)
+        if self.is_home_sick == 1:
+            update_infection_parameters(self)
 
         ##MOVE###
-        if self.model.day_count == 0:
-            if self.model.minute_count in self.model.class_times and self.model.minute_count%2 == 0:
+        if self.model.day_count == 1:
+            if self.model.minute_count in self.model.class_times and self.model.minute_count%2 == 1:
                 self.moving_to_door = 1
 
-        elif self.model.day_count > 0 and self.model.minute_count in self.model.class_times+[0] and self.model.minute_count%2 == 0:
+        elif self.model.day_count > 1 and self.model.minute_count in self.model.class_times+[1] and self.model.minute_count%2 == 1:
             self.moving_to_door = 1
 
         self.move(True)
@@ -409,9 +412,9 @@ class TA(Agent):
         self.is_home_sick = 0
         self.time_remaining = 105
 
-        self.infection_period = max(5*540,abs(round(np.random.normal(9,1))*540))#How long are they sick?
-        self.asymptomatic = min(max(3*540,abs(round(np.random.normal(5,1)))*540),self.infection_period) #Agents are asymptomatic for 5 days
-        self.exposed = self.asymptomatic-2*540
+        self.infection_period = max(5,abs(round(np.random.normal(9,1))))*day_length#How long are they sick?
+        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5,1)))*day_length),self.infection_period) #Agents are asymptomatic for 5 days
+        self.exposed = self.asymptomatic-2*day_length
 
 
         self.timeToTeach = 5
@@ -441,11 +444,11 @@ class TA(Agent):
     def connect_TA_and_students(self):
         ss = [a for a in self.model.schedule.agents if isinstance(a,covid_Agent) and a.door == self.door]
 
-        #Get the correct students
+        #Get the correct students, because they can overlap when a class is ending and new one is starting
         if self.id in [1001,1002,1003]:
-            self.students = [a for a in ss if a.id in range(0,78) and a.is_home_sick != 1]
+            self.students = [a for a in ss if a.id in range(0,(self.model.n_agents+1)*3) and a.is_home_sick != 1]
         elif self.id in [1004,1005,1006]:
-            self.students = [a for a in ss if a.id not in range(0,78) and a.is_home_sick != 1]
+            self.students = [a for a in ss if a.id not in range(0,(self.model.n_agents+1)*3) and a.is_home_sick != 1]
 
         #Apply TA to students
         for s in self.students:
@@ -474,7 +477,8 @@ class TA(Agent):
       if self.infected == 1:
          infect(self)
          update_infection_parameters(self)
-
+      if self.is_home_sick == 1:
+            update_infection_parameters(self)
       self.move()
 
 class canteen_Agent(Agent):
@@ -490,9 +494,9 @@ class canteen_Agent(Agent):
         self.coords = ()
 
         #Infection parameters
-        self.infection_period = max(5*540,abs(round(np.random.normal(9,1))*540))#How long are they sick?
-        self.asymptomatic = min(max(3*540,abs(round(np.random.normal(5,1)))*540),self.infection_period) #Agents are asymptomatic for 5 days
-        self.exposed = self.asymptomatic-2*540
+        self.infection_period = max(5*day_length,abs(round(np.random.normal(9,1))*day_length))#How long are they sick?
+        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5,1)))*day_length),self.infection_period) #Agents are asymptomatic for 5 days
+        self.exposed = self.asymptomatic-2*day_length
 
         #Class-schedule parameters
         self.next_to_attend_class = False
@@ -513,14 +517,18 @@ class canteen_Agent(Agent):
                 infect(self)
                 update_infection_parameters(self)
 
-        if self.model.day_count == 0:
-            if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 1 and self.next_to_attend_class is True:
+        if self.is_home_sick == 1:
+            update_infection_parameters(self)
+
+        #When should canteen agent go to door?
+        if self.model.day_count == 1:
+            if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 0 and self.next_to_attend_class is True:
                 self.moving_to_door = 1
-        elif (self.model.minute_count == 0 or (self.model.minute_count in self.model.class_times+[1] and self.model.minute_count%2 == 1))\
+        elif (self.model.minute_count == 0 or (self.model.minute_count in self.model.class_times+[2] and self.model.minute_count%2 == 0))\
                 and self.next_to_attend_class is True:
             self.moving_to_door = 1
 
-        if self.moving_to_door == 1 and self.model.setUpType is not 1:
+        if self.moving_to_door == 1:
             self.move(True)
         else: self.move()
 

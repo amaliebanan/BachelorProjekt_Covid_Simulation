@@ -7,6 +7,7 @@ from mesa import Agent, Model
 import numpy as np
 from mesa.datacollection import DataCollector
 
+day_length = 525
 init_positive_agents = 2
 init_canteen_agents = 85
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
@@ -51,7 +52,7 @@ def add_init_infected_to_grid(self,n):
             positive_agent = randomAgent
             positive_agent.infected = 1
             positive_agent.exposed = 0
-            positive_agent.asymptomatic = 1040
+            positive_agent.asymptomatic = 2*day_length
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
             self.infected_agents.append(positive_agent)
@@ -160,6 +161,11 @@ def setUp(N,model,setUpType,i):
         # Add TA
         x,y = random.choice([(7,5+i*11),(7,4+i*11)])
         TA = ac.TA(1001+i,model)
+     #   if TA.id == 1001:
+      #      TA.infected = 1
+       #     TA.asymptomatic = 100
+        #    TA.exposed = 0
+         #   TA.infection_period = 200
         TA.coords = dir['W']
         TA.door = door
         model.schedule.add(TA)
@@ -212,27 +218,43 @@ def make_classrooms_fit_to_grid(list_of_setuptypes,model):
 
 def weekend(self):
     infected_agents = [a for a in self.schedule.agents if (isinstance(a, ac.TA) or isinstance(a,ac.covid_Agent) or isinstance(a,ac.canteen_Agent)) and a.infected == 1]
-    print("før",len(infected_agents))
     ids_to_remove = []
     for a in infected_agents:
-        a.asymptomatic = max(0,a.asymptomatic-2*540)  #Træk 2 dage fra asymtom
-        a.infection_period = max(0,a.infection_period-2*540) #Træk 2 dage fra infektionsperiode
-        a.exposed = max(0,a.exposed-2*540) #Træk 2 dage fra exposed
+        a.asymptomatic = max(0,a.asymptomatic-2*day_length)  #Træk 2 dage fra asymtom
+        a.infection_period = max(0,a.infection_period-2*day_length) #Træk 2 dage fra infektionsperiode
+        a.exposed = max(0,a.exposed-2*day_length) #Træk 2 dage fra exposed
        # print("JEG ER , AIE",a.id, a.asymptomatic,a.infection_period,a.exposed)
         if a.is_home_sick == 1: #Agenten er hjemme, skal den tilbage nu?
-            print("JEG ER HJEMME",a.id, a.asymptomatic,a.infection_period,a.exposed)
             if a.infection_period == 0:
-                print("MEN JEG MÅ KOMME TILBAGE",a.id)
                 ac.send_agent_back_to_school(a) #Agenten er rask og skal tilbage i skole
                 ids_to_remove.append(a.id)
                 continue
         elif a.asymptomatic == 0: #Agenten har symptomer nu og skal blive hjemme
-            print("Jeg skal hjem nu!",a.id, a.asymptomatic,a.infection_period,a.exposed)
             ac.send_agent_home(a)
             ids_to_remove.append(a.id)
             continue
     infected_agents = [a for a in self.infected_agents if a.id not in ids_to_remove]
-    print("efter",len(infected_agents))
+
+def off_school(self):
+    first_third_class = [a for a in self.schedule.agents if a.id in range(0,(self.n_agents+1)*len(self.setUpType))]
+    first_third_TAs = [a for a in self.schedule.agents if a.id in [1001,1002,1003]]
+    second_fourth_class = [a for a in self.schedule.agents if a.id in range((self.n_agents+1)*len(self.setUpType),2*(self.n_agents+1)*len(self.setUpType))]
+    second_fourth_TAs = [a for a in self.schedule.agents if a.id in [1004,1005,1006]]
+
+    minutes = [x for x in range(0,20)]
+    minutes2 = [x for x in range(405,450)]
+
+    if self.minute_count in minutes:
+        for a in second_fourth_class+second_fourth_TAs:
+            a.off_school = 1
+        for a in first_third_class:
+            a.off_school = 0
+    elif self.minute_count == 114:
+         for a in second_fourth_class+second_fourth_TAs:
+            a.off_school = 0
+    elif self.minute_count in minutes2:
+        for a in first_third_class+first_third_TAs:
+            a.off_school = 1
 
 class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
@@ -252,12 +274,13 @@ class covid_Model(Model):
         self.infected_agents = []
 
         #Counting minutes and days
-        self.minute_count = 0
-        self.hour_count = 0
-        self.day_count = 0
+        self.minute_count = 1
+        self.hour_count = 1
+        self.day_count = 1
         self.door = ()
 
-        self.class_times = [120,135,240,315,420,435,540]
+    #    self.class_times = [120,135,240,315,420,435,540]
+        self.class_times = [105,120,225,300,405,420,525]
 
         self.other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
 
@@ -315,8 +338,10 @@ class covid_Model(Model):
         self.running = True
 
     def step(self):
+       # print(self.minute_count)
+        off_school(self)
         #Every 10th timestep add asking student
-        if not self.setUpType == 1 and self.schedule.time > 2 and (self.schedule.time) % 10 == 0:
+        if (self.minute_count) % 10 == 0:
             for ta in self.TAs:
                 if len(ta.students) == 0:
                     continue
@@ -328,32 +353,12 @@ class covid_Model(Model):
         self.schedule.step()
         self.datacollector.collect(self)
 
-
-
-        if self.day_count>0 and self.minute_count in [110,220,390,539]:
+        if self.day_count>1 and self.minute_count in [100,220,400,520]:
             set_canteen_agents_next_to_attend_class(self)
-        elif self.minute_count in [220,390,539]:
+        elif self.minute_count in [220,400,520]:
             set_canteen_agents_next_to_attend_class(self)
 
-        first_third_class = [a for a in self.schedule.agents if a.id in range(0,(self.n_agents+1)*len(self.setUpType))]
-        first_third_TAs = [a for a in self.schedule.agents if a.id in [1001,1002,1003]]
-        second_fourth_class = [a for a in self.schedule.agents if a.id in range((self.n_agents+1)*len(self.setUpType),2*(self.n_agents+1)*len(self.setUpType))]
-        second_fourth_TAs = [a for a in self.schedule.agents if a.id in [1004,1005,1006]]
 
-        minutes = [x for x in range(0,45)]
-        if self.minute_count in minutes:
-            for a in second_fourth_class+second_fourth_TAs:
-                a.off_school = 1
-            for a in first_third_class:
-                a.off_school = 0
-
-        if self.minute_count == 120:
-             for a in second_fourth_class+second_fourth_TAs:
-                a.off_school = 0
-
-        if self.minute_count == 435:
-            for a in first_third_class+first_third_TAs:
-                a.off_school = 1
 
 
 
@@ -361,30 +366,34 @@ class covid_Model(Model):
         #if find_status(self,"infected") == 0:
          #  self.running = False
 
+        if self.minute_count in [100,220,400,520]:
+            TAs = [a.id for a in self.schedule.agents if (isinstance(a, ac.TA))]
+            if len(TAs) < 3:
+                all_tas = [a for a in self.schedule.agents if a.id in [1001,1002,1003,1004,1005,1006]]
+                all_tas_pos = [a.pos for a in all_tas]
+                all_tas_id = [a.id for a in all_tas]
+                all_tas_status = [a.infected for a in all_tas]
+                are_home = [a.is_home_sick for a in all_tas]
+                print(self.day_count,self.minute_count,len(TAs),TAs)
+                print("status",all_tas_status,"are home",are_home)
+                print(all_tas_pos,all_tas_id)
+
         #Time count
         self.minute_count += 1
-        if self.minute_count % 59 == 0:
+        if self.minute_count % 60 == 0:
             self.hour_count += 1
             #Reset list of seats so new agents can pop from original list of seats in classrooms
             self.seats = []
             for list in self.seat:
                 self.seats.append(random.sample(list,k=len(list)))
 
-        if self.minute_count % 540 == 0:
-            self.day_count += 1
-            self.minute_count = 0
-            self.hour_count = 0
 
-            if self.day_count%4 == 0: ##WEEKEND
+        if self.minute_count % 525 == 0:
+            self.day_count += 1
+            self.minute_count = 1
+            self.hour_count = 1
+
+            if self.day_count%5 == 0: ##WEEKEND
                 print(self.day_count)
                 weekend(self)
-
-        if self.minute_count in [119,239,419,539]:
-            TAs = [a.id for a in self.schedule.agents if (isinstance(a, ac.TA))]
-            if len(TAs) < 3:
-                all_tas = [a for a in self.schedule.agents if a.id in [1001,1002,1003,1004,1005,1006]]
-                all_tas_pos = [a.pos for a in all_tas]
-                all_tas_id = [a.id for a in all_tas]
-                print(self.day_count,self.minute_count,len(TAs),TAs)
-                print(all_tas_pos,all_tas_id)
 
