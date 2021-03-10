@@ -7,6 +7,7 @@ import multiprocessing as mp
 from multiprocessing import Pool
 
 
+
 fixed_params = {"width": 20, "height": 33, "setUpType": [4,4,4]}
 variable_params = {"N": range(25,26,1)} # 25 students
 iterationer = 1
@@ -104,16 +105,19 @@ def list_of_infected(j):
         max_number_of_infected.append(max(temp_list)) #saves max of temp_list
     print("Gennemsnitligt er antallet af max smittede for setup type %s " %[j,j,j], "er: ", np.mean(max_number_of_infected))
     #rest of code is to get y-values for the plot
-    sum_of_infected = [0]*(skridt+1) #makes list for y-values
-    num_of_susceptible = [0]*(skridt+1)
+    num_of_infected = [0]*(skridt+1) #makes list for y-values for Infected
+    num_of_susceptible = [0]*(skridt+1) #makes list for y-values for Susceptible
+    num_of_recovered = [0]*(skridt+1) #makes list for y-values for Recovered
     for i in range(len(data_list)):
         for j in range(len(data_list[i]["infected"])):
-            sum_of_infected[j]+=data_list[i]["infected"][j]
+            num_of_infected[j]+=data_list[i]["infected"][j]
             num_of_susceptible[j] += data_list[i]["Agent_count"][j]-(data_list[i]["infected"][j]+data_list[i]["recovered"][j]) #number of susceptible at each time step
-    avg_infected =[number / iterationer for number in sum_of_infected] #avg number of infected
+            num_of_recovered[j] += data_list[i]["recovered"][j]
+    num_of_infected =[number / iterationer for number in num_of_infected] #avg number of infected
     num_of_susceptible = [number / iterationer for number in num_of_susceptible]
+    num_of_recovered = [number / iterationer for number in num_of_recovered]
 
-    return avg_infected, num_of_susceptible
+    return num_of_infected, num_of_susceptible, num_of_recovered
 
 
 "uncomment below to run list_of_infected function with different set up types. Change line 12 and 13 to change number of iterations and timesteps"
@@ -124,13 +128,21 @@ pool.close() #closes the pools
 "Uncomment below for plotting the three plots for comparing"
 time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
 colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
+Legends = ['Horseshoe', 'Rows', 'Groups']
+plt.figure(figsize=(10,6)) #size of the plot-figure
 for i in range(1,4,1):
-    plt.plot(time, results[i-1][0], label= [i+1,i+1,i+1], color=colors[i-1]) #makes the three different plots
+    plt.plot(time, results[i-1][0], label= Legends[i-1], color=colors[i-1]) #makes the three different plots
     plt.plot(time, results[i-1][1], color=colors[i-1], linestyle='dashed')
+    plt.plot(time, results[i-1][2], color=colors[i-1], linestyle='dotted')
 plt.xlabel('Tidsskridt')
+plt.plot([], color='Black', label='Infected')
+plt.plot([], color='Black', label='Susceptible', linestyle='dashed')
+plt.plot([], color='Black', label='Recovered', linestyle='dotted')
 plt.ylabel('Gennemsnit antal smittede')
 plt.title('%s simulationer' %iterationer)
-plt.legend()
+plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
+plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
 
 plt.show()
+
 
