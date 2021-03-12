@@ -292,6 +292,7 @@ def move_to_specific_pos(self,pos_):
     if pos_ == self.pos:
         return
 
+
    #### Agent is moving one step closer to goal-position ####
 
     #Which list to use? If possible_empty_steps is empty, use back-up list (allowing agent to go through agents)
@@ -312,7 +313,15 @@ def move_to_specific_pos(self,pos_):
     #Only move if the cell is closer to desired cell than your own cell
     #if dist_self_to_pos_ > dist_from_desired_cell_to_pos_:
 
+    if self.model.minute_count in [50,170,350,480]:
+        force_agent_to_specific_pos(self,pos_)
+        return
     self.model.grid.move_agent(self,(x_,y_))
+
+
+
+def force_agent_to_specific_pos(self,pos):
+    self.model.grid.move_agent(self,pos)
 
 def send_agent_home(self):
     self.is_home_sick = 1

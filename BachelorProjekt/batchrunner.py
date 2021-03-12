@@ -8,10 +8,10 @@ from multiprocessing import Pool
 
 
 
-fixed_params = {"width": 20, "height": 33, "setUpType": [4,4,4]}
+fixed_params = {"width": 20, "height": 33, "setUpType": [3]}
 variable_params = {"N": range(25,26,1)} # 25 students
-iterationer = 1
-skridt = 525*15
+iterationer = 200
+skridt = 105
 
 
 "Below is to plot infected vs timestep and susceptible vs timestep for a single set up type"
@@ -37,12 +37,12 @@ def plot_infected(fix_par, var_par, model, iter, steps):
     for i in range(len(data_list)):
         for j in range(len(data_list[i]["infected"])):
             sum_of_infected[j]+=data_list[i]["infected"][j] #at the right index add number of infected
-            num_of_susceptible[j] += data_list[i]["Agent_count"][j]-data_list[i]["infected"][j] #number of susceptible at each time step
+    #        num_of_susceptible[j] += data_list[i]["Agent_count"][j]-data_list[i]["infected"][j] #number of susceptible at each time step
     sum_of_infected =[number / iter for number in sum_of_infected] #divide list with number of iterations to get avg
-    num_of_susceptible = [number / iter for number in num_of_susceptible]
+   # num_of_susceptible = [number / iter for number in num_of_susceptible]
     time = [i for i in range(0,steps+1)] #makes list of x-values for plotting
     plt.plot(time, sum_of_infected, label= 'Number of Infected', color = 'Green')
-    plt.plot(time, num_of_susceptible, label= 'Number of Susceptible', color = 'Green', linestyle='dashed')
+  #  plt.plot(time, num_of_susceptible, label= 'Number of Susceptible', color = 'Green', linestyle='dashed')
     plt.xlabel('Tidsskridt')
     plt.ylabel('Gennemsnit antal smittede')
     plt.title('Klasselokaleopstilling %s '%fix_par['setUpType']+ ' ved %s simulationer' %iter)
@@ -51,8 +51,8 @@ def plot_infected(fix_par, var_par, model, iter, steps):
 
 
 "uncomment below to see a plot of a single setup type. Change setup type by changing fixed_params at line 10"
-#plot_infected(fixed_params, variable_params, covid_Model, iterationer, skridt)
-#plt.show()
+plot_infected(fixed_params, variable_params, covid_Model, iterationer, skridt)
+plt.show()
 
 
 def max_infected(fix_par, var_par, model, iter, steps):
@@ -79,9 +79,11 @@ def max_infected(fix_par, var_par, model, iter, steps):
     return max_number_of_infected #this is now a list of max number of infected for each iteration
 
 "uncomment below to get avg max number of infected. Change setup type by changing fixed_params at line 10"
-#print("Gennemsnitligt er antallet af max antal smittede: \t", np.mean(max_infected(fixed_params, variable_params, covid_Model, iterationer, skridt)))
+print("Gennemsnitligt er antallet af max antal smittede: \t", np.mean(max_infected(fixed_params, variable_params, covid_Model, iterationer, skridt)))
 
 
+
+'''
 "Below is to compare setup type [2,2,2], [3,3,3], [4,4,4]"
 def list_of_infected(j):
     """
@@ -144,4 +146,4 @@ plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
 plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
 
 plt.show()
-
+'''

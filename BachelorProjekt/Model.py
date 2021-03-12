@@ -8,10 +8,13 @@ import numpy as np
 from mesa.datacollection import DataCollector
 
 day_length = 525
-init_positive_agents = 2
+init_positive_agents = 1
 new_positives_after_weekends = 2
-go_home_in_breaks = True
 init_canteen_agents = 90
+
+go_home_in_breaks = True
+family_groups = False
+
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
 
@@ -164,11 +167,6 @@ def setUp(N,model,setUpType,i):
         # Add TA
         x,y = random.choice([(7,5+i*11),(7,4+i*11)])
         TA = ac.TA(1001+i,model)
-     #   if TA.id == 1001:
-      #      TA.infected = 1
-       #     TA.asymptomatic = 100
-        #    TA.exposed = 0
-         #   TA.infection_period = 200
         TA.coords = dir['W']
         TA.door = door
         model.schedule.add(TA)
@@ -253,9 +251,9 @@ def weekend(self):
 
 def off_school(self,breaks=False):
     first_third_TAs = [a for a in self.schedule.agents if a.id in [1001,1002,1003]]
-    first_third_class = [a for a in self.schedule.agents if a.id in range(0,(self.n_agents+1)*len(self.setUpType))]
+    first_third_class = [a for a in self.schedule.agents if a.id in range(0,(self.n_agents)*len(self.setUpType))]
     second_fourth_TAs = [a for a in self.schedule.agents if a.id in [1004,1005,1006]]
-    second_fourth_class = [a for a in self.schedule.agents if a.id in range((self.n_agents+1)*len(self.setUpType),2*(self.n_agents+1)*len(self.setUpType))]
+    second_fourth_class = [a for a in self.schedule.agents if a.id in range((self.n_agents)*len(self.setUpType),2*(self.n_agents)*len(self.setUpType))]
 
     sf_off_ft_in = [x for x in range(0,20)]
     if self.minute_count in sf_off_ft_in:
@@ -367,10 +365,11 @@ class covid_Model(Model):
         #Add agents to model and grid
         i = 0
         for s in setUpType:
-            setUp(self.n_agents+1,self,s,i)
+            setUp(self.n_agents,self,s,i)
             i+=1
 
-        add_init_cantine_agents_to_grid(self,(self.n_agents+1)*i,init_canteen_agents)
+        if len(self.setUpType)>1:
+            add_init_cantine_agents_to_grid(self,(self.n_agents)*i,init_canteen_agents)
         add_init_infected_to_grid(self,init_positive_agents)
 
         self.seat = make_classrooms_fit_to_grid(setUpType,self)
@@ -408,7 +407,7 @@ class covid_Model(Model):
 
         if self.minute_count in [100,220,400,520]:
             TAs = [a.id for a in self.schedule.agents if (isinstance(a, ac.TA))]
-            if len(TAs) < 3:
+            if len(TAs) < len(self.setUpType):
                 all_tas = [a for a in self.schedule.agents if a.id in [1001,1002,1003,1004,1005,1006]]
                 all_tas_pos = [a.pos for a in all_tas]
                 all_tas_id = [a.id for a in all_tas]
