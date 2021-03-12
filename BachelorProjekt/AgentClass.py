@@ -83,6 +83,8 @@ def infect(self):
                     closest_neighbors.append(neighbor)
 
         for agent in closest_neighbors:
+            if agent.is_home_sick == 1 or (isinstance(self,canteen_Agent) and self.off_school == 1):
+                continue
             distance = getDistance(self.pos,agent.pos)
             agent_status = agent.infected
             agent_recovered_status = agent.recovered

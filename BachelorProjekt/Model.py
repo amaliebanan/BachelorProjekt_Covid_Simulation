@@ -71,7 +71,7 @@ def add_init_cantine_agents_to_grid(self,N,n):
     while limit > counter:
             newAgent = ac.canteen_Agent(id_,self)
             self.schedule.add(newAgent) #Add agent to scheduler
-            x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
+
             newAgent.coords = random.choice(list(dir.values()))   #Give agent random direction to look at
 
             newAgent.courses = [self.range13.pop(),self.range46.pop()]
@@ -80,6 +80,10 @@ def add_init_cantine_agents_to_grid(self,N,n):
             newAgent.door = next_door[0]
             newAgent.next_to_attend_class = True
             newAgent.off_school = 1
+
+
+            x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
+
             self.grid.place_agent(newAgent, (max(x,9),y))
             self.sf_batch.append(newAgent)
             id_+=1
@@ -107,8 +111,12 @@ def add_init_cantine_agents_to_grid(self,N,n):
         for i in range(0,m):
             newAgent = ac.canteen_Agent(id_,self)
             self.schedule.add(newAgent) #Add agent to scheduler
+            newAgent.coords = random.choice(list(dir.values()))
+
             x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
-            newAgent.coords = random.choice(list(dir.values()))   #Give agent random direction to look at
+            while not self.grid.is_cell_empty((max(x,9),y)):
+                x, y = self.grid.find_empty()
+
             self.grid.place_agent(newAgent, (max(x,9),y))
             id_+=1
 
@@ -122,9 +130,6 @@ def set_canteen_agents_next_to_attend_class(self):
          canteens_agents.append(agent)
 
      going_to_class_next_agents = canteens_agents
-
-     not_TAs = [a for a in going_to_class_next_agents if isinstance(a,ac.canteen_Agent)]
-
 
      for agent in going_to_class_next_agents:
          if isinstance(agent,ac.TA):
@@ -396,12 +401,13 @@ class covid_Model(Model):
 
     def step(self):
         off_school(self,go_home_in_breaks)
+
         #Every 10th timestep add asking student
         if (self.minute_count) % 10 == 0:
             for ta in self.TAs:
                 if len(ta.students) == 0:
                     continue
-                if len(ta.students)>1:
+                if len(ta.students)>10:
                     TAs_students = ta.students
                     randomStudent = self.random.choice(TAs_students)
                     randomStudent.hasQuestion = 1
