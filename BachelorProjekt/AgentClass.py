@@ -354,8 +354,9 @@ class covid_Agent(Agent):
         self.mask = 0
         self.is_home_sick = 0
 
-        self.infection_period = max(5*day_length,abs(round(np.random.normal(9,1))*day_length))#How long are they sick?
-        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5,1)))*day_length),self.infection_period) #Agents are asymptomatic for 5 days
+          #Infection parameters
+        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
+        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
         self.exposed = self.asymptomatic-2*day_length
 
 
@@ -385,6 +386,9 @@ class covid_Agent(Agent):
 
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
+    #    print("IP",self.id,self.infection_period)
+     #   print("AS",self.id,self.asymptomatic)
+      #  print("EX",self.id,self.exposed)
         if self.infected == 1:
             #Try to infect
             infect(self)
@@ -412,10 +416,10 @@ class TA(Agent):
         self.is_home_sick = 0
         self.time_remaining = 105
 
-        self.infection_period = max(5,abs(round(np.random.normal(9,1))))*day_length#How long are they sick?
-        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5,1)))*day_length),self.infection_period) #Agents are asymptomatic for 5 days
+          #Infection parameters
+        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
+        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
         self.exposed = self.asymptomatic-2*day_length
-
 
         self.timeToTeach = 5
         self.courses = ()
@@ -477,8 +481,8 @@ class TA(Agent):
       if self.infected == 1:
          infect(self)
          update_infection_parameters(self)
-      if self.is_home_sick == 1:
-            update_infection_parameters(self)
+    #  if self.is_home_sick == 1:
+   #         update_infection_parameters(self)
       self.move()
 
 class canteen_Agent(Agent):
@@ -494,8 +498,8 @@ class canteen_Agent(Agent):
         self.coords = ()
 
         #Infection parameters
-        self.infection_period = max(5*day_length,abs(round(np.random.normal(9,1))*day_length))#How long are they sick?
-        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5,1)))*day_length),self.infection_period) #Agents are asymptomatic for 5 days
+        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
+        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
         self.exposed = self.asymptomatic-2*day_length
 
         #Class-schedule parameters

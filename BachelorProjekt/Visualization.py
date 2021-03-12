@@ -6,7 +6,8 @@ import numpy as np
 from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 
-ids = [i for i in range(0,78)]
+agentsN = 24
+width, height = 25,33
 
 class infected_Element(TextElement):
     '''
@@ -84,22 +85,22 @@ def covid_draw(agent):
         elif agent.orientation == 'h':
             portrayal["w"] = 1
             portrayal["h"] = 0.2
-    if agent.id in range(0,26):
+    if agent.id in range(0,25):
         portrayal["Color"] = "Silver"
         portrayal["scale"] = 0.9
-    if agent.id in range(26,52):
+    if agent.id in range(25,2*agentsN):
         portrayal["Color"] = "gold"
         portrayal["scale"] = 0.9
-    if agent.id in range(52,78):
+    if agent.id in range(2*agentsN,3*agentsN):
         portrayal["Color"] = "purple"
         portrayal["scale"] = 0.9
-    if agent.id in range(78,104):
+    if agent.id in range(3*agentsN,4*agentsN):
         portrayal["Color"] = "black"
         portrayal["scale"] = 0.9
-    if agent.id in range(104,130):
+    if agent.id in range(4*agentsN,5*agentsN):
         portrayal["Color"] = "grey"
         portrayal["scale"] = 0.9
-    if agent.id in range(130,156):
+    if agent.id in range(5*agentsN,6*agentsN):
         portrayal["Color"] = "green"
         portrayal["scale"] = 0.9
     if (isinstance(agent,ac.TA) or isinstance(agent,ac.covid_Agent) or isinstance(agent,ac.canteen_Agent)):
@@ -114,9 +115,6 @@ def covid_draw(agent):
                 portrayal["Shape"] = "resources/white.jpg"
                 portrayal["scale"] = 0.9
     return portrayal
-
-agentsN = 25
-width, height = 25,33
 
 infected_element = infected_Element()
 days_chart = count_Days()

@@ -9,7 +9,9 @@ from mesa.datacollection import DataCollector
 
 day_length = 525
 init_positive_agents = 2
-init_canteen_agents = 85
+new_positives_after_weekends = 2
+go_home_in_breaks = True
+init_canteen_agents = 90
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
 
@@ -76,6 +78,7 @@ def add_init_cantine_agents_to_grid(self,N,n):
             newAgent.next_to_attend_class = True
             newAgent.off_school = 1
             self.grid.place_agent(newAgent, (max(x,9),y))
+            self.sf_batch.append(newAgent)
             id_+=1
             counter+=1
     #m >= 3 since we want to create 3 TAs that start in the canteen
@@ -188,6 +191,7 @@ def setUp(N,model,setUpType,i):
             newAgent.TA = TA
             newAgent.seat = (x,y)
             students.append(newAgent)
+            model.ft_batch.append(newAgent)
         TA.students = students
 
         #Place walls
@@ -223,7 +227,6 @@ def weekend(self):
         a.asymptomatic = max(0,a.asymptomatic-2*day_length)  #Træk 2 dage fra asymtom
         a.infection_period = max(0,a.infection_period-2*day_length) #Træk 2 dage fra infektionsperiode
         a.exposed = max(0,a.exposed-2*day_length) #Træk 2 dage fra exposed
-       # print("JEG ER , AIE",a.id, a.asymptomatic,a.infection_period,a.exposed)
         if a.is_home_sick == 1: #Agenten er hjemme, skal den tilbage nu?
             if a.infection_period == 0:
                 ac.send_agent_back_to_school(a) #Agenten er rask og skal tilbage i skole
@@ -233,28 +236,64 @@ def weekend(self):
             ac.send_agent_home(a)
             ids_to_remove.append(a.id)
             continue
-    infected_agents = [a for a in self.infected_agents if a.id not in ids_to_remove]
 
-def off_school(self):
-    first_third_class = [a for a in self.schedule.agents if a.id in range(0,(self.n_agents+1)*len(self.setUpType))]
+
+    n = new_positives_after_weekends
+
+    while n>0:
+        infected_agents = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent) or
+                       isinstance(a,ac.canteen_Agent)) and a.infected == 0 and a.recovered == 0]
+        if len(infected_agents)>0:
+            positive_ = self.random.choice(infected_agents)
+          #  print("FØR",positive_.id,positive_.infected,positive_.asymptomatic,positive_.exposed,positive_.infection_period)
+            positive_.infected = 1
+           # print("EFTER",positive_.id,positive_.infected,positive_.asymptomatic,positive_.exposed,positive_.infection_period)
+
+        n-=1
+
+def off_school(self,breaks=False):
     first_third_TAs = [a for a in self.schedule.agents if a.id in [1001,1002,1003]]
-    second_fourth_class = [a for a in self.schedule.agents if a.id in range((self.n_agents+1)*len(self.setUpType),2*(self.n_agents+1)*len(self.setUpType))]
+    first_third_class = [a for a in self.schedule.agents if a.id in range(0,(self.n_agents+1)*len(self.setUpType))]
     second_fourth_TAs = [a for a in self.schedule.agents if a.id in [1004,1005,1006]]
+    second_fourth_class = [a for a in self.schedule.agents if a.id in range((self.n_agents+1)*len(self.setUpType),2*(self.n_agents+1)*len(self.setUpType))]
 
-    minutes = [x for x in range(0,20)]
-    minutes2 = [x for x in range(405,450)]
+    sf_off_ft_in = [x for x in range(0,20)]
+    if self.minute_count in sf_off_ft_in:
+            for a in second_fourth_class+second_fourth_TAs:
+                a.off_school = 1
+            for a in first_third_class+first_third_class:
+                a.off_school = 0
 
-    if self.minute_count in minutes:
-        for a in second_fourth_class+second_fourth_TAs:
-            a.off_school = 1
-        for a in first_third_class:
-            a.off_school = 0
-    elif self.minute_count == 114:
-         for a in second_fourth_class+second_fourth_TAs:
-            a.off_school = 0
-    elif self.minute_count in minutes2:
-        for a in first_third_class+first_third_TAs:
-            a.off_school = 1
+    elif breaks==False:
+        sf_in = [x for x in range(115,116)]
+        tf_in = [x for x in range(405,425)]
+
+        if self.minute_count in sf_in:
+             for a in second_fourth_class+second_fourth_TAs:
+                a.off_school = 0
+        elif self.minute_count in tf_in:
+            for a in first_third_class+first_third_TAs:
+                a.off_school = 1
+
+    elif breaks==True:
+        breaks_ft = [x for x in range(110,145)]+[x for x in range(420,445)]
+      #  go_to_school_ft = [x for x in range(300,325)]
+        go_to_school_ft = [300]
+        breaks_sf = [x for x in range(235,245)]+[x for x in range(300,325)]
+     #   go_to_school_sf = [x for x in range(105,120)]+[x for x in range(420,445)]
+        go_to_school_sf = [105,420]
+        if self.minute_count in breaks_ft:
+            for a in first_third_class+first_third_TAs:
+                a.off_school = 1
+        elif self.minute_count in breaks_sf:
+            for a in second_fourth_class+second_fourth_TAs:
+                a.off_school = 1
+        elif self.minute_count in go_to_school_ft:
+            for a in first_third_class+second_fourth_TAs:
+                a.off_school = 0
+        elif self.minute_count in go_to_school_sf:
+            for a in second_fourth_class+second_fourth_TAs:
+                a.off_school = 0
 
 class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
@@ -278,6 +317,9 @@ class covid_Model(Model):
         self.hour_count = 1
         self.day_count = 1
         self.door = ()
+
+        self.ft_batch = []
+        self.sf_batch = []
 
     #    self.class_times = [120,135,240,315,420,435,540]
         self.class_times = [105,120,225,300,405,420,525]
@@ -339,7 +381,7 @@ class covid_Model(Model):
 
     def step(self):
        # print(self.minute_count)
-        off_school(self)
+        off_school(self,go_home_in_breaks)
         #Every 10th timestep add asking student
         if (self.minute_count) % 10 == 0:
             for ta in self.TAs:
@@ -357,8 +399,6 @@ class covid_Model(Model):
             set_canteen_agents_next_to_attend_class(self)
         elif self.minute_count in [220,400,520]:
             set_canteen_agents_next_to_attend_class(self)
-
-
 
 
 
@@ -387,13 +427,11 @@ class covid_Model(Model):
             for list in self.seat:
                 self.seats.append(random.sample(list,k=len(list)))
 
-
         if self.minute_count % 525 == 0:
             self.day_count += 1
             self.minute_count = 1
             self.hour_count = 1
 
             if self.day_count%5 == 0: ##WEEKEND
-                print(self.day_count)
-                weekend(self)
+               weekend(self)
 
