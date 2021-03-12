@@ -12,7 +12,7 @@ init_positive_agents = 1
 new_positives_after_weekends = 2
 init_canteen_agents = 90
 
-go_home_in_breaks = True
+go_home_in_breaks = False
 family_groups = False
 
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
@@ -175,7 +175,6 @@ def setUp(N,model,setUpType,i):
 
 
 
-
         for j in range(N*i,(i+1)*N):
             newAgent = ac.covid_Agent(j, model)
             model.schedule.add(newAgent)
@@ -243,9 +242,7 @@ def weekend(self):
                        isinstance(a,ac.canteen_Agent)) and a.infected == 0 and a.recovered == 0]
         if len(infected_agents)>0:
             positive_ = self.random.choice(infected_agents)
-          #  print("FØR",positive_.id,positive_.infected,positive_.asymptomatic,positive_.exposed,positive_.infection_period)
             positive_.infected = 1
-           # print("EFTER",positive_.id,positive_.infected,positive_.asymptomatic,positive_.exposed,positive_.infection_period)
 
         n-=1
 
@@ -322,10 +319,26 @@ class covid_Model(Model):
     #    self.class_times = [120,135,240,315,420,435,540]
         self.class_times = [105,120,225,300,405,420,525]
 
-        self.other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
+        self.other_courses = []
+        self.range46 = []
+        self.range13 = []
 
-        self.range46 = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
-        self.range13 = random.sample([1]*26+[2]*26+[3]*26,k=len([1]*26+[2]*26+[3]*26))
+        if family_groups == False: #With shuffle
+            self.other_courses = random.sample([4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents,
+                                               k=len([4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents))
+
+            self.range46 = random.sample([4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents,
+                                     k=len([4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents))
+
+            self.range13 = random.sample([1]*self.n_agents+[2]*self.n_agents+[3]*self.n_agents,
+                                     k=len([1]*self.n_agents+[2]*self.n_agents+[3]*self.n_agents))
+        elif family_groups == True: #Wihtout shuffle
+            self.other_courses = [4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents
+            self.range46 = [4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents
+            self.range13 = [1]*self.n_agents+[2]*self.n_agents+[3]*self.n_agents
+
+
+
 
         #Classrooms +  directions
         self.classroom_2 = [((1,1),dir['E']),((2,1),dir['N']),((3,1),dir['N']),((4,1),dir['N']),((5,1),dir['N']),
@@ -374,12 +387,14 @@ class covid_Model(Model):
 
         self.seat = make_classrooms_fit_to_grid(setUpType,self)
         for list in self.seat:
-            self.seats.append(random.sample(list,k=len(list)))
+            if family_groups == False: #Shuffle
+                self.seats.append(random.sample(list,k=len(list)))
+            elif family_groups == True: #Dont shuffle
+                self.seats.append(list)
         self.datacollector.collect(self)
         self.running = True
 
     def step(self):
-       # print(self.minute_count)
         off_school(self,go_home_in_breaks)
         #Every 10th timestep add asking student
         if (self.minute_count) % 10 == 0:
@@ -417,14 +432,20 @@ class covid_Model(Model):
                 print("status",all_tas_status,"are home",are_home)
                 print(all_tas_pos,all_tas_id)
 
+
+        if self.minute_count in [1,100,200,300,400]:
+             #Reset list of seats so new agents can pop from original list of seats in classrooms
+            self.seats = []
+            self.seat = make_classrooms_fit_to_grid(self.setUpType,self)
+            for list in self.seat:
+                if family_groups == False:
+                    self.seats.append(random.sample(list,k=len(list)))
+                elif family_groups == True:
+                    self.seats.append(list)
         #Time count
         self.minute_count += 1
         if self.minute_count % 60 == 0:
             self.hour_count += 1
-            #Reset list of seats so new agents can pop from original list of seats in classrooms
-            self.seats = []
-            for list in self.seat:
-                self.seats.append(random.sample(list,k=len(list)))
 
         if self.minute_count % 525 == 0:
             self.day_count += 1

@@ -306,13 +306,6 @@ def move_to_specific_pos(self,pos_):
     #Get x,y position of the cell with the smallest distance between goal-position and possible cells to go to
     x_,y_ = min(distances,key=lambda x:x[1])[0]
 
-
-    dist_from_desired_cell_to_pos_ = min(distances,key=lambda x:x[1])[1]
-    dist_self_to_pos_ = getDistance(self.pos,pos_)
-
-    #Only move if the cell is closer to desired cell than your own cell
-    #if dist_self_to_pos_ > dist_from_desired_cell_to_pos_:
-
     if self.model.minute_count in [50,170,350,480]:
         force_agent_to_specific_pos(self,pos_)
         return
@@ -395,9 +388,6 @@ class covid_Agent(Agent):
 
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
-    #    print("IP",self.id,self.infection_period)
-     #   print("AS",self.id,self.asymptomatic)
-      #  print("EX",self.id,self.exposed)
         if self.infected == 1:
             #Try to infect
             infect(self)
@@ -481,7 +471,6 @@ class TA(Agent):
     def step(self):
       self.time_remaining -=1
       self.connect_TA_and_students()
-     # print(self.model.minute_count, self.id, self.time_remaining)
 
       if self.time_remaining <= 0 and len(self.students)<5:
           TA_to_class(self)
