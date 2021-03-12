@@ -12,8 +12,11 @@ init_positive_agents = 1
 new_positives_after_weekends = 2
 init_canteen_agents = 90
 
+
 go_home_in_breaks = False
 family_groups = False
+with_mask = False
+percentages_of_vaccinated = 0 #Number in [0,1]
 
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
@@ -80,12 +83,11 @@ def add_init_cantine_agents_to_grid(self,N,n):
             newAgent.door = next_door[0]
             newAgent.next_to_attend_class = True
             newAgent.off_school = 1
-
-
             x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
-
             self.grid.place_agent(newAgent, (max(x,9),y))
             self.sf_batch.append(newAgent)
+            if with_mask == True:
+                newAgent.mask = 1
             id_+=1
             counter+=1
     #m >= 3 since we want to create 3 TAs that start in the canteen
@@ -113,6 +115,9 @@ def add_init_cantine_agents_to_grid(self,N,n):
             self.schedule.add(newAgent) #Add agent to scheduler
             newAgent.coords = random.choice(list(dir.values()))
 
+            if with_mask == True:
+                newAgent.mask = 1
+
             x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
             while not self.grid.is_cell_empty((max(x,9),y)):
                 x, y = self.grid.find_empty()
@@ -132,8 +137,6 @@ def set_canteen_agents_next_to_attend_class(self):
      going_to_class_next_agents = canteens_agents
 
      for agent in going_to_class_next_agents:
-         if isinstance(agent,ac.TA):
-             print(self.minute_count,self.setUpType,agent.id,agent.pos)
          if isinstance(agent,ac.canteen_Agent):
                 agent.next_to_attend_class = not agent.next_to_attend_class
 

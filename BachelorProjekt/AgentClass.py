@@ -83,6 +83,8 @@ def infect(self):
                     closest_neighbors.append(neighbor)
 
         for agent in closest_neighbors:
+
+            #Dont infect neighbors that are home sick / not on campus
             if agent.is_home_sick == 1 or (isinstance(self,canteen_Agent) and self.off_school == 1):
                 continue
             distance = getDistance(self.pos,agent.pos)
@@ -92,22 +94,39 @@ def infect(self):
             if agent_recovered_status == 1 or agent_status == 1: # kan ikke blive smittet, da den er immun eller allerede infected
                 continue
             elif distance <= 0.1:
-                pTA = np.random.poisson(2.5/100) #TA står meget tæt og snakker højt
+                if self.mask == 1:
+                    pTA = np.random(0.25/100)
+                elif self.mask == 0:
+                    pTA = np.random.poisson(2.5/100) #TA står meget tæt og snakker højt
                 if pTA == 1:
                     agent.infected = 1
                     self.model.infected_agents.append(agent)
+                 #Indenfor 1 meters afstand
             elif distance > 0.5 and distance <= 1.0:
-                p_1 = np.random.poisson(0.25/100) #Indenfor 1 meters afstand
-                if p_1 == 1:
+                 if self.mask == 1:
+                    p_1 = np.random.poisson(0.025/100)
+                 elif self.mask == 0:
+                     p_1 = np.random.poisson(0.25/100)
+                 if p_1 == 1:
                     agent.infected = 1
                     self.model.infected_agents.append(agent)
+
+                 #Mellem 1 og 2 meters afstand
             elif distance > 1.0 and distance <= 2.0:
-                p_1_til_2 = np.random.poisson(0.22450/100) #Mellem 1 og 2 meters afstand
+                if self.mask == 1:
+                    p_1_til_2 = np.random.poisson(0.022450/100)
+                elif self.mask == 0:
+                     p_1_til_2 = np.random.poisson(0.22450/100)
                 if p_1_til_2 == 1:
                     agent.infected = 1
                     self.model.infected_agents.append(agent)
+
+                #Over 2 meters afstand
             elif distance>2.0:
-                p_over_2 = np.random.poisson(0.2199651/100) #Over 2 meters afstand
+                if self.mask == 1:
+                    p_over_2 = np.random.poisson(0.02199651/100)
+                elif self.mask == 0:
+                     p_over_2 = np.random.poisson(0.2199651/100)
                 if p_over_2 == 1:
                     agent.infected = 1
                     self.model.infected_agents.append(agent)
@@ -312,7 +331,6 @@ def move_to_specific_pos(self,pos_):
         force_agent_to_specific_pos(self,pos_)
         return
     self.model.grid.move_agent(self,(x_,y_))
-
 
 
 def force_agent_to_specific_pos(self,pos):
