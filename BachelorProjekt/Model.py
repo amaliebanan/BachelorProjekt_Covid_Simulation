@@ -2,6 +2,7 @@ import AgentClass as ac
 from mesa.time import SimultaneousActivation,RandomActivation
 from mesa.space import MultiGrid
 import random
+import math
 from mesa import Agent, Model
 
 import numpy as np
@@ -16,7 +17,7 @@ init_canteen_agents = 90
 go_home_in_breaks = False
 family_groups = False
 with_mask = False
-percentages_of_vaccinated = 0 #Number in [0,1]
+percentages_of_vaccinated = 0.5 #Number 0<=x<1
 
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
@@ -110,6 +111,8 @@ def add_init_cantine_agents_to_grid(self,N,n):
     if n-3>limit: #We still need to initialize more canteen-agents, but these will not attend classes (fx students writing their master thesis)
         #They are initialized without door, courses, etc. They are "dummy" agents which can only contribute
         #to infecting others.
+        if go_home_in_breaks:
+            return
         for i in range(0,m):
             newAgent = ac.canteen_Agent(id_,self)
             self.schedule.add(newAgent) #Add agent to scheduler
@@ -247,7 +250,7 @@ def weekend(self):
 
     while n>0:
         infected_agents = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent) or
-                       isinstance(a,ac.canteen_Agent)) and a.infected == 0 and a.recovered == 0]
+                       isinstance(a,ac.canteen_Agent)) and a.infected == 0 and a.recovered == 0 and a.vaccinated == 0]
         if len(infected_agents)>0:
             positive_ = self.random.choice(infected_agents)
             positive_.infected = 1
@@ -331,7 +334,7 @@ class covid_Model(Model):
         self.range46 = []
         self.range13 = []
 
-        if family_groups == False: #With shuffle
+        if family_groups == False: #Shuffle courses
             self.other_courses = random.sample([4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents,
                                                k=len([4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents))
 
@@ -344,7 +347,6 @@ class covid_Model(Model):
             self.other_courses = [4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents
             self.range46 = [4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents
             self.range13 = [1]*self.n_agents+[2]*self.n_agents+[3]*self.n_agents
-
 
 
 
@@ -402,8 +404,28 @@ class covid_Model(Model):
         self.datacollector.collect(self)
         self.running = True
 
+
+        if percentages_of_vaccinated != 0 and percentages_of_vaccinated <= 1:
+            n_agents_has_been_vaccinated = math.floor(count_agents(self)*percentages_of_vaccinated)
+            n = 0
+
+            agents = [a for a in self.schedule.agents if isinstance(a,ac.TA) or isinstance(a,ac.canteen_Agent) or isinstance(a,ac.covid_Agent)]
+            while n_agents_has_been_vaccinated>n:
+                vaccinate_agent = self.random.choice(agents)
+                if vaccinate_agent.vaccinated == 1 or vaccinate_agent.infected == 1:
+                    continue
+                else:
+                    vaccinate_agent.vaccinated = 1
+                    n+=1
+
+
     def step(self):
         off_school(self,go_home_in_breaks)
+
+        aa = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.canteen_Agent) or isinstance(a,ac.covid_Agent)) and a.vaccinated == 1]
+      #  print(len(aa))
+        aa = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.canteen_Agent) or isinstance(a,ac.covid_Agent))]
+      #  print(len(aa))
 
         #Every 10th timestep add asking student
         if (self.minute_count) % 10 == 0:
@@ -422,7 +444,6 @@ class covid_Model(Model):
             set_canteen_agents_next_to_attend_class(self)
         elif self.minute_count in [220,400,520]:
             set_canteen_agents_next_to_attend_class(self)
-
 
 
         #Terminate model when everyone is healthy

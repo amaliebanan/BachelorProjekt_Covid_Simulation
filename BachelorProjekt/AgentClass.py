@@ -87,6 +87,9 @@ def infect(self):
             #Dont infect neighbors that are home sick / not on campus
             if agent.is_home_sick == 1 or (isinstance(self,canteen_Agent) and self.off_school == 1):
                 continue
+            #Dont infect neighbors that are vaccinated
+            if agent.vaccinated == 1:
+                continue
             distance = getDistance(self.pos,agent.pos)
             agent_status = agent.infected
             agent_recovered_status = agent.recovered
@@ -156,6 +159,8 @@ def change_obj_params(new,old):
 def canteen_to_class(self):
     c_agent = covid_Agent(self.id,self.model)
 
+
+    c_agent.vaccinated = self.vaccinated
     #Set up canteen agent to have same paramters as prior class-agent
     c_agent.infected, c_agent.recovered, c_agent.exposed, c_agent.asymptomatic, c_agent.mask = \
         self.infected, self.recovered, self.exposed, self.asymptomatic, self.mask
@@ -183,6 +188,7 @@ def canteen_to_class(self):
 def class_to_canteen(self):
     c_agent = canteen_Agent(self.id,self.model)
 
+    c_agent.vaccinated = self.vaccinated
     #Set up canteen agent to have same paramters as prior class-agent
     c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.asymptomatic, c_agent.mask = \
         self.infected, self.recovered, self.exposed,self.asymptomatic,self.mask
@@ -223,6 +229,8 @@ def class_to_canteen(self):
 def TA_to_class(self):
     self.model.grid.move_agent(self, self.pos)
     c_agent = covid_Agent(self.id,self.model)
+
+    c_agent.vaccinated = self.vaccinated
     c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.asymptomatic, c_agent.mask = \
         self.infected, self.recovered, self.exposed,self.asymptomatic,self.mask
     c_agent.door, c_agent.moving_to_door = self.door, 1
@@ -244,7 +252,7 @@ def TA_to_class(self):
 #Turn canteen-object to TA-object
 def canteen_to_TA(self):
     c_agent = TA(self.id,self.model)
-    c_agent.is_home_sick = self.is_home_sick
+    c_agent.is_home_sick, c_agent.vaccinated = self.is_home_sick, self.vaccinated
     c_agent.infection_period = self.infection_period
     #Set up TA agent to have same paramters as prior canteen-agent
     c_agent.infected, c_agent.recovered, c_agent.exposed, c_agent.asymptomatic, c_agent.mask = \
@@ -375,6 +383,7 @@ class covid_Agent(Agent):
         self.recovered = 0
         self.mask = 0
         self.is_home_sick = 0
+        self.vaccinated = 0
 
           #Infection parameters
         self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
@@ -433,6 +442,8 @@ class TA(Agent):
         self.recovered = 0
         self.mask = 1
         self.is_home_sick = 0
+        self.vaccinated = 0
+
         self.time_remaining = 105
 
           #Infection parameters
@@ -512,6 +523,8 @@ class canteen_Agent(Agent):
         self.recovered = 0
         self.mask = 0
         self.is_home_sick = 0
+        self.vaccinated = 0
+
         self.off_school = 0
         self.coords = ()
 
