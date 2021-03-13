@@ -137,39 +137,27 @@ def infect(self):
 ###CHANGING OBJECT-TYPE###
 #Get all essential parameters transfered
 def change_obj_params(new,old):
-    new.id = old.id
+
+    new.is_home_sick, new.vaccinated = old.is_home_sick,\
+                                       old.vaccinated
+
+    new.infection_period,new.exposed, new.asymptomatic = old.infection_period,\
+                                                         old.exposed,\
+                                                         old.asymptomatic,
+    #Set up TA agent to have same paramters as prior canteen-agent
+    new.infected, new.recovered,  new.mask = old.infected,\
+                                             old.recovered,\
+                                             old.mask
     new.pos = old.pos
-    new.coords = old.coords
-
-    new.infected, new.recovered, new.mask, new.is_home_sick = old.infected, old.recovered, old.mask, old.is_home_sick
-
-    new.infection_period = old.infection_period
-    new.asymptomatic = old.asymptomatic
-    new.exposed = old.asymptomatic
-
-    new.courses = old.courses
-
-    old.model.schedule.remove(old)
-    old.model.grid.remove_agent(old)
-    old.model.schedule.add(new)
-    old.model.grid.place_agent(new,new.pos)
 ###CHANGING OBJECT-TYPE###
 
 #Turn canteen-object to class-object
 def canteen_to_class(self):
     c_agent = covid_Agent(self.id,self.model)
+    change_obj_params(c_agent,self)
 
-
-    c_agent.vaccinated = self.vaccinated
-    #Set up canteen agent to have same paramters as prior class-agent
-    c_agent.infected, c_agent.recovered, c_agent.exposed, c_agent.asymptomatic, c_agent.mask = \
-        self.infected, self.recovered, self.exposed, self.asymptomatic, self.mask
-    c_agent.is_home_sick = self.is_home_sick
-    c_agent.infection_period = self.infection_period
     c_agent.courses = self.courses
-    c_agent.pos = self.pos
     c_agent.moving_to_door = 0
-
     c_agent.door = self.door
 
     #Which classroom are agent entering, adjust the y-coordinate accordingly.
@@ -187,14 +175,9 @@ def canteen_to_class(self):
 #Turn class-object to canteen-object
 def class_to_canteen(self):
     c_agent = canteen_Agent(self.id,self.model)
+    change_obj_params(c_agent,self)
 
-    c_agent.vaccinated = self.vaccinated
-    #Set up canteen agent to have same paramters as prior class-agent
-    c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.asymptomatic, c_agent.mask = \
-        self.infected, self.recovered, self.exposed,self.asymptomatic,self.mask
-    c_agent.pos, c_agent.TA = self.pos, self.TA
-    c_agent.is_home_sick = self.is_home_sick
-    c_agent.infection_period = self.infection_period
+    c_agent.TA = self.TA
 
     #Get the correct door (based on the next course the agent will attend)
     x,y = self.courses
@@ -210,12 +193,8 @@ def class_to_canteen(self):
     next_door = [a for a in self.model.schedule.agents if isinstance(a,door) and a.id == next_door_id]
     c_agent.door = next_door[0]
 
-    self.model.schedule.remove(self)
-    self.model.grid.remove_agent(self)
-    self.model.schedule.add(c_agent)
 
     #If it is a TA->Class->Canteen, we cannot remove TA from its own list of students.
-
     if self.TA is not ():
         students = self.TA.students
         #If student is present
@@ -223,42 +202,35 @@ def class_to_canteen(self):
             students.remove(self)
         self.TA.students = students
 
+    self.model.schedule.remove(self)
+    self.model.grid.remove_agent(self)
+    self.model.schedule.add(c_agent)
+
     return c_agent
 
 #Turn TA-object to class-object
 def TA_to_class(self):
-    self.model.grid.move_agent(self, self.pos)
     c_agent = covid_Agent(self.id,self.model)
+    change_obj_params(c_agent,self)
 
-    c_agent.vaccinated = self.vaccinated
-    c_agent.infected, c_agent.recovered, c_agent.exposed,c_agent.asymptomatic, c_agent.mask = \
-        self.infected, self.recovered, self.exposed,self.asymptomatic,self.mask
     c_agent.door, c_agent.moving_to_door = self.door, 1
-    c_agent.is_home_sick = self.is_home_sick
-    c_agent.infection_period = self.infection_period
     if self.courses == (): #First time, we need to initialize TA's courses
         c_agent.courses = [0,0]
     else: c_agent.courses = self.courses
 
+    self.model.grid.remove_agent(self)
     self.model.schedule.remove(self)
-    x,y = self.pos
-
-    self.model.schedule.add(c_agent)
-    self.model.grid.place_agent(c_agent,(x,y))
     self.model.TAs.remove(self)
 
-    self.model.grid.remove_agent(self)
+    self.model.schedule.add(c_agent)
+    self.model.grid.place_agent(c_agent,c_agent.pos)
 
 #Turn canteen-object to TA-object
 def canteen_to_TA(self):
     c_agent = TA(self.id,self.model)
-    c_agent.is_home_sick, c_agent.vaccinated = self.is_home_sick, self.vaccinated
-    c_agent.infection_period = self.infection_period
-    #Set up TA agent to have same paramters as prior canteen-agent
-    c_agent.infected, c_agent.recovered, c_agent.exposed, c_agent.asymptomatic, c_agent.mask = \
-        self.infected, self.recovered, self.exposed,self.asymptomatic, self.mask
-    c_agent.pos,c_agent.door = self.pos, self.door
+    change_obj_params(c_agent,self)
 
+    c_agent.door = self.door
     c_agent.students = [0] ##Dummy list, when all students are in class we update the TA's list of students
     c_agent.enrolled_students = [0] ##Dummy list
 
@@ -302,7 +274,6 @@ def move_to_specific_pos(self,pos_):
                 newAgent.pos = x+1,y+newY
                 self.model.grid.place_agent(newAgent, newAgent.pos)
                 return
-
             elif isinstance(self,canteen_Agent):
                     newAgent,seat_ = canteen_to_class(self)
                     #"push" agent through door
@@ -339,7 +310,6 @@ def move_to_specific_pos(self,pos_):
         force_agent_to_specific_pos(self,pos_)
         return
     self.model.grid.move_agent(self,(x_,y_))
-
 
 def force_agent_to_specific_pos(self,pos):
     self.model.grid.move_agent(self,pos)

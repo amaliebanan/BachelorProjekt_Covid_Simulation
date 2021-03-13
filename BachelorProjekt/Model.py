@@ -17,7 +17,7 @@ init_canteen_agents = 90
 go_home_in_breaks = False
 family_groups = False
 with_mask = False
-percentages_of_vaccinated = 0.5 #Number 0<=x<1
+percentages_of_vaccinated = 0 #Number 0<=x<1
 
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
@@ -405,10 +405,9 @@ class covid_Model(Model):
         self.running = True
 
 
-        if percentages_of_vaccinated != 0 and percentages_of_vaccinated <= 1:
+        if 0 <= percentages_of_vaccinated < 1:
             n_agents_has_been_vaccinated = math.floor(count_agents(self)*percentages_of_vaccinated)
             n = 0
-
             agents = [a for a in self.schedule.agents if isinstance(a,ac.TA) or isinstance(a,ac.canteen_Agent) or isinstance(a,ac.covid_Agent)]
             while n_agents_has_been_vaccinated>n:
                 vaccinate_agent = self.random.choice(agents)
