@@ -17,7 +17,7 @@ class infected_Element(TextElement):
         pass
 
     def render(self, model):
-        return "Infected agents: " + str(find_status(model, "infected", [ac.covid_Agent, ac.canteen_Agent, ac.TA]))
+        return "Infected agents: " + str(find_status(model, "infected", [ac.class_Agent, ac.canteen_Agent, ac.TA]))
 
 class count_Days(TextElement):
     '''
@@ -42,7 +42,7 @@ def covid_draw(agent):
         return
     portrayal = {"Shape": "circle", "r": 0.8, "Filled": "true", "Layer": 0}
 
-    if isinstance(agent,ac.covid_Agent) or isinstance(agent,ac.canteen_Agent):
+    if isinstance(agent, ac.class_Agent) or isinstance(agent, ac.canteen_Agent):
         if agent.recovered == 1:
             portrayal["Color"] = "purple"
         if agent.infected == 0:
@@ -54,7 +54,7 @@ def covid_draw(agent):
                 portrayal["Shape"] = "resources/exposed.png"
                 portrayal["scale"] = 0.9
 
-        if isinstance(agent,ac.covid_Agent) and agent.hasQuestion == 1:
+        if isinstance(agent, ac.class_Agent) and agent.hasQuestion == 1:
             if agent.infected == 1:
                 portrayal["Color"] = "black"
             if agent.infected == 0:
@@ -106,7 +106,7 @@ def covid_draw(agent):
     if agent.id in range(5*agentsN,6*agentsN):
         portrayal["Color"] = "green"
         portrayal["scale"] = 0.9
-    if (isinstance(agent,ac.TA) or isinstance(agent,ac.covid_Agent) or isinstance(agent,ac.canteen_Agent)):
+    if (isinstance(agent,ac.TA) or isinstance(agent, ac.class_Agent) or isinstance(agent, ac.canteen_Agent)):
             if agent.is_home_sick == 1:
                 portrayal["Shape"] = "resources/white.jpg"
                 portrayal["scale"] = 0.9
