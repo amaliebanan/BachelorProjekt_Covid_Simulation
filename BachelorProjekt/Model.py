@@ -56,7 +56,7 @@ def add_init_infected_to_grid(self,n):
         randomAgent = self.random.choice(self.schedule.agents)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
-        elif isinstance(randomAgent,ac.covid_Agent) or isinstance(randomAgent,ac.TA) or isinstance(randomAgent,ac.canteen_Agent):
+        elif isinstance(randomAgent, ac.class_Agent) or isinstance(randomAgent, ac.TA) or isinstance(randomAgent, ac.canteen_Agent):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent
             positive_agent.infected = 1
@@ -150,7 +150,7 @@ def setUp(N,model,setUpType,i):
     'random set-up'
     if setUpType == 1:
         for i in range(N*i,(1+i)*N):
-            newAgent = ac.covid_Agent(i, model)
+            newAgent = ac.class_Agent(i, model)
             model.schedule.add(newAgent) #Add agent to scheduler
             x, y = model.grid.find_empty()#Place agent randomly in empty cell on grid
             newAgent.coords = random.choice(list(dir.values()))   #Give agent random direction to look at
@@ -187,7 +187,7 @@ def setUp(N,model,setUpType,i):
 
 
         for j in range(N*i,(i+1)*N):
-            newAgent = ac.covid_Agent(j, model)
+            newAgent = ac.class_Agent(j, model)
             model.schedule.add(newAgent)
             posAndDirection = listOfPositions.pop()
             x,y = posAndDirection[0]
@@ -229,7 +229,7 @@ def make_classrooms_fit_to_grid(list_of_setuptypes,model):
     return seats
 
 def weekend(self):
-    infected_agents = [a for a in self.schedule.agents if (isinstance(a, ac.TA) or isinstance(a,ac.covid_Agent) or isinstance(a,ac.canteen_Agent)) and a.infected == 1]
+    infected_agents = [a for a in self.schedule.agents if (isinstance(a, ac.TA) or isinstance(a, ac.class_Agent) or isinstance(a, ac.canteen_Agent)) and a.infected == 1]
     ids_to_remove = []
     for a in infected_agents:
         a.asymptomatic = max(0,a.asymptomatic-2*day_length)  #Træk 2 dage fra asymtom
@@ -249,8 +249,8 @@ def weekend(self):
     n = new_positives_after_weekends
 
     while n>0:
-        infected_agents = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.covid_Agent) or
-                       isinstance(a,ac.canteen_Agent)) and a.infected == 0 and a.recovered == 0 and a.vaccinated == 0]
+        infected_agents = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a, ac.class_Agent) or
+                                                               isinstance(a,ac.canteen_Agent)) and a.infected == 0 and a.recovered == 0 and a.vaccinated == 0]
         if len(infected_agents)>0:
             positive_ = self.random.choice(infected_agents)
             positive_.infected = 1
@@ -273,6 +273,8 @@ def off_school(self,breaks=False):
     elif breaks==False:
         sf_in = [x for x in range(115,116)]
         tf_in = [x for x in range(405,425)]
+        random_studentFT = random.choices(first_third_class, k=math.floor(self.n_agents*len(self.setUpType)/2))
+        random_studentSF = random.choices(second_fourth_class, k=math.floor(self.n_agents*len(self.setUpType)/2))
 
         if self.minute_count in sf_in:
              for a in second_fourth_class+second_fourth_TAs:
@@ -280,13 +282,18 @@ def off_school(self,breaks=False):
         elif self.minute_count in tf_in:
             for a in first_third_class+first_third_TAs:
                 a.off_school = 1
+        elif self.minute_count == 238:
+            for a in random_studentFT+random_studentSF:
+                a.off_school = 1
+        elif self.minute_count == 300:
+            all_on_break = [a for a in self.schedule.agents if (isinstance(a,ac.canteen_Agent)) and a.off_school == 1]
+            for a in all_on_break:
+                a.off_school = 0
 
     elif breaks==True:
         breaks_ft = [x for x in range(110,145)]+[x for x in range(420,445)]
-      #  go_to_school_ft = [x for x in range(300,325)]
         go_to_school_ft = [300]
         breaks_sf = [x for x in range(235,245)]+[x for x in range(300,325)]
-     #   go_to_school_sf = [x for x in range(105,120)]+[x for x in range(420,445)]
         go_to_school_sf = [105,420]
         if self.minute_count in breaks_ft:
             for a in first_third_class+first_third_TAs:
@@ -308,11 +315,11 @@ class covid_Model(Model):
         self.grid = MultiGrid(width, height, torus=False) #torus wraps edges
         self.schedule = RandomActivation(self)
         self.setUpType = setUpType
-        self.status = find_status(self,"infected",[ac.covid_Agent])
-        self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", [ac.covid_Agent, ac.canteen_Agent, ac.TA]),
+        self.status = find_status(self,"infected", [ac.class_Agent])
+        self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", [ac.class_Agent, ac.canteen_Agent, ac.TA]),
                                                             "Agent_count": lambda m: count_agents(self),
-                                                            "recovered": lambda m: find_status(self, "recovered", [ac.covid_Agent, ac.canteen_Agent, ac.TA]),
-                                                            "Home":lambda m: find_status(self, "is_home_sick", [ac.covid_Agent, ac.canteen_Agent, ac.TA])})
+                                                            "recovered": lambda m: find_status(self, "recovered", [ac.class_Agent, ac.canteen_Agent, ac.TA]),
+                                                            "Home":lambda m: find_status(self, "is_home_sick", [ac.class_Agent, ac.canteen_Agent, ac.TA])})
 
         self.agents_at_home = []
         self.recovered_agents = []
@@ -408,7 +415,7 @@ class covid_Model(Model):
         if 0 <= percentages_of_vaccinated < 1:
             n_agents_has_been_vaccinated = math.floor(count_agents(self)*percentages_of_vaccinated)
             n = 0
-            agents = [a for a in self.schedule.agents if isinstance(a,ac.TA) or isinstance(a,ac.canteen_Agent) or isinstance(a,ac.covid_Agent)]
+            agents = [a for a in self.schedule.agents if isinstance(a,ac.TA) or isinstance(a,ac.canteen_Agent) or isinstance(a, ac.class_Agent)]
             while n_agents_has_been_vaccinated>n:
                 vaccinate_agent = self.random.choice(agents)
                 if vaccinate_agent.vaccinated == 1 or vaccinate_agent.infected == 1:
@@ -421,9 +428,9 @@ class covid_Model(Model):
     def step(self):
         off_school(self,go_home_in_breaks)
 
-        aa = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.canteen_Agent) or isinstance(a,ac.covid_Agent)) and a.vaccinated == 1]
+        aa = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.canteen_Agent) or isinstance(a, ac.class_Agent)) and a.vaccinated == 1]
       #  print(len(aa))
-        aa = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.canteen_Agent) or isinstance(a,ac.covid_Agent))]
+        aa = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.canteen_Agent) or isinstance(a, ac.class_Agent))]
       #  print(len(aa))
 
         #Every 10th timestep add asking student

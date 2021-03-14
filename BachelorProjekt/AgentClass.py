@@ -79,7 +79,7 @@ def infect(self):
 
         for neighbor in all_neighbors_within_radius:
             if not self.model.grid.is_cell_empty(neighbor.pos):
-                if isinstance(neighbor,covid_Agent) or isinstance(neighbor,TA) or isinstance(neighbor,canteen_Agent):
+                if isinstance(neighbor, class_Agent) or isinstance(neighbor, TA) or isinstance(neighbor, canteen_Agent):
                     closest_neighbors.append(neighbor)
 
         for agent in closest_neighbors:
@@ -153,7 +153,7 @@ def change_obj_params(new,old):
 
 #Turn canteen-object to class-object
 def canteen_to_class(self):
-    c_agent = covid_Agent(self.id,self.model)
+    c_agent = class_Agent(self.id, self.model)
     change_obj_params(c_agent,self)
 
     c_agent.courses = self.courses
@@ -210,7 +210,7 @@ def class_to_canteen(self):
 
 #Turn TA-object to class-object
 def TA_to_class(self):
-    c_agent = covid_Agent(self.id,self.model)
+    c_agent = class_Agent(self.id, self.model)
     change_obj_params(c_agent,self)
 
     c_agent.door, c_agent.moving_to_door = self.door, 1
@@ -259,14 +259,14 @@ def move_to_specific_pos(self,pos_):
     #If no cell is empty, agent can go through others "person"-agents (to avoid bottleneck)
     #Back-up list contains cells with covid,TA and canteen agents in
     pos_other_agents = [cell for cell in self.model.grid.get_neighbors(self.pos,moore=True,include_center=False)
-                         if isinstance(cell,covid_Agent) or isinstance(cell,TA) or isinstance(cell,canteen_Agent)]
+                        if isinstance(cell, class_Agent) or isinstance(cell, TA) or isinstance(cell, canteen_Agent)]
     back_up_empty_cells = [cell.pos for cell in pos_other_agents]
 
     #If goal-position is in possible steps, go there
     if pos_ in possible_steps:
         #If goal-position is a door change object accordingly
         if pos_ == self.door.pos:
-            if isinstance(self,covid_Agent):
+            if isinstance(self, class_Agent):
                 newAgent = class_to_canteen(self)
                 #"push" agent through door
                 x,y = pos_                         #Door position
@@ -284,7 +284,7 @@ def move_to_specific_pos(self,pos_):
                     self.model.grid.place_agent(newAgent, newAgent.pos)
                     return
         #If goal-position is the seat, go there
-        if isinstance(self,covid_Agent) and pos_ == self.seat:
+        if isinstance(self, class_Agent) and pos_ == self.seat:
             self.model.grid.move_agent(self,pos_)
             return
 
@@ -342,7 +342,7 @@ def update_infection_parameters(self):
     self.exposed = max(0,self.exposed-1)    #If already 0 stay there, if larger than 0 subtract one
     self.infection_period = max(0,self.infection_period-1)
 
-class covid_Agent(Agent):
+class class_Agent(Agent):
     def __init__(self, id, model):
         super().__init__(id, model)
         self.id = id
@@ -446,7 +446,7 @@ class TA(Agent):
             self.timeToTeach -= 1
 
     def connect_TA_and_students(self):
-        ss = [a for a in self.model.schedule.agents if isinstance(a,covid_Agent) and a.door == self.door]
+        ss = [a for a in self.model.schedule.agents if isinstance(a, class_Agent) and a.door == self.door]
 
         #Get the correct students, because they can overlap when a class is ending and new one is starting
         if self.id in [1001,1002,1003]:
@@ -459,7 +459,7 @@ class TA(Agent):
             s.TA = self
 
     def move(self):
-        questionStatus = find_status(self.model,"hasQuestion",[covid_Agent],self.students)
+        questionStatus = find_status(self.model,"hasQuestion", [class_Agent], self.students)
 
         if questionStatus > 0 and len(self.students) > 15:  #Class is started and somebody a question
             for s in self.students:
