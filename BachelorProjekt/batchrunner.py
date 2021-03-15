@@ -8,10 +8,10 @@ from multiprocessing import Pool
 
 
 
-fixed_params = {"width":10, "height": 11, "setUpType": [4]}
+fixed_params = {"width":20, "height": 33, "setUpType": [2,3,4]}
 variable_params = {"N": range(26,27,1)} # 25 students
-iterationer = 100
-skridt = 105*1
+iterationer = 2
+skridt = 525*10
 
 
 "Below is to plot infected vs timestep and susceptible vs timestep for a single set up type"
@@ -51,8 +51,8 @@ def plot_infected(fix_par, var_par, model, iter, steps):
 
 
 "uncomment below to see a plot of a single setup type. Change setup type by changing fixed_params at line 10"
-plot_infected(fixed_params, variable_params, covid_Model, iterationer, skridt)
-plt.show()
+#plot_infected(fixed_params, variable_params, covid_Model, iterationer, skridt)
+#plt.show()
 
 
 def max_infected(fix_par, var_par, model, iter, steps):
@@ -121,7 +121,7 @@ def list_of_infected(j):
 
     return num_of_infected, num_of_susceptible, num_of_recovered
 
-"""
+
 "uncomment below to run list_of_infected function with different set up types. Change line 12 and 13 to change number of iterations and timesteps"
 pool = mp.Pool(mp.cpu_count()) #opens pools for running parallel programs
 results=pool.map(list_of_infected, [2,3,4]) #runs the list_of_infected function for j={2,3,4}
@@ -147,4 +147,4 @@ plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
 plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
 
 plt.show()
-"""
+

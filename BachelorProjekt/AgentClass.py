@@ -482,8 +482,7 @@ class TA(Agent):
       if self.infected == 1:
          infect(self)
          update_infection_parameters(self)
-    #  if self.is_home_sick == 1:
-   #         update_infection_parameters(self)
+
       self.move()
 
 class canteen_Agent(Agent):

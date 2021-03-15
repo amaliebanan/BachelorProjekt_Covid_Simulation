@@ -16,7 +16,7 @@ init_canteen_agents = 90
 
 go_home_in_breaks = False
 family_groups = False
-with_mask = False
+with_mask = True
 percentages_of_vaccinated = 0 #Number 0<=x<1
 
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
