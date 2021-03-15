@@ -8,10 +8,10 @@ from multiprocessing import Pool
 
 
 
-fixed_params = {"width":10, "height": 11, "setUpType": [4]}
-variable_params = {"N": range(26,27,1)} # 26 students
-iterationer = 1000
-skridt = 105*1
+fixed_params = {"width":20, "height": 33, "setUpType": [2,3,4]}
+variable_params = {"N": range(26,27,1)} # 25 students
+iterationer = 2
+skridt = 525*10
 
 
 "Below is to plot infected vs timestep and susceptible vs timestep for a single set up type"
@@ -83,8 +83,7 @@ def max_infected(fix_par, var_par, model, iter, steps):
 
 
 
-#fixed_for_classroom = {"width": 10, "height": 11, "setUpType": [j]}
-#fixed_normal = {"width": 20, "height": 33, "setUpType": [j,j,j]}
+
 "Below is to compare setup type [2,2,2], [3,3,3], [4,4,4]"
 def list_of_infected(j):
     """
@@ -93,7 +92,7 @@ def list_of_infected(j):
     """
     batch_run = BatchRunner(covid_Model,
         variable_parameters=variable_params,
-        fixed_parameters={"width": 10, "height": 11, "setUpType": [j]},
+        fixed_parameters={"width": 20, "height": 33, "setUpType": [j,j,j]},
         iterations=iterationer,
         max_steps=skridt,
         model_reporters={"infected": lambda m: find_status(m,"infected")})
