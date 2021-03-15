@@ -85,10 +85,7 @@ def covid_draw(agent):
         elif agent.orientation == 'h':
             portrayal["w"] = 1
             portrayal["h"] = 0.2
-    if agent.id == 0:
-        portrayal["Color"] = "yellow"
-        portrayal["scale"] = 0.9
-    if agent.id in range(1,agentsN):
+    if agent.id in range(0,agentsN):
         portrayal["Color"] = "Silver"
         portrayal["scale"] = 0.9
     if agent.id in range(agentsN,2*agentsN):

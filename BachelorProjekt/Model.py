@@ -263,7 +263,7 @@ def off_school(self,breaks=False):
     second_fourth_TAs = [a for a in self.schedule.agents if a.id in [1004,1005,1006]]
     second_fourth_class = [a for a in self.schedule.agents if a.id in range((self.n_agents)*len(self.setUpType),2*(self.n_agents)*len(self.setUpType))]
 
-    sf_off_ft_in = [x for x in range(0,20)]
+    sf_off_ft_in = [x for x in range(0,40)]
     if self.minute_count in sf_off_ft_in:
             for a in second_fourth_class+second_fourth_TAs:
                 a.off_school = 1
@@ -313,7 +313,7 @@ class covid_Model(Model):
         self.n_agents = N
         self.TAs = []
         self.grid = MultiGrid(width, height, torus=False) #torus wraps edges
-        self.schedule = RandomActivation(self)
+        self.schedule = SimultaneousActivation(self)
         self.setUpType = setUpType
         self.status = find_status(self,"infected", [ac.class_Agent])
         self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", [ac.class_Agent, ac.canteen_Agent, ac.TA]),
