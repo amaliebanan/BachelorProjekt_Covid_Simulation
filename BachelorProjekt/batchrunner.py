@@ -8,10 +8,10 @@ from multiprocessing import Pool
 
 
 
-fixed_params = {"width": 20, "height": 33, "setUpType": [4,4,4]}
-variable_params = {"N": range(25,26,1)} # 25 students
-iterationer = 1
-skridt = 525*10
+fixed_params = {"width":10, "height": 11, "setUpType": [4]}
+variable_params = {"N": range(26,27,1)} # 25 students
+iterationer = 100
+skridt = 105*1
 
 
 "Below is to plot infected vs timestep and susceptible vs timestep for a single set up type"
@@ -51,8 +51,8 @@ def plot_infected(fix_par, var_par, model, iter, steps):
 
 
 "uncomment below to see a plot of a single setup type. Change setup type by changing fixed_params at line 10"
-#plot_infected(fixed_params, variable_params, covid_Model, iterationer, skridt)
-#plt.show()
+plot_infected(fixed_params, variable_params, covid_Model, iterationer, skridt)
+plt.show()
 
 
 def max_infected(fix_par, var_par, model, iter, steps):

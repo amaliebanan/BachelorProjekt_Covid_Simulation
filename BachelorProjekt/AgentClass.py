@@ -306,6 +306,8 @@ def move_to_specific_pos(self,pos_):
     #Get x,y position of the cell with the smallest distance between goal-position and possible cells to go to
     x_,y_ = min(distances,key=lambda x:x[1])[0]
 
+    #to prevent logic-flaw when student cannot get to seat
+    #???? if student isnt making it to class in time ???
     if self.model.minute_count in [50,170,350,480]:
         force_agent_to_specific_pos(self,pos_)
         return

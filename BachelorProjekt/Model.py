@@ -270,7 +270,7 @@ def off_school(self,breaks=False):
             for a in first_third_class+first_third_class:
                 a.off_school = 0
 
-    elif breaks==False:
+    elif breaks==False and len(self.setUpType)>1:
         sf_in = [x for x in range(115,116)]
         tf_in = [x for x in range(405,425)]
         random_studentFT = random.choices(first_third_class, k=math.floor(self.n_agents*len(self.setUpType)/2))
@@ -334,7 +334,6 @@ class covid_Model(Model):
         self.ft_batch = []
         self.sf_batch = []
 
-    #    self.class_times = [120,135,240,315,420,435,540]
         self.class_times = [105,120,225,300,405,420,525]
 
         self.other_courses = []
