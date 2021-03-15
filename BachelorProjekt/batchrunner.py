@@ -9,8 +9,8 @@ from multiprocessing import Pool
 
 
 fixed_params = {"width":10, "height": 11, "setUpType": [4]}
-variable_params = {"N": range(26,27,1)} # 25 students
-iterationer = 100
+variable_params = {"N": range(26,27,1)} # 26 students
+iterationer = 1000
 skridt = 105*1
 
 
@@ -51,8 +51,8 @@ def plot_infected(fix_par, var_par, model, iter, steps):
 
 
 "uncomment below to see a plot of a single setup type. Change setup type by changing fixed_params at line 10"
-plot_infected(fixed_params, variable_params, covid_Model, iterationer, skridt)
-plt.show()
+#plot_infected(fixed_params, variable_params, covid_Model, iterationer, skridt)
+#plt.show()
 
 
 def max_infected(fix_par, var_par, model, iter, steps):
@@ -83,7 +83,8 @@ def max_infected(fix_par, var_par, model, iter, steps):
 
 
 
-
+#fixed_for_classroom = {"width": 10, "height": 11, "setUpType": [j]}
+#fixed_normal = {"width": 20, "height": 33, "setUpType": [j,j,j]}
 "Below is to compare setup type [2,2,2], [3,3,3], [4,4,4]"
 def list_of_infected(j):
     """
@@ -92,7 +93,7 @@ def list_of_infected(j):
     """
     batch_run = BatchRunner(covid_Model,
         variable_parameters=variable_params,
-        fixed_parameters={"width": 20, "height": 33, "setUpType": [j,j,j]},
+        fixed_parameters={"width": 10, "height": 11, "setUpType": [j]},
         iterations=iterationer,
         max_steps=skridt,
         model_reporters={"infected": lambda m: find_status(m,"infected")})
@@ -103,7 +104,7 @@ def list_of_infected(j):
     for i in range(len(data_list)):
         temp_list = []
         for k in range(len(data_list[i]["infected"])):
-            temp_list.append(data_list[i]["infected"][k]) #appends number of infected
+            temp_list.append(data_list[i]["infected"][k]-data_list[i]["Home"][k]) #appends number of infected
         max_number_of_infected.append(max(temp_list)) #saves max of temp_list
     print("Gennemsnitligt er antallet af max smittede for setup type %s " %[j,j,j], "er: ", np.mean(max_number_of_infected))
     #rest of code is to get y-values for the plot
@@ -121,12 +122,14 @@ def list_of_infected(j):
 
     return num_of_infected, num_of_susceptible, num_of_recovered
 
-"""
+
 "uncomment below to run list_of_infected function with different set up types. Change line 12 and 13 to change number of iterations and timesteps"
 pool = mp.Pool(mp.cpu_count()) #opens pools for running parallel programs
 results=pool.map(list_of_infected, [2,3,4]) #runs the list_of_infected function for j={2,3,4}
 pool.close() #closes the pools
 
+
+"""
 "Uncomment below for plotting the three plots for comparing"
 time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
 colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
@@ -145,6 +148,22 @@ plt.suptitle('%s simulation(er)' %iterationer, fontsize=20)
 plt.title('Masker=%s' %with_mask + ', Familiegrupper=%s' %family_groups +', Hjemme i pauser= %s' %go_home_in_breaks + ', Procent vaccinerede=%s' %percentages_of_vaccinated,fontsize=10)
 plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
 plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
-
 plt.show()
 """
+
+
+"Uncomment below for plotting three plots without susceptible and recovered. Use this for One Classroom"
+time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
+colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
+Legends = ['Horseshoe', 'Rows', 'Groups']
+plt.figure(figsize=(10,6)) #size of the plot-figure
+for i in range(1,4,1):
+    plt.plot(time, results[i-1][0], label= Legends[i-1], color=colors[i-1]) #makes the three different plots
+plt.xlabel('Tidsskridt')
+plt.ylabel('Gennemsnit antal smittede')
+plt.suptitle('%s simulation(er)' %iterationer, fontsize=20)
+plt.title('Masker=%s' %with_mask + ', Familiegrupper=%s' %family_groups +', Hjemme i pauser= %s' %go_home_in_breaks + ', Procent vaccinerede=%s' %percentages_of_vaccinated,fontsize=10)
+plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
+plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
+plt.show()
+

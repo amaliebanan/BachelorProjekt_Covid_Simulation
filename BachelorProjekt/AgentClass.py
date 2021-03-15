@@ -74,7 +74,10 @@ def infect(self):
         if (self.is_home_sick == 1) or (isinstance(self,canteen_Agent) and self.off_school == 1): #Agenten er derhjemme og kan ikke smitte
             return
 
-        all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
+        if isinstance(self, TA):
+            all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=True,radius=2)
+        else:
+            all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
         closest_neighbors = []
 
         for neighbor in all_neighbors_within_radius:
@@ -97,8 +100,9 @@ def infect(self):
             if agent_recovered_status == 1 or agent_status == 1: # kan ikke blive smittet, da den er immun eller allerede infected
                 continue
             elif distance <= 0.1:
+             #   print(agent,agent.pos,self.pos,self)
                 if self.mask == 1:
-                    pTA = np.random(0.25/100)
+                    pTA = np.random.poisson(0.25/100)
                 elif self.mask == 0:
                     pTA = np.random.poisson(2.5/100) #TA står meget tæt og snakker højt
                 if pTA == 1:
@@ -412,7 +416,7 @@ class TA(Agent):
         self.id = id
         self.infected = 0
         self.recovered = 0
-        self.mask = 1
+        self.mask = 0
         self.is_home_sick = 0
         self.vaccinated = 0
 
