@@ -13,8 +13,8 @@ init_positive_agents = 1
 new_positives_after_weekends = 2
 init_canteen_agents = 90
 
-go_home_in_breaks = True
-family_groups = True
+go_home_in_breaks = False
+family_groups = False
 with_mask = False
 percentages_of_vaccinated = 0.20 #Number 0<=x<1
 
@@ -492,10 +492,8 @@ class covid_Model(Model):
             self.seats = []
             self.seat = make_classrooms_fit_to_grid(self.setUpType,self)
             for list in self.seat:
-                if family_groups == False:
-                    self.seats.append(random.sample(list,k=len(list)))
-                elif family_groups == True:
-                    self.seats.append(list)
+                 self.seats.append(random.sample(list,k=len(list)))
+
         #Time count
         self.minute_count += 1
         if self.minute_count % 60 == 0:
