@@ -416,7 +416,7 @@ class TA(Agent):
         self.id = id
         self.infected = 0
         self.recovered = 0
-        self.mask = 0
+        self.mask = 1
         self.is_home_sick = 0
         self.vaccinated = 0
 
