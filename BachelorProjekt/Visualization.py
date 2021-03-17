@@ -6,7 +6,7 @@ import numpy as np
 from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 
-agentsN = 26
+agentsN = 20
 width, height = 26,33
 
 class infected_Element(TextElement):

@@ -13,11 +13,10 @@ init_positive_agents = 1
 new_positives_after_weekends = 2
 init_canteen_agents = 90
 
-
-go_home_in_breaks = False
-family_groups = False
+go_home_in_breaks = True
+family_groups = True
 with_mask = False
-percentages_of_vaccinated = 0 #Number 0<=x<1
+percentages_of_vaccinated = 0.20 #Number 0<=x<1
 
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
@@ -56,9 +55,8 @@ def add_init_infected_to_grid(self,n):
         randomAgent = self.random.choice(self.schedule.agents)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
-        #elif isinstance(randomAgent, ac.class_Agent) or isinstance(randomAgent, ac.TA) or isinstance(randomAgent, ac.canteen_Agent):
-        #elif isinstance(randomAgent, ac.class_Agent):
-        elif isinstance(randomAgent, ac.TA):
+       # elif isinstance(randomAgent, ac.class_Agent):
+        elif isinstance(randomAgent, ac.class_Agent) or isinstance(randomAgent, ac.TA) or isinstance(randomAgent, ac.canteen_Agent):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent
             positive_agent.infected = 1
@@ -158,11 +156,29 @@ def setUp(N,model,setUpType,i):
             newAgent.coords = random.choice(list(dir.values()))   #Give agent random direction to look at
             model.grid.place_agent(newAgent, (x,y))
     elif setUpType == 2: #Horseshoe
-        listOfPositions = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_2]
+        if model.n_agents<26:
+            list = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_2]
+            list_ = random.sample(list,k=len(list))
+        else:
+            list_ = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_2]
+
+        listOfPositions = list_
     elif setUpType == 3: #Rows
-        listOfPositions = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_3]
+        if model.n_agents<26:
+            list = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_3]
+            list_ = random.sample(list,k=len(list))
+        else:
+            list_ = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_3]
+
+        listOfPositions = list_
     elif setUpType == 4: #4-people table with correct direction added
-        listOfPositions = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_4]
+        if model.n_agents<26:
+            list = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_4]
+            list_ = random.sample(list,k=len(list))
+        else:
+            list_ = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_4]
+
+        listOfPositions = list_
     elif setUpType == 5:
          listOfPositions = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_5]
     if setUpType is not 1:
@@ -295,7 +311,7 @@ def off_school(self,breaks=False):
     elif breaks==True:
         breaks_ft = [x for x in range(110,145)]+[x for x in range(420,445)]
         go_to_school_ft = [300]
-        breaks_sf = [x for x in range(235,245)]+[x for x in range(300,325)]
+        breaks_sf = [x for x in range(235,245)]+[x for x in range(301,325)]
         go_to_school_sf = [105,420]
         if self.minute_count in breaks_ft:
             for a in first_third_class+first_third_TAs:
@@ -303,12 +319,13 @@ def off_school(self,breaks=False):
         elif self.minute_count in breaks_sf:
             for a in second_fourth_class+second_fourth_TAs:
                 a.off_school = 1
-        elif self.minute_count in go_to_school_ft:
-            for a in first_third_class+second_fourth_TAs:
-                a.off_school = 0
         elif self.minute_count in go_to_school_sf:
             for a in second_fourth_class+second_fourth_TAs:
                 a.off_school = 0
+        elif self.minute_count in go_to_school_ft:
+            for a in first_third_class+first_third_TAs:
+                a.off_school = 0
+
 
 class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
