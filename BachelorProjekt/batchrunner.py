@@ -8,10 +8,10 @@ from multiprocessing import Pool
 
 
 
-fixed_params = {"width":20, "height": 33, "setUpType": [2,3,4]}
-variable_params = {"N": range(26,27,1)} # 25 students
-iterationer = 2
-skridt = 525*10
+fixed_params = {"width":26, "height": 33, "setUpType": [4,4,4]}
+variable_params = {"N": range(26,27,1)} # 26 students
+iterationer = 1
+skridt = 525*40
 
 
 "Below is to plot infected vs timestep and susceptible vs timestep for a single set up type"
@@ -103,7 +103,7 @@ def list_of_infected(j):
     for i in range(len(data_list)):
         temp_list = []
         for k in range(len(data_list[i]["infected"])):
-            temp_list.append(data_list[i]["infected"][k]-data_list[i]["Home"][k]) #appends number of infected
+            temp_list.append(data_list[i]["infected"][k]) #appends number of infected
         max_number_of_infected.append(max(temp_list)) #saves max of temp_list
     print("Gennemsnitligt er antallet af max smittede for setup type %s " %[j,j,j], "er: ", np.mean(max_number_of_infected))
     #rest of code is to get y-values for the plot
@@ -112,7 +112,7 @@ def list_of_infected(j):
     num_of_recovered = [0]*(skridt+1) #makes list for y-values for Recovered
     for i in range(len(data_list)):
         for j in range(len(data_list[i]["infected"])):
-            num_of_infected[j]+=data_list[i]["infected"][j]-data_list[i]["Home"][j]
+            num_of_infected[j]+=data_list[i]["infected"][j]
             num_of_susceptible[j] += data_list[i]["Agent_count"][j]-(data_list[i]["infected"][j]+data_list[i]["recovered"][j]) #number of susceptible at each time step
             num_of_recovered[j] += data_list[i]["recovered"][j]
     num_of_infected =[number / iterationer for number in num_of_infected] #avg number of infected
@@ -128,7 +128,8 @@ results=pool.map(list_of_infected, [2,3,4]) #runs the list_of_infected function 
 pool.close() #closes the pools
 
 
-"""
+
+
 "Uncomment below for plotting the three plots for comparing"
 time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
 colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
@@ -148,9 +149,10 @@ plt.title('Masker=%s' %with_mask + ', Familiegrupper=%s' %family_groups +', Hjem
 plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
 plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
 plt.show()
-"""
 
 
+
+'''
 "Uncomment below for plotting three plots without susceptible and recovered. Use this for One Classroom"
 time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
 colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
@@ -166,3 +168,6 @@ plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
 plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
 plt.show()
 
+
+
+'''
