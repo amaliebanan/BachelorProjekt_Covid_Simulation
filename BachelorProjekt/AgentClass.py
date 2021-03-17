@@ -12,7 +12,7 @@ other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
 ids = [i for i in range(0,78)]
 
 #From sugerscape_cg
-##Helper functions
+##Helper functionss
 def getDistance(pos1,pos2):
     x1,y1 = pos1
     x2,y2 = pos2
