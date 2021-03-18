@@ -7,13 +7,11 @@ import multiprocessing as mp
 from multiprocessing import Pool
 
 
-x1label= ['Horseshoe - no mask', '#1f77b4']
-x2label=['Rows - no mask', '#ff7f0e']
-x3lalbel=['Groups - no mask', '#2ca02c']
-fixed_params = {"width":20, "height": 33, "setUpType": [2,3,4]}
+
+fixed_params = {"width":26, "height": 33, "setUpType": [2,3,4]}
 variable_params = {"N": range(26,27,1)} # 25 students
-iterationer = 500
-skridt = 105
+iterationer = 1
+skridt = 525*10
 
 
 "Below is to plot infected vs timestep and susceptible vs timestep for a single set up type"
@@ -94,7 +92,7 @@ def list_of_infected(j):
     """
     batch_run = BatchRunner(covid_Model,
         variable_parameters=variable_params,
-        fixed_parameters={"width": 10, "height": 11, "setUpType": [j]},
+        fixed_parameters={"width": 26, "height": 33, "setUpType": [j,j,j]},
         iterations=iterationer,
         max_steps=skridt,
         model_reporters={"infected": lambda m: find_status(m,"infected")})
@@ -130,7 +128,7 @@ results=pool.map(list_of_infected, [2,3,4]) #runs the list_of_infected function 
 pool.close() #closes the pools
 
 
-"""
+
 "Uncomment below for plotting the three plots for comparing"
 time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
 colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
@@ -168,3 +166,4 @@ plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
 plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
 plt.show()
 print('storfedpik')
+"""
