@@ -10,7 +10,7 @@ from multiprocessing import Pool
 fixed_params = {"width":26, "height": 33, "setUpType": [4,4,4]}
 variable_params = {"N": range(26,27,1)} # 26 students
 iterationer = 1
-skridt = 525*40
+skridt = 525*10
 
 
 
@@ -92,7 +92,7 @@ def list_of_infected(j):
     """
     batch_run = BatchRunner(covid_Model,
         variable_parameters=variable_params,
-        fixed_parameters={"width": 10, "height": 11, "setUpType": [j]},
+        fixed_parameters={"width": 26, "height": 33, "setUpType": [j,j,j]},
         iterations=iterationer,
         max_steps=skridt,
         model_reporters={"infected": lambda m: find_status(m,"infected")})
@@ -167,12 +167,5 @@ plt.title('Masker=%s' %with_mask + ', Familiegrupper=%s' %family_groups +', Hjem
 plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
 plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
 plt.show()
-<<<<<<< HEAD
-print('storfedpik')
-=======
-
-
 
 '''
-
-print("pikke")

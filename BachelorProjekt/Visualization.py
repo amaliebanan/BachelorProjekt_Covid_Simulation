@@ -6,7 +6,7 @@ import numpy as np
 from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 
-agentsN = 20
+agentsN = 26
 width, height = 26,33
 
 class infected_Element(TextElement):
@@ -114,6 +114,18 @@ def covid_draw(agent):
           if agent.off_school == 1:
                 portrayal["Shape"] = "resources/white.jpg"
                 portrayal["scale"] = 0.9
+    if isinstance(agent, ac.employee_Agent) and agent.id == 1250:
+        if agent.infected ==0:
+            portrayal["Shape"] = "resources/burger.png"
+            portrayal["scale"] =1.5
+        else:
+            portrayal["Shape"] = "resources/blueburger.png"
+            portrayal["scale"] =1
+    if isinstance(agent,ac.desk):
+        portrayal["Shape"] = "rect"
+        portrayal["Color"] = "Brown"
+        portrayal["w"] = 0.2
+        portrayal["h"] = 1
     return portrayal
 
 infected_element = infected_Element()

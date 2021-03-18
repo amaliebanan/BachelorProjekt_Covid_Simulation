@@ -13,10 +13,10 @@ init_positive_agents = 1
 new_positives_after_weekends = 2
 init_canteen_agents = 90
 
-go_home_in_breaks = True
-family_groups = True
+go_home_in_breaks = False
+family_groups = False
 with_mask = False
-percentages_of_vaccinated = 0.20 #Number 0<=x<1
+percentages_of_vaccinated = 0.0 #Number 0<=x<1
 
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
@@ -37,9 +37,15 @@ def find_status(model,parameter,agent_type=None,list=None):
                         agents_status.append(getattr(agent,parameter))
     else:
         for agent in model.schedule.agents:
-            if not isinstance(agent, ac.door) and not isinstance(agent,ac.wall):
+            if is_human(agent) == True:
                 agents_status.append(getattr(agent,parameter))
     return sum(agents_status)
+
+def is_human(agent_to_check):
+    if isinstance(agent_to_check, ac.class_Agent) or isinstance(agent_to_check, ac.TA) or isinstance(agent_to_check, ac.canteen_Agent) or isinstance(agent_to_check, ac.employee_Agent):
+        return True
+    else:
+        return False
 
 def count_agents(model):
     Agents = []
@@ -56,7 +62,7 @@ def add_init_infected_to_grid(self,n):
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
        # elif isinstance(randomAgent, ac.class_Agent):
-        elif isinstance(randomAgent, ac.class_Agent) or isinstance(randomAgent, ac.TA) or isinstance(randomAgent, ac.canteen_Agent):
+        elif is_human(randomAgent):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent
             positive_agent.infected = 1
@@ -85,8 +91,10 @@ def add_init_cantine_agents_to_grid(self,N,n):
             newAgent.next_to_attend_class = True
             newAgent.off_school = 1
             x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
+            if (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:
+                while (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:
+                 x, y = self.grid.find_empty()
             self.grid.place_agent(newAgent, (max(x,9),y))
-            self.sf_batch.append(newAgent)
             if with_mask == True:
                 newAgent.mask = 1
             id_+=1
@@ -98,6 +106,9 @@ def add_init_cantine_agents_to_grid(self,N,n):
         newAgent = ac.canteen_Agent(1000+j+i,self)
         self.schedule.add(newAgent) #Add agent to scheduler
         x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
+        if (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:
+                while (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:
+                 x, y = self.grid.find_empty()
         newAgent.coords = random.choice(list(dir.values()))   #Give agent random direction to look at
         next_door_id = newAgent.id-503 #Which door should agent go to when class starts - depending on course
         next_door = [a for a in self.schedule.agents if isinstance(a,ac.door) and a.id == next_door_id]
@@ -122,11 +133,23 @@ def add_init_cantine_agents_to_grid(self,N,n):
                 newAgent.mask = 1
 
             x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
-            while not self.grid.is_cell_empty((max(x,9),y)):
+            if (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:
+                while (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:
+                 x, y = self.grid.find_empty()
+            #while not self.grid.is_cell_empty((max(x,9),y)):
                 x, y = self.grid.find_empty()
 
             self.grid.place_agent(newAgent, (max(x,9),y))
             id_+=1
+
+def add_init_employee_to_grid(self):
+    lunchlady = ac.employee_Agent(1250, self)
+    self.schedule.add(lunchlady) #Add agent to scheduler
+    lunchlady.coords = dir['W'] #looks west
+    x, y= (25,17)
+    self.grid.place_agent(lunchlady, (x,y))
+
+
 
 def set_canteen_agents_next_to_attend_class(self):
      canteens_agents = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent)
@@ -222,7 +245,11 @@ def setUp(N,model,setUpType,i):
 
         #Place walls
         wall_placements_vertical = [(8,j+i*11) for j in range(0,11)]
+        wall_placements_canteen_v = [(21,j) for j in range(4,20)]+[(24,j) for j in range(4,17)]+[(24,18), (24,19)]
+        wall_placements_vertical.extend(wall_placements_canteen_v)
         wall_placements_horizontal = [(j,10+i*11) for j in range(0,8)]
+        wall_placements_canteen_h = [(25,4), (25,19)]
+        wall_placements_horizontal.extend(wall_placements_canteen_h)
         wall_placements_v_id = [k for k in range(7000+len(wall_placements_vertical)*i,7000+(i+1)*len(wall_placements_vertical))]
         wall_placements_h_id = [k for k in range(6000+len(wall_placements_horizontal)*i,6000+(i+1)*len(wall_placements_horizontal))]
         for j in range(len(wall_placements_vertical)):
@@ -235,6 +262,14 @@ def setUp(N,model,setUpType,i):
             newWall.orientation = 'h'
             model.schedule.add(newWall)
             model.grid.place_agent(newWall,wall_placements_horizontal[j])
+
+
+        #Place desk
+        desk_location = (24,17)
+        desk = ac.desk(1234+i, door_location, model)
+        model.schedule.add(desk)
+        model.grid.place_agent(desk,desk_location)
+
 
 #Returns list of lists of seats I can assign to agents
 def make_classrooms_fit_to_grid(list_of_setuptypes,model):
@@ -418,6 +453,7 @@ class covid_Model(Model):
 
         if len(self.setUpType)>1:
             add_init_cantine_agents_to_grid(self,(self.n_agents)*i,init_canteen_agents)
+            add_init_employee_to_grid(self)
         add_init_infected_to_grid(self,init_positive_agents)
 
         self.seat = make_classrooms_fit_to_grid(setUpType,self)

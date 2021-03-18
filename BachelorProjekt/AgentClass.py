@@ -4,7 +4,7 @@ from mesa.space import MultiGrid
 import numpy as np
 import random
 import sys
-from Model import find_status, make_classrooms_fit_to_grid, covid_Model
+from Model import find_status, make_classrooms_fit_to_grid, covid_Model, is_human
 
 
 day_length = 525
@@ -82,7 +82,7 @@ def infect(self):
 
         for neighbor in all_neighbors_within_radius:
             if not self.model.grid.is_cell_empty(neighbor.pos):
-                if isinstance(neighbor, class_Agent) or isinstance(neighbor, TA) or isinstance(neighbor, canteen_Agent):
+                if is_human(neighbor):
                     closest_neighbors.append(neighbor)
 
         for agent in closest_neighbors:
@@ -263,7 +263,7 @@ def move_to_specific_pos(self,pos_):
     #If no cell is empty, agent can go through others "person"-agents (to avoid bottleneck)
     #Back-up list contains cells with covid,TA and canteen agents in
     pos_other_agents = [cell for cell in self.model.grid.get_neighbors(self.pos,moore=True,include_center=False)
-                        if isinstance(cell, class_Agent) or isinstance(cell, TA) or isinstance(cell, canteen_Agent)]
+                        if is_human(cell)]
     back_up_empty_cells = [cell.pos for cell in pos_other_agents]
 
     #If goal-position is in possible steps, go there
@@ -557,6 +557,39 @@ class door(Agent):
         self.id = id
         self.model = model
         self.classroom = 0
+
+class desk(Agent):
+    """" Desk is for the canteen. Get's ID"""
+    def __init__(self, id, pos, model):
+        super().__init__(id, model)
+        self.id = id
+        self.pos=pos
+
+class employee_Agent(Agent):
+    def __init__(self,id,model):
+        super().__init__(id,model)
+        self.id = id
+        self.infected = 0
+        self.recovered = 0
+        self.mask = 0
+        self.is_home_sick = 0
+        self.vaccinated = 0
+
+        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
+        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
+        self.exposed = self.asymptomatic-2*day_length
+
+        self.off_school = 0
+        self.coords = ()
+
+    def step(self):
+        if self.infected == 1:
+            if self.off_school == 0:
+                infect(self)
+                update_infection_parameters(self)
+
+        if self.is_home_sick == 1:
+            update_infection_parameters(self)
 
 #Places in canteen to attract people
 #Toilets, canteen, tables in hall, etc.
