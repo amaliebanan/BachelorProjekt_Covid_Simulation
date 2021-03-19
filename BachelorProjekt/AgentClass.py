@@ -39,9 +39,16 @@ def intersect(list1,list2):
 def wonder(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
     possible_empty_steps = []
+    end_of_canteen = [(23,20),(24,20), (25,20)]
     for position in possible_steps:
         if self.model.grid.is_cell_empty(position):
-            possible_empty_steps.append(position)
+            if self.pos not in end_of_canteen: #checks if not standing at the end of canteen
+                possible_empty_steps.append(position)
+            else:
+                #print(self.pos)
+                if position != (24,19): # cant go wrong way through canteen
+                    #print("jeg går med vilje væk fra kantinen")
+                    possible_empty_steps.append(position)
 
     if len(possible_empty_steps) != 0:
         next_move = self.random.choice(possible_empty_steps)
@@ -246,6 +253,15 @@ def canteen_to_TA(self):
 
     return c_agent
 
+def move_to_desk(self):
+    if self.pos != (23,18):
+        if self.pos == (22,3) or self.pos == (24,3):
+            newPos = (23,3)
+        else:
+            newPos = (self.pos[0],self.pos[1]+1)
+        self.model.grid.move_agent(self, newPos)
+        print("nu har jeg rykket mig til", self.pos)
+
 def move_to_specific_pos(self,pos_):
     if self.id in [1001,1002,1003,1004,1005,1006]:
         if isinstance(self,canteen_Agent):
@@ -256,6 +272,7 @@ def move_to_specific_pos(self,pos_):
             newAgent.pos = x-1,y+newY
             self.model.grid.place_agent(newAgent, newAgent.pos)
             return
+
 
     possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
     possible_empty_steps = [cell for cell in possible_steps if self.model.grid.is_cell_empty(cell)]
@@ -519,6 +536,10 @@ class canteen_Agent(Agent):
     def move(self,timestep=False):
         if timestep is True: #Agents go to door
             move_to_specific_pos(self,self.door.pos)
+        elif self.pos ==(23,3) or self.pos ==(22,3) or self.pos ==(24,3):
+            print("nu sker det", self.pos)
+            self.id = 123456
+            move_to_desk(self)
         else: wonder(self)
 
     def step(self):

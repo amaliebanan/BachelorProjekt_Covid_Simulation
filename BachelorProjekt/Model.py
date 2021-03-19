@@ -11,7 +11,7 @@ from mesa.datacollection import DataCollector
 day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
-init_canteen_agents = 90
+init_canteen_agents = 50
 
 go_home_in_breaks = False
 family_groups = False
@@ -91,7 +91,7 @@ def add_init_cantine_agents_to_grid(self,N,n):
             newAgent.next_to_attend_class = True
             newAgent.off_school = 1
             x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
-            if (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:
+            if (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:# if placed in canteen, find another placement
                 while (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:
                  x, y = self.grid.find_empty()
             self.grid.place_agent(newAgent, (max(x,9),y))
@@ -245,7 +245,7 @@ def setUp(N,model,setUpType,i):
 
         #Place walls
         wall_placements_vertical = [(8,j+i*11) for j in range(0,11)]
-        wall_placements_canteen_v = [(21,j) for j in range(4,20)]+[(24,j) for j in range(4,17)]+[(24,18), (24,19)]
+        wall_placements_canteen_v = [(22,j) for j in range(4,20)]+[(24,j) for j in range(4,17)]+[(24,18), (24,19)]
         wall_placements_vertical.extend(wall_placements_canteen_v)
         wall_placements_horizontal = [(j,10+i*11) for j in range(0,8)]
         wall_placements_canteen_h = [(25,4), (25,19)]
@@ -266,6 +266,7 @@ def setUp(N,model,setUpType,i):
 
         #Place desk
         desk_location = (24,17)
+        ac.desk.pos = desk_location
         desk = ac.desk(1234+i, door_location, model)
         model.schedule.add(desk)
         model.grid.place_agent(desk,desk_location)
@@ -518,9 +519,9 @@ class covid_Model(Model):
                 all_tas_id = [a.id for a in all_tas]
                 all_tas_status = [a.infected for a in all_tas]
                 are_home = [a.is_home_sick for a in all_tas]
-                print(self.day_count,self.minute_count,len(TAs),TAs)
-                print("status",all_tas_status,"are home",are_home)
-                print(all_tas_pos,all_tas_id)
+                #print(self.day_count,self.minute_count,len(TAs),TAs)
+                #print("status",all_tas_status,"are home",are_home)
+                #print(all_tas_pos,all_tas_id)
 
 
         if self.minute_count in [1,100,200,300,400]:
