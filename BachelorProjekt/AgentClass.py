@@ -572,7 +572,8 @@ class canteen_Agent(Agent):
 
         if self.moving_to_door == 1:
             self.move(True)
-        else: self.move()
+        else:
+            self.move()
 
 class wall(Agent):
     """" Door for people to enter by and to exit by end of class"""
