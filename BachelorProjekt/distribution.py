@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from sympy import symbols, solve,Eq
 import seaborn as sns
 import numpy as np
-import Model
+
 
 #Covid infektionen er geometrisk fordelt. Sandsynligheden for at blive smittet akkumulerer over tid.
 
@@ -30,7 +30,7 @@ def cdf(n,p):
     return x,y
 
 #Calculate and plot Cumulative Distribution Function for geometrisk fordeling med vores p-værdi
-#x,y = cdf(120,p)
+x,y = cdf(120,p)
 
 #x,y = cdf(120,p1)
 
