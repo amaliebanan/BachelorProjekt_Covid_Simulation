@@ -80,6 +80,7 @@ def infect(self):
             all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
         closest_neighbors = []
 
+        print(len(all_neighbors_within_radius))
         for neighbor in all_neighbors_within_radius:
             if not self.model.grid.is_cell_empty(neighbor.pos):
                 if isinstance(neighbor, class_Agent) or isinstance(neighbor, TA) or isinstance(neighbor, canteen_Agent):
@@ -90,16 +91,12 @@ def infect(self):
             #Dont infect neighbors that are home sick / not on campus
             if agent.is_home_sick == 1 or (isinstance(self,canteen_Agent) and self.off_school == 1):
                 continue
-            #Dont infect neighbors that are vaccinated
-            if agent.vaccinated == 1:
+            #Dont infect neighbors that are vaccinated, recorvered or
+            if agent.vaccinated == 1 or agent.recovered == 1 or agent.infected == 1: # kan ikke blive smittet, da den er immun eller allerede infected
                 continue
-            distance = getDistance(self.pos,agent.pos)
-            agent_status = agent.infected
-            agent_recovered_status = agent.recovered
 
-            if agent_recovered_status == 1 or agent_status == 1: # kan ikke blive smittet, da den er immun eller allerede infected
-                continue
-            elif distance <= 0.1:
+            distance = getDistance(self.pos,agent.pos)
+            if distance <= 0.1:
              #   print(agent,agent.pos,self.pos,self)
                 if self.mask == 1:
                     pTA = np.random.poisson(0.25/100)
