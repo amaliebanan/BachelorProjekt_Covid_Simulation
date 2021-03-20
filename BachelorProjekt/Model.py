@@ -11,7 +11,7 @@ from mesa.datacollection import DataCollector
 day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
-init_canteen_agents = 50
+init_canteen_agents = 0
 
 go_home_in_breaks = False
 family_groups = False
@@ -91,8 +91,8 @@ def add_init_cantine_agents_to_grid(self,N,n):
             newAgent.next_to_attend_class = True
             newAgent.off_school = 1
             x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
-            if (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:# if placed in canteen, find another placement
-                while (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:
+            if (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]+[(23,j) for j in range(4,20)]:# if placed in canteen, find another placement
+                while (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]+[(23,j) for j in range(4,20)]:
                  x, y = self.grid.find_empty()
             self.grid.place_agent(newAgent, (max(x,9),y))
             if with_mask == True:

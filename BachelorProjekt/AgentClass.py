@@ -39,16 +39,9 @@ def intersect(list1,list2):
 def wonder(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
     possible_empty_steps = []
-    end_of_canteen = [(23,20),(24,20), (25,20)]
     for position in possible_steps:
-        if self.model.grid.is_cell_empty(position):
-            if self.pos not in end_of_canteen: #checks if not standing at the end of canteen
-                possible_empty_steps.append(position)
-            else:
-                #print(self.pos)
-                if position != (24,19): # cant go wrong way through canteen
-                    #print("jeg går med vilje væk fra kantinen")
-                    possible_empty_steps.append(position)
+        if self.model.grid.is_cell_empty(position) and position not in [(23,18), (23,19)]: #cant walk wrong way through canteen
+            possible_empty_steps.append(position)
 
     if len(possible_empty_steps) != 0:
         next_move = self.random.choice(possible_empty_steps)
@@ -253,14 +246,25 @@ def canteen_to_TA(self):
 
     return c_agent
 
-def move_to_desk(self):
-    if self.pos != (23,18):
-        if self.pos == (22,3) or self.pos == (24,3):
-            newPos = (23,3)
+def move_in_queue(self, pos_):
+    if self.buying_lunch != 0:
+        self.buying_lunch -= 1
+    else:
+        possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
+        possible_empty_steps = [cell for cell in possible_steps if self.model.grid.is_cell_empty(cell)]
+        if possible_empty_steps == []: #if someone in front of you - dont move
+            return
+        distances = [(pos,getDistance(pos_,pos)) for pos in possible_empty_steps]
+        x_,y_ = min(distances,key=lambda x:x[1])[0]
+        if min(getDistance((x_,y_), pos_), getDistance(self.pos, pos_)) == getDistance(self.pos, pos_):
+            return
         else:
-            newPos = (self.pos[0],self.pos[1]+1)
-        self.model.grid.move_agent(self, newPos)
-        print("nu har jeg rykket mig til", self.pos)
+            self.model.grid.move_agent(self,(x_,y_))
+            if self.pos == (23,17):
+                self.buying_lunch = 3
+
+
+
 
 def move_to_specific_pos(self,pos_):
     if self.id in [1001,1002,1003,1004,1005,1006]:
@@ -516,6 +520,8 @@ class canteen_Agent(Agent):
         self.mask = 0
         self.is_home_sick = 0
         self.vaccinated = 0
+        self.queue = 0
+        self.buying_lunch = 0
 
         self.off_school = 0
         self.coords = ()
@@ -535,11 +541,12 @@ class canteen_Agent(Agent):
 
     def move(self,timestep=False):
         if timestep is True: #Agents go to door
-            move_to_specific_pos(self,self.door.pos)
-        elif self.pos ==(23,3) or self.pos ==(22,3) or self.pos ==(24,3):
-            print("nu sker det", self.pos)
-            self.id = 123456
-            move_to_desk(self)
+            if self.queue == 0:
+                move_to_specific_pos(self,self.door.pos)
+            else:
+                force_agent_to_specific_pos(self, self.door.pos)
+        elif self.queue == 1:
+            move_in_queue(self, (23,20))
         else: wonder(self)
 
     def step(self):
@@ -550,6 +557,10 @@ class canteen_Agent(Agent):
 
         if self.is_home_sick == 1:
             update_infection_parameters(self)
+        if self.pos in [(22,3),(23,3),(24,3)]: #in beginning of queue area
+            self.queue =1 #stands in line for canteen
+        if self.pos == (23,20):
+            self.queue = 0 #done in line
 
         #When should canteen agent go to door?
         if self.model.day_count == 1:

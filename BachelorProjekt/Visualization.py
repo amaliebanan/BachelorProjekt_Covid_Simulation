@@ -128,9 +128,13 @@ def covid_draw(agent):
         portrayal["Color"] = "Brown"
         portrayal["w"] = 0.2
         portrayal["h"] = 1
-    if agent.id ==123456:
-        portrayal["Color"] = "Blue"
-        portrayal["scale"] = 0.9
+    if isinstance(agent, ac.canteen_Agent):
+        if agent.queue==1:
+            portrayal["Color"] = "Blue"
+            portrayal["scale"] = 0.9
+        if agent.queue ==1 and agent.infected ==1:
+            portrayal["Color"] = "Purple"
+            portrayal["scale"] = 0.9
     return portrayal
 
 infected_element = infected_Element()
