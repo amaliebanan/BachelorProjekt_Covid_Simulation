@@ -431,6 +431,7 @@ class class_Agent(Agent):
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
         if self.infected == 1:
+            print(self.infection_period, self.asymptomatic, self.is_home_sick, self.id)
             #Try to infect
             infect(self)
             update_infection_parameters(self)
@@ -634,7 +635,6 @@ class employee_Agent(Agent):
         self.coords = ()
 
     def step(self):
-        print(self.infection_period, self.asymptomatic, self.is_home_sick, self.id)
         if self.infected == 1:
             if self.off_school == 0:
                 infect(self)
