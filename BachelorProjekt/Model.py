@@ -61,7 +61,7 @@ def add_init_infected_to_grid(self,n):
         randomAgent = self.random.choice(self.schedule.agents)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
-        elif isinstance(randomAgent, ac.class_Agent):
+        elif isinstance(randomAgent, ac.employee_Agent):
         #elif is_human(randomAgent):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent

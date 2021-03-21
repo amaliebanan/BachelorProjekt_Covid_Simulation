@@ -431,7 +431,6 @@ class class_Agent(Agent):
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
         if self.infected == 1:
-            print(self.infection_period, self.asymptomatic, self.is_home_sick, self.id)
             #Try to infect
             infect(self)
             update_infection_parameters(self)
@@ -636,15 +635,18 @@ class employee_Agent(Agent):
 
     def step(self):
         if self.infected == 1:
+            print(self.infection_period, self.asymptomatic, self.is_home_sick, self.id)
             if self.off_school == 0:
                 infect(self)
                 update_infection_parameters(self)
-        if self.is_home_sick == 1:
-            update_infection_parameters(self)
+            if self.is_home_sick == 1:
+                update_infection_parameters(self)
 
         if self.id %2 == 0:
             self.move()
-        print(len(self.model.canteen_agents_at_work))
+        #if self.id > 1251 and len(self.model.canteen_agents_at_work)==2: #if both other employees is at work
+        #    self.model.grid.remove_agent(self)
+
 
     def move(self):
         wonder(self)
