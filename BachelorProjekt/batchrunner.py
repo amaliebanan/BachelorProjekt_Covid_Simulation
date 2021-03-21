@@ -10,7 +10,7 @@ from multiprocessing import Pool
 fixed_params = {"width":26, "height": 33, "setUpType": [4,4,4]}
 variable_params = {"N": range(26,27,1)} # 26 students
 iterationer = 1
-skridt = 525*1
+skridt = 525
 
 
 
@@ -148,7 +148,7 @@ plt.suptitle('%s simulation(er)' %iterationer, fontsize=20)
 plt.title('Masker=%s' %with_mask + ', Familiegrupper=%s' %family_groups +', Hjemme i pauser= %s' %go_home_in_breaks + ', Procent vaccinerede=%s' %percentages_of_vaccinated,fontsize=10)
 plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
 plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
-#plt.show()
+plt.show()
 
 
 

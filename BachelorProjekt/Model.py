@@ -61,13 +61,13 @@ def add_init_infected_to_grid(self,n):
         randomAgent = self.random.choice(self.schedule.agents)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
-       # elif isinstance(randomAgent, ac.class_Agent):
-        elif is_human(randomAgent):
+        elif isinstance(randomAgent, ac.employee_Agent):
+        #elif is_human(randomAgent):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent
             positive_agent.infected = 1
             positive_agent.exposed = 0
-            positive_agent.asymptomatic = 2*day_length
+            positive_agent.asymptomatic = 50#2*day_length
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
             self.infected_agents.append(positive_agent)
@@ -143,11 +143,18 @@ def add_init_cantine_agents_to_grid(self,N,n):
             id_+=1
 
 def add_init_employee_to_grid(self):
+    cashier = ac.employee_Agent(1251, self)
     lunchlady = ac.employee_Agent(1250, self)
     self.schedule.add(lunchlady) #Add agent to scheduler
+    self.schedule.add(cashier)
     lunchlady.coords = dir['W'] #looks west
-    x, y= (25,17)
-    self.grid.place_agent(lunchlady, (x,y))
+    cashier.coords = dir['W']
+    x1, y1= (25,17)
+    x2,y2 = random.choice([(25,j) for j in range(5,17)])
+    self.grid.place_agent(cashier, (x1,y1))
+    self.grid.place_agent(lunchlady,(x2,y2))
+    self.canteen_agents_at_work.append(cashier)
+    self.canteen_agents_at_work.append(lunchlady)
 
 
 
@@ -283,7 +290,7 @@ def make_classrooms_fit_to_grid(list_of_setuptypes,model):
     return seats
 
 def weekend(self):
-    infected_agents = [a for a in self.schedule.agents if (isinstance(a, ac.TA) or isinstance(a, ac.class_Agent) or isinstance(a, ac.canteen_Agent)) and a.infected == 1]
+    infected_agents = [a for a in self.schedule.agents if is_human(a) and a.infected == 1]
     ids_to_remove = []
     for a in infected_agents:
         a.asymptomatic = max(0,a.asymptomatic-2*day_length)  #Træk 2 dage fra asymtom
@@ -379,6 +386,7 @@ class covid_Model(Model):
         self.agents_at_home = []
         self.recovered_agents = []
         self.infected_agents = []
+        self.canteen_agents_at_work = []
 
         #Counting minutes and days
         self.minute_count = 1

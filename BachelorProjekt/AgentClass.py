@@ -40,7 +40,11 @@ def wonder(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
     possible_empty_steps = []
     for position in possible_steps:
-        if self.model.grid.is_cell_empty(position) and position not in [(23,18), (23,19)]: #cant walk wrong way through canteen
+        if self == canteen_Agent:
+            if self.off_school ==1 or self.is_home_sick ==1:
+                if self.model.grid.is_cell_empty(position) and position not in[(23,18), (23,19)]+[(22,4), (23,4), (24,4)]:
+                    possible_empty_steps.append(position)
+        elif self.model.grid.is_cell_empty(position) and position not in [(23,18), (23,19)]: #cant walk wrong way through canteen
             possible_empty_steps.append(position)
 
     if len(possible_empty_steps) != 0:
@@ -264,8 +268,6 @@ def move_in_queue(self, pos_):
                 self.buying_lunch = 3
 
 
-
-
 def move_to_specific_pos(self,pos_):
     if self.id in [1001,1002,1003,1004,1005,1006]:
         if isinstance(self,canteen_Agent):
@@ -344,6 +346,9 @@ def force_agent_to_specific_pos(self,pos):
 def send_agent_home(self):
     self.is_home_sick = 1
     self.model.agents_at_home.append(self)
+    if isinstance(self, employee_Agent):
+        call_backup_employee(self)
+        self.model.canteen_agents_at_work.remove(self)
 
 def send_agent_back_to_school(self):
     newList_at_home = [a for a in self.model.agents_at_home if a.id != self.id]
@@ -353,6 +358,11 @@ def send_agent_back_to_school(self):
     self.is_home_sick = 0
     self.infected = 0
     self.recovered = 1
+    if isinstance(self, employee_Agent) and (self.id==1250 or self.id==1251):
+        self.model.canteen_agents_at_work.append(self)
+
+
+
 
 def update_infection_parameters(self):
     if self.is_home_sick == 1: #Agent is already home. Just update infection period
@@ -369,6 +379,12 @@ def update_infection_parameters(self):
     self.exposed = max(0,self.exposed-1)    #If already 0 stay there, if larger than 0 subtract one
     self.infection_period = max(0,self.infection_period-1)
 
+def call_backup_employee(self):
+    newLunchlady = employee_Agent(self.id+2,self.model)
+    self.model.schedule.add(newLunchlady)
+    self.model.grid.place_agent(newLunchlady, self.pos)
+
+
 class class_Agent(Agent):
     def __init__(self, id, model):
         super().__init__(id, model)
@@ -383,7 +399,7 @@ class class_Agent(Agent):
         self.vaccinated = 0
 
           #Infection parameters
-        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
+        self.infection_period = 100#max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
         self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
         self.exposed = self.asymptomatic-2*day_length
 
@@ -430,6 +446,7 @@ class class_Agent(Agent):
             self.moving_to_door = 1
 
         self.move(True)
+
 
 class TA(Agent):
     def __init__(self,id,model):
@@ -546,7 +563,7 @@ class canteen_Agent(Agent):
             else:
                 force_agent_to_specific_pos(self, self.door.pos)
         elif self.queue == 1:
-            move_in_queue(self, (23,20))
+            move_in_queue(self, (23,20)) # moves towards end of canteen
         else: wonder(self)
 
     def step(self):
@@ -558,7 +575,8 @@ class canteen_Agent(Agent):
         if self.is_home_sick == 1:
             update_infection_parameters(self)
         if self.pos in [(22,3),(23,3),(24,3)]: #in beginning of queue area
-            self.queue =1 #stands in line for canteen
+            if self.off_school ==0 and self.is_home_sick ==0:
+                self.queue =1 #stands in line for canteen
         if self.pos == (23,20):
             self.queue = 0 #done in line
 
@@ -608,21 +626,28 @@ class employee_Agent(Agent):
         self.is_home_sick = 0
         self.vaccinated = 0
 
-        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
-        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
+        self.infection_period = 100#max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
+        self.asymptomatic = 90#min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
         self.exposed = self.asymptomatic-2*day_length
 
         self.off_school = 0
         self.coords = ()
 
     def step(self):
+        print(self.infection_period, self.asymptomatic, self.is_home_sick, self.id)
         if self.infected == 1:
             if self.off_school == 0:
                 infect(self)
                 update_infection_parameters(self)
-
         if self.is_home_sick == 1:
             update_infection_parameters(self)
+
+        if self.id %2 == 0:
+            self.move()
+        print(len(self.model.canteen_agents_at_work))
+
+    def move(self):
+        wonder(self)
 
 #Places in canteen to attract people
 #Toilets, canteen, tables in hall, etc.
