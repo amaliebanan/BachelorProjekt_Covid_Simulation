@@ -158,6 +158,7 @@ def add_init_employee_to_grid(self):
 
 
 
+
 def set_canteen_agents_next_to_attend_class(self):
      canteens_agents = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent)
                         and a.id not in [1001,1002,1003,1004,1005,1006]

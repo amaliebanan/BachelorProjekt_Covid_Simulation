@@ -385,6 +385,7 @@ def call_backup_employee(self):
     self.model.grid.place_agent(newLunchlady, self.pos)
 
 
+
 class class_Agent(Agent):
     def __init__(self, id, model):
         super().__init__(id, model)
@@ -577,6 +578,8 @@ class canteen_Agent(Agent):
         if self.pos in [(22,3),(23,3),(24,3)]: #in beginning of queue area
             if self.off_school ==0 and self.is_home_sick ==0:
                 self.queue =1 #stands in line for canteen
+        if self.pos in [(23,j) for j in range(4,19)]:
+            self.queue=1
         if self.pos == (23,20):
             self.queue = 0 #done in line
 
@@ -630,22 +633,21 @@ class employee_Agent(Agent):
         self.asymptomatic = 90#min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
         self.exposed = self.asymptomatic-2*day_length
 
-        self.off_school = 0
         self.coords = ()
 
     def step(self):
         if self.infected == 1:
             print(self.infection_period, self.asymptomatic, self.is_home_sick, self.id)
-            if self.off_school == 0:
-                infect(self)
-                update_infection_parameters(self)
-            if self.is_home_sick == 1:
-                update_infection_parameters(self)
+            infect(self)
+            update_infection_parameters(self)
+            #if self.is_home_sick == 1:
+             #   update_infection_parameters(self)
 
         if self.id %2 == 0:
             self.move()
-        #if self.id > 1251 and len(self.model.canteen_agents_at_work)==2: #if both other employees is at work
-        #    self.model.grid.remove_agent(self)
+        if self.id > 1251 and len(self.model.canteen_agents_at_work)==2: #if both other employees is at work
+            self.model.grid.remove_agent(self)
+            self.model.schedule.remove(self)
 
 
     def move(self):
