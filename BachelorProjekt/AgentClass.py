@@ -434,6 +434,8 @@ class class_Agent(Agent):
 
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
+        if self.id == 80:
+            print(self.pos, self.coords)
         if self.infected == 1:
             #Try to infect
             infect(self)
@@ -566,6 +568,8 @@ class canteen_Agent(Agent):
             if self.queue == 0 and self.sitting_in_canteen == 0:
                 move_to_specific_pos(self,self.door.pos)
             else:
+                self.queue = 0
+                self.sitting_in_canteen=0
                 force_agent_to_specific_pos(self, self.door.pos)
         elif self.queue == 1:
             move_in_queue(self, (23,20)) # moves towards end of canteen
@@ -574,6 +578,8 @@ class canteen_Agent(Agent):
         else: wonder(self)
 
     def step(self):
+        if self.id == 80:
+            print(self.pos, self.coords)
         if self.infected == 1:
             if self.off_school == 0:
                 infect(self)
