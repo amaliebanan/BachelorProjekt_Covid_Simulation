@@ -51,6 +51,9 @@ def wonder(self):
         next_move = self.random.choice(possible_empty_steps)
         self.model.grid.move_agent(self, next_move)
 
+    if self.pos in [self.model.canteen_table_1[i][0] for i in range(0,4)] or self.pos in [self.model.canteen_table_2[i][0] for i in range(0,4)] or self.pos in [self.model.canteen_table_3[i][0] for i in range(0,4)] or self.pos in [self.model.canteen_table_4[i][0] for i in range(0,4)]:
+        self.sitting_in_canteen = 15
+
 #check direction between two agents
 def checkDirection(agent,neighbor):
     dirA,dirN = agent.coords, neighbor.coords
@@ -400,7 +403,7 @@ class class_Agent(Agent):
         self.vaccinated = 0
 
           #Infection parameters
-        self.infection_period = 100#max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
+        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
         self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
         self.exposed = self.asymptomatic-2*day_length
 
@@ -540,6 +543,7 @@ class canteen_Agent(Agent):
         self.vaccinated = 0
         self.queue = 0
         self.buying_lunch = 0
+        self.sitting_in_canteen = 0
 
         self.off_school = 0
         self.coords = ()
@@ -559,12 +563,14 @@ class canteen_Agent(Agent):
 
     def move(self,timestep=False):
         if timestep is True: #Agents go to door
-            if self.queue == 0:
+            if self.queue == 0 and self.sitting_in_canteen == 0:
                 move_to_specific_pos(self,self.door.pos)
             else:
                 force_agent_to_specific_pos(self, self.door.pos)
         elif self.queue == 1:
             move_in_queue(self, (23,20)) # moves towards end of canteen
+        elif self.sitting_in_canteen != 0:
+            self.sitting_in_canteen = max(0, self.sitting_in_canteen -1)
         else: wonder(self)
 
     def step(self):
@@ -625,19 +631,18 @@ class employee_Agent(Agent):
         self.id = id
         self.infected = 0
         self.recovered = 0
-        self.mask = 0
+        self.mask = 1
         self.is_home_sick = 0
         self.vaccinated = 0
 
-        self.infection_period = 100#max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
-        self.asymptomatic = 90#min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
+        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
+        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
         self.exposed = self.asymptomatic-2*day_length
 
         self.coords = ()
 
     def step(self):
         if self.infected == 1:
-            print(self.infection_period, self.asymptomatic, self.is_home_sick, self.id)
             infect(self)
             update_infection_parameters(self)
             #if self.is_home_sick == 1:
@@ -646,8 +651,8 @@ class employee_Agent(Agent):
         if self.id %2 == 0:
             self.move()
         if self.id > 1251 and len(self.model.canteen_agents_at_work)==2: #if both other employees is at work
-            self.model.grid.remove_agent(self)
-            self.model.schedule.remove(self)
+            self.model.canteen_backups_to_go_home.append(self)
+
 
 
     def move(self):

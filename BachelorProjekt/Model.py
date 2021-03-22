@@ -61,13 +61,13 @@ def add_init_infected_to_grid(self,n):
         randomAgent = self.random.choice(self.schedule.agents)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
-        elif isinstance(randomAgent, ac.employee_Agent):
-        #elif is_human(randomAgent):
+        #elif isinstance(randomAgent, ac.employee_Agent):
+        elif is_human(randomAgent):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent
             positive_agent.infected = 1
             positive_agent.exposed = 0
-            positive_agent.asymptomatic = 50#2*day_length
+            positive_agent.asymptomatic = 2*day_length
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
             self.infected_agents.append(positive_agent)
@@ -388,6 +388,7 @@ class covid_Model(Model):
         self.recovered_agents = []
         self.infected_agents = []
         self.canteen_agents_at_work = []
+        self.canteen_backups_to_go_home = []
 
         #Counting minutes and days
         self.minute_count = 1
@@ -455,6 +456,12 @@ class covid_Model(Model):
         self.seat = ()
 
 
+        self.canteen_table_1 = [((22,22), dir['N']), ((21,22), dir['N']), ((21,23), dir['S']), ((22,23), dir['S'])]
+        self.canteen_table_2 = [((18,22), dir['N']), ((17,22), dir['N']), ((18,23), dir['S']), ((17,23), dir['S'])]
+        self.canteen_table_3 = [((22,26), dir['N']), ((21,26), dir['N']), ((22,27), dir['S']), ((21,27), dir['S'])]
+        self.canteen_table_4 = [((18,26), dir['N']), ((17,26), dir['N']), ((18,27), dir['S']), ((17,27), dir['S'])]
+
+
         #Add agents to model and grid
         i = 0
         for s in setUpType:
@@ -508,6 +515,11 @@ class covid_Model(Model):
                     randomStudent.hasQuestion = 1
 
         self.schedule.step()
+        for agent in self.canteen_backups_to_go_home:
+            self.grid.remove_agent(agent)
+            self.schedule.remove(agent)
+            self.canteen_backups_to_go_home.remove(agent)
+
         self.datacollector.collect(self)
 
         if self.day_count>1 and self.minute_count in [100,220,400,520]:
