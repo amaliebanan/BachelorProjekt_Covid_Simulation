@@ -11,7 +11,7 @@ from mesa.datacollection import DataCollector
 day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
-init_canteen_agents = 100
+init_canteen_agents = 90
 
 go_home_in_breaks = False
 family_groups = False
