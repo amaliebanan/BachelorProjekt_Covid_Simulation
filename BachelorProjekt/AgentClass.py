@@ -477,10 +477,6 @@ class class_Agent(Agent):
 
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
-        #if self.pos == (5,1):
-            #n = self.model.grid.get_neighbors(self.pos, moore = True, include_center = False)
-            #for agent in n:
-                #print(np.subtract((self.pos),(agent.pos)))
         if self.infected == 1:
             #Try to infect
             infect(self)
@@ -632,8 +628,6 @@ class canteen_Agent(Agent):
 
 
     def step(self):
-        if self.id == 80:
-            print(self.coords, self.pos)
         if self.infected == 1:
             if self.off_school == 0:
                 infect(self)

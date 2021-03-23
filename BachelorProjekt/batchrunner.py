@@ -9,8 +9,8 @@ from multiprocessing import Pool
 
 fixed_params = {"width":26, "height": 33, "setUpType": [4,4,4]}
 variable_params = {"N": range(26,27,1)} # 26 students
-iterationer = 1
-skridt = 525*30
+iterationer = 3
+skridt = 525*25
 
 
 
