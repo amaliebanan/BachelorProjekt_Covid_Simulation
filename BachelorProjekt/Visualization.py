@@ -70,6 +70,12 @@ def covid_draw(agent):
         elif agent.infected == 1:
             portrayal["Color"] = "Pink"
             portrayal["scale"] = 0.9
+    if isinstance(agent, ac.table):
+        portrayal['Shape']="rect"
+        portrayal["Color"] = "Black"
+        portrayal["w"] = 0.9
+        portrayal["h"] = 0.9
+        portrayal["Layer"]=1
     if isinstance(agent,ac.door):
         portrayal["Shape"] = "resources/door.png"
         portrayal["scale"] = 0.9
