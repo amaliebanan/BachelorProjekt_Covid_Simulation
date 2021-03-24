@@ -70,7 +70,7 @@ def wonder(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
     possible_empty_steps = []
     for position in possible_steps:
-        if  isinstance(self,canteen_Agent):
+        if isinstance(self, canteen_Agent):
             if self.off_school ==1 or self.is_home_sick ==1:
                 if self.model.grid.is_cell_empty(position) and position not in[(23,18), (23,19)]+[(22,4), (23,4), (24,4)]:
                     possible_empty_steps.append(position)
@@ -79,6 +79,11 @@ def wonder(self):
                     possible_empty_steps.append(position)
                 elif isinstance(self.model.grid.get_cell_list_contents(position)[0],table):
                     possible_empty_steps.append(position)
+        elif position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
+            if self.model.grid.is_cell_empty(position):
+                possible_empty_steps.append(position)
+            elif isinstance(self.model.grid.get_cell_list_contents(position)[0],table):
+                possible_empty_steps.append(position)
 
 
 
