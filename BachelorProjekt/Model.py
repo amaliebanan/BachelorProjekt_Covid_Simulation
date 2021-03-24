@@ -267,9 +267,40 @@ def setUp(N,model,setUpType,i):
         #Place desk
         desk_location = (24,17)
         ac.desk.pos = desk_location
-        desk = ac.desk(1234+i, door_location, model)
+        desk = ac.desk(1234+i, desk_location, model)
         model.schedule.add(desk)
         model.grid.place_agent(desk,desk_location)
+
+        if i == 0:
+        #Place tables
+            for j in range(0,4): #table 1
+                table_location = model.canteen_table_1[j][0]
+                ac.table.pos = table_location
+                table = ac.table(5000+j, table_location, model)
+                model.schedule.add(table)
+                model.grid.place_agent(table, table_location)
+            for j in range(0,4): #table 1
+                table_location = model.canteen_table_2[j][0]
+                ac.table.pos = table_location
+                table = ac.table(5004+i+j, table_location, model)
+                model.schedule.add(table)
+                model.grid.place_agent(table, table_location)
+            for j in range(0,4): #table 1
+                table_location = model.canteen_table_3[j][0]
+                ac.table.pos = table_location
+                table = ac.table(5008+i+j, table_location, model)
+                model.schedule.add(table)
+                model.grid.place_agent(table, table_location)
+            for j in range(0,4): #table 1
+                table_location = model.canteen_table_4[j][0]
+                ac.table.pos = table_location
+                table = ac.table(5012+i+j, table_location, model)
+                model.schedule.add(table)
+                model.grid.place_agent(table, table_location)
+
+
+
+
 
 #Returns list of lists of seats I can assign to agents
 def make_classrooms_fit_to_grid(list_of_setuptypes,model):
@@ -451,6 +482,7 @@ class covid_Model(Model):
         self.canteen_table_4 = [((18,26), dir['N']), ((17,26), dir['N']), ((18,27), dir['S']), ((17,27), dir['S'])]
 
 
+
         #Add agents to model and grid
         i = 0
         for s in setUpType:
@@ -486,7 +518,6 @@ class covid_Model(Model):
 
 
     def step(self):
-       # print(self.minute_count,get_infected(self))
         off_school(self,go_home_in_breaks)
 
 

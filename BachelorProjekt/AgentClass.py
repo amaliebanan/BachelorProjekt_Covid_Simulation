@@ -70,12 +70,17 @@ def wonder(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
     possible_empty_steps = []
     for position in possible_steps:
-        if self == canteen_Agent:
+        if  isinstance(self,canteen_Agent):
             if self.off_school ==1 or self.is_home_sick ==1:
                 if self.model.grid.is_cell_empty(position) and position not in[(23,18), (23,19)]+[(22,4), (23,4), (24,4)]:
                     possible_empty_steps.append(position)
-        elif self.model.grid.is_cell_empty(position) and position not in [(23,18), (23,19)]: #cant walk wrong way through canteen
-            possible_empty_steps.append(position)
+            elif position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
+                if self.model.grid.is_cell_empty(position):
+                    possible_empty_steps.append(position)
+                elif isinstance(self.model.grid.get_cell_list_contents(position)[0],table):
+                    possible_empty_steps.append(position)
+
+
 
     if len(possible_empty_steps) != 0:
         next_move = self.random.choice(possible_empty_steps)
@@ -711,13 +716,9 @@ class desk(Agent):
         self.id = id
         self.pos=pos
 
-
-
-#Places in canteen to attract people
-#Toilets, canteen, tables in hall, etc.
-class hotspot(Agent):
-    def __init__(self,id,model):
+class table(Agent):
+    def __init__(self,id,pos, model):
         super().__init__(id,model)
         self.id = id
-        self.model = id
-        self.students_to_attrach = []
+        self.pos = pos
+
