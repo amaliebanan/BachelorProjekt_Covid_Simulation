@@ -88,10 +88,10 @@ def add_init_cantine_agents_to_grid(self,N,n):
             if (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]+[(23,j) for j in range(4,20)]:# if placed in canteen, find another placement
                 while (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]+[(23,j) for j in range(4,20)]:
                  x, y = self.grid.find_empty()
-            self.grid.place_agent(newAgent, (max(x,9),y))
+            self.grid.place_agent(newAgent, (max(x,9),min(30,y)))
 
             if with_mask == True:
-                newAgent.mask = 1
+                newAgent.mask = True
             id_+=1
             counter+=1
     #m >= 3 since we want to create 3 TAs that start in the canteen
@@ -110,7 +110,7 @@ def add_init_cantine_agents_to_grid(self,N,n):
         newAgent.next_to_attend_class = True
         newAgent.door = next_door[0]
         newAgent.off_school = 1
-        self.grid.place_agent(newAgent, (max(x,9),y))
+        self.grid.place_agent(newAgent, (max(x,9),min(y,30)))
 
 
     m = n-limit-3
@@ -134,7 +134,7 @@ def add_init_cantine_agents_to_grid(self,N,n):
             #while not self.grid.is_cell_empty((max(x,9),y)):
                 x, y = self.grid.find_empty()
 
-            self.grid.place_agent(newAgent, (max(x,9),y))
+            self.grid.place_agent(newAgent, (max(x,9),min(y,30)))
             id_+=1
 
 def add_init_employee_to_grid(self):
@@ -263,45 +263,6 @@ def setUp(N,model,setUpType,i):
             model.schedule.add(newWall)
             model.grid.place_agent(newWall,wall_placements_horizontal[j])
 
-
-        #Place desk
-        desk_location = (24,17)
-        ac.desk.pos = desk_location
-        desk = ac.desk(1234+i, desk_location, model)
-        model.schedule.add(desk)
-        model.grid.place_agent(desk,desk_location)
-
-        if i == 0:
-        #Place tables
-            for j in range(0,4): #table 1
-                table_location = model.canteen_table_1[j][0]
-                ac.table.pos = table_location
-                table = ac.table(5000+j, table_location, model)
-                model.schedule.add(table)
-                model.grid.place_agent(table, table_location)
-            for j in range(0,4): #table 1
-                table_location = model.canteen_table_2[j][0]
-                ac.table.pos = table_location
-                table = ac.table(5004+i+j, table_location, model)
-                model.schedule.add(table)
-                model.grid.place_agent(table, table_location)
-            for j in range(0,4): #table 1
-                table_location = model.canteen_table_3[j][0]
-                ac.table.pos = table_location
-                table = ac.table(5008+i+j, table_location, model)
-                model.schedule.add(table)
-                model.grid.place_agent(table, table_location)
-            for j in range(0,4): #table 1
-                table_location = model.canteen_table_4[j][0]
-                ac.table.pos = table_location
-                table = ac.table(5012+i+j, table_location, model)
-                model.schedule.add(table)
-                model.grid.place_agent(table, table_location)
-
-
-
-
-
 #Returns list of lists of seats I can assign to agents
 def make_classrooms_fit_to_grid(list_of_setuptypes,model):
     seats = []
@@ -312,6 +273,66 @@ def make_classrooms_fit_to_grid(list_of_setuptypes,model):
         seats.append(class_room)
     return seats
 
+def set_up_canteen(self):
+        #Place walls
+
+        wall_placements_canteen_v = [(22,j) for j in range(4,20)]+[(24,j) for j in range(4,17)]+[(24,18), (24,19)]
+        wall_placements_canteen_h = [(25,4), (25,19)]
+        ids_h = [i for i in range(10000,10002)]
+        ids_v = [i for i in range(10002,10002+len(wall_placements_canteen_v))]
+        for pos_ in wall_placements_canteen_v:
+            newBrick = ac.wall(ids_v.pop(), self)
+            newBrick.orientation = 'v'
+            self.schedule.add(newBrick)
+            self.grid.place_agent(newBrick, pos_)
+        for pos_ in wall_placements_canteen_h:
+            newWall = ac.wall(ids_h.pop(),self)
+            newWall.orientation = 'h'
+            self.schedule.add(newWall)
+            self.grid.place_agent(newWall,pos_)
+
+        #Place desk
+        desk_location = (24,17)
+        ac.desk.pos = desk_location
+        desk = ac.desk(1234, desk_location, self)
+        self.schedule.add(desk)
+        self.grid.place_agent(desk,desk_location)
+
+
+        table_pos = [x for (x,y) in self.canteen_table_1]+[x for (x,y) in self.canteen_table_2]
+        counter = 0
+        for pos in table_pos:
+            newTable = ac.table(8000+counter,self)
+            self.schedule.add(newTable)
+            self.grid.place_agent(newTable, pos)
+            counter += 1
+'''
+        outer_wall_v = [(26,i) for i in range(0,22)]
+        #[(27,i) for i in range(0,39)]+[(28,i) for i in range(0,39)]+[(29,i) for i in range(0,39)
+        
+        counter = max([a.id for a in self.schedule.agents if isinstance(a,ac.wall)])+1
+        for i in range(0,len(outer_wall_v)):
+            p = outer_wall_v.pop()
+            print(p)
+            newBrick = ac.wall(counter, self)
+            newBrick.orientation = 'v'
+            self.schedule.add(newBrick)
+            self.grid.place_agent(newBrick, p)
+            counter+=1
+
+        outer_wall_h = [(i,21) for i in range(27,30)]
+        #[(27,i) for i in range(0,39)]+[(28,i) for i in range(0,39)]+[(29,i) for i in range(0,39)]
+
+        counter = max([a.id for a in self.schedule.agents if isinstance(a,ac.wall)])+1
+        for i in range(0,len(outer_wall_h)):
+            p = outer_wall_h.pop()
+            print(p)
+            newBrick = ac.wall(counter, self)
+            newBrick.orientation = 'h'
+            self.schedule.add(newBrick)
+            self.grid.place_agent(newBrick, p)
+            counter+=1
+'''
 def weekend(self):
     infected_agents = [a for a in self.schedule.agents if is_human(a) and a.infected == True]
     ids_to_remove = []
@@ -476,12 +497,12 @@ class covid_Model(Model):
         self.seat = ()
 
 
-        self.canteen_table_1 = [((22,22), dir['N']), ((21,22), dir['N']), ((21,23), dir['S']), ((22,23), dir['S'])]
-        self.canteen_table_2 = [((18,22), dir['N']), ((17,22), dir['N']), ((18,23), dir['S']), ((17,23), dir['S'])]
-        self.canteen_table_3 = [((22,26), dir['N']), ((21,26), dir['N']), ((22,27), dir['S']), ((21,27), dir['S'])]
-        self.canteen_table_4 = [((18,26), dir['N']), ((17,26), dir['N']), ((18,27), dir['S']), ((17,27), dir['S'])]
+        self.canteen_table_1 = [((22,y), dir['E']) for y in range(25,33)]+[((23,y), dir['W']) for y in range(25,33)]
+        self.canteen_table_2 = [((18,y), dir['E']) for y in range(25,33)]+[((19,y), dir['W']) for y in range(25,33)]
 
-
+        if go_home_in_breaks == False:
+                add_init_employee_to_grid(self)
+                set_up_canteen(self)
 
         #Add agents to model and grid
         i = 0
@@ -491,7 +512,7 @@ class covid_Model(Model):
 
         if len(self.setUpType)>1:
             add_init_cantine_agents_to_grid(self,(self.n_agents)*i,init_canteen_agents)
-            add_init_employee_to_grid(self)
+
         add_init_infected_to_grid(self,init_positive_agents)
 
         self.seat = make_classrooms_fit_to_grid(setUpType,self)

@@ -70,7 +70,7 @@ def wonder(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
     possible_empty_steps = []
     for position in possible_steps:
-        if  isinstance(self,canteen_Agent):
+        if isinstance(self, canteen_Agent):
             if self.off_school ==1 or self.is_home_sick ==1:
                 if self.model.grid.is_cell_empty(position) and position not in[(23,18), (23,19)]+[(22,4), (23,4), (24,4)]:
                     possible_empty_steps.append(position)
@@ -79,6 +79,11 @@ def wonder(self):
                     possible_empty_steps.append(position)
                 elif isinstance(self.model.grid.get_cell_list_contents(position)[0],table):
                     possible_empty_steps.append(position)
+        elif position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
+            if self.model.grid.is_cell_empty(position):
+                possible_empty_steps.append(position)
+            elif isinstance(self.model.grid.get_cell_list_contents(position)[0],table):
+                possible_empty_steps.append(position)
 
 
 
@@ -86,7 +91,7 @@ def wonder(self):
         next_move = self.random.choice(possible_empty_steps)
         self.model.grid.move_agent(self, next_move)
 
-    if self.pos in [self.model.canteen_table_1[i][0] for i in range(0,4)] or self.pos in [self.model.canteen_table_2[i][0] for i in range(0,4)] or self.pos in [self.model.canteen_table_3[i][0] for i in range(0,4)] or self.pos in [self.model.canteen_table_4[i][0] for i in range(0,4)]:
+    if self.pos in [x for (x,y) in self.model.canteen_table_1]+[x for (x,y) in self.model.canteen_table_2]:
         self.sitting_in_canteen = 15
 
 #check direction between two agents
@@ -619,7 +624,7 @@ class canteen_Agent(Agent):
                 move_to_specific_pos(self,self.door.pos)
             else:
                 self.queue = 0
-                self.sitting_in_canteen=0
+                self.sitting_in_canteen = 0
                 force_agent_to_specific_pos(self, (23,21))
                 move_to_specific_pos(self,self.door.pos)
 
@@ -717,8 +722,8 @@ class desk(Agent):
         self.pos=pos
 
 class table(Agent):
-    def __init__(self,id,pos, model):
+    def __init__(self,id, model):
         super().__init__(id,model)
         self.id = id
-        self.pos = pos
+        self.model = model
 
