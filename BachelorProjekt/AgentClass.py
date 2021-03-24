@@ -169,7 +169,99 @@ def infect(self):
                     self.model.infected_agents.append(agent)
 
 def new_infect(self):
-    pass
+    if self.exposed != 0:   #Agent smitter ikke endnu.
+        return
+    if (self.is_home_sick == 1) or (isinstance(self,canteen_Agent) and self.off_school == 1): #Agenten er derhjemme og kan ikke smitte
+        return
+
+    if isinstance(self, TA):
+        all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=True,radius=2)
+    else:
+        all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
+
+    all_humans_within_radius = []
+    for neighbor in all_neighbors_within_radius:
+            #Dont infect neighbors that are home sick / not on campus
+        if neighbor.is_home_sick == True or (isinstance(neighbor,canteen_Agent) and neighbor.off_school == True):
+            continue
+            #Dont infect neighbors that are vaccinated, recorvered or infected
+        if neighbor.vaccinated == True or neighbor.recovered == True or neighbor.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
+            continue
+        if not self.model.grid.is_cell_empty(neighbor.pos):
+            if is_human(neighbor):
+                all_humans_within_radius.append(neighbor)
+            """"HVIS UNDER EN METER VÆK, GÅ IKKE VIDERE"""
+    neighbor_in_front = []
+    neighbor_behind = []
+    neighbor_aligned = []
+    if self.coords == dir['N']:
+        for agent in all_humans_within_radius:
+            if agent.pos[1] > self.pos[1]:
+                neighbor_in_front.append(agent)
+            elif agent.pos[1] == self.pos[1]:
+                neighbor_aligned.append(agent)
+            else:
+                neighbor_behind.append(agent)
+    if self.coords == dir['NE']:
+        for agent in all_humans_within_radius:
+            if agent.pos in [(self.pos[0]+i,self.pos[1]-i) for i in range(-2,3)]:
+                neighbor_aligned.append(agent)
+            elif (agent.pos[0] >= self.pos[0] and agent.pos[1] >= self.pos[1]) or agent.pos in [(self.pos[0]+2, self.pos[1]-1), (self.pos[0]-1, self.pos[1]+2)]:
+                neighbor_in_front.append(agent)
+            else:
+                neighbor_behind.append(agent)
+
+    if self.coords == dir['E']:
+        for agent in all_humans_within_radius:
+            if agent.pos[0] > self.pos[0]:
+                neighbor_in_front.append(agent)
+            elif agent.pos[0] == self.pos[0]:
+                neighbor_aligned.append(agent)
+            else:
+                neighbor_behind.append(agent)
+    if self.coords == dir['SE']:
+        for agent in all_humans_within_radius:
+            if agent.pos in [(self.pos[0]+i,self.pos[1]+i) for i in range(-2,3)]:
+                neighbor_aligned.append(agent)
+            elif (agent.pos[0]>= self.pos[0] and agent.pos[1]<=self.pos[1]) or agent.pos in [(self.pos[0]-1,self.pos[1]-2), (self.pos[0]+2, self.pos[1]+1)]:
+                neighbor_in_front.append(agent)
+            else:
+                neighbor_behind.append(agent)
+    if self.coords == dir['S']:
+        for agent in all_humans_within_radius:
+            if agent.pos[1] < self.pos[1]:
+                neighbor_in_front.append(agent)
+            elif agent.pos[1] == self.pos[1]:
+                neighbor_aligned.append(agent)
+            else:
+                neighbor_behind.append(agent)
+    if self.coords == dir['SW']:
+        for agent in all_humans_within_radius:
+            if agent.pos in [(self.pos[0]+i,self.pos[1]-i) for i in range(-2,3)]:
+                neighbor_aligned.append(agent)
+            elif (agent.pos[0] >= self.pos[0] and agent.pos[1] >= self.pos[1]) or agent.pos in [(self.pos[0]+2, self.pos[1]-1), (self.pos[0]-1, self.pos[1]+2)]:
+                neighbor_behind.append(agent)
+            else:
+                neighbor_in_front.append(agent)
+    if self.coords == dir['W']:
+        for agent in all_humans_within_radius:
+            if agent.pos[0] < self.pos[0]:
+                neighbor_in_front.append(agent)
+            elif agent.pos[0] == self.pos[0]:
+                neighbor_aligned.append(agent)
+            else:
+                neighbor_behind.append(agent)
+    if self.coords == dir['NW']:
+        for agent in all_humans_within_radius:
+            if agent.pos in [(self.pos[0]+i,self.pos[1]+i) for i in range(-2,3)]:
+                neighbor_aligned.append(agent)
+            elif (agent.pos[0]>= self.pos[0] and agent.pos[1]<=self.pos[1]) or agent.pos in [(self.pos[0]-1,self.pos[1]-2), (self.pos[0]+2, self.pos[1]+1)]:
+                neighbor_behind.append(agent)
+            else:
+                neighbor_in_front.append(agent)
+
+
+
 ###CHANGING OBJECT-TYPE###
 #Get all essential parameters transfered
 def change_obj_params(new,old):
@@ -630,7 +722,6 @@ class canteen_Agent(Agent):
         if self.infected == True:
             infect(self)
             update_infection_parameters(self)
-
         if self.pos in [(22,3),(23,3),(24,3)]: #in beginning of queue area
             if self.off_school ==0 and self.is_home_sick ==0:
                 self.queue =1 #stands in line for canteen

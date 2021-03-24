@@ -16,8 +16,8 @@ day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
 init_canteen_agents = 90
-infection_rate = 0.025
-infection_rate_1_to_2_meter = calculate_percentage(0.025, 10.2)
+infection_rate = 0.025/100
+infection_rate_1_to_2_meter = calculate_percentage(infection_rate, 10.2)
 infection_rate_2plus_meter = calculate_percentage(infection_rate_1_to_2_meter,2.02)
 infection_decrease_with_mask_pct = 70
 
@@ -63,8 +63,8 @@ def add_init_infected_to_grid(self,n):
         randomAgent = self.random.choice(self.schedule.agents)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
-       # elif isinstance(randomAgent, ac.class_Agent):
-        elif isinstance(randomAgent, ac.class_Agent) or isinstance(randomAgent, ac.TA) or isinstance(randomAgent, ac.canteen_Agent):
+        elif isinstance(randomAgent, ac.canteen_Agent):
+        #elif is_human(randomAgent):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent
             positive_agent.infected = True

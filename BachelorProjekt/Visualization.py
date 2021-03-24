@@ -122,7 +122,7 @@ def covid_draw(agent):
         if agent.queue==1 or agent.sitting_in_canteen!=0:
             portrayal["Shape"] = "resources/burger.png"
             portrayal["scale"] = 0.9
-        if agent.queue ==1 and agent.infected ==1:
+        if (agent.queue ==1 or agent.sitting_in_canteen!=0) and agent.infected ==1:
             portrayal["Shape"] = "resources/blueburger.png"
             portrayal["scale"] = 0.9
     if ac.is_human(agent):
