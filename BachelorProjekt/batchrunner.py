@@ -1,5 +1,5 @@
 import AgentClass as ac
-from Model import covid_Model, find_status, with_mask, family_groups, go_home_in_breaks, percentages_of_vaccinated
+from Model import covid_Model, get_home_sick,get_infected,get_recovered, with_mask, family_groups, go_home_in_breaks, percentages_of_vaccinated
 import numpy as np
 from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
@@ -28,7 +28,7 @@ def plot_infected(fix_par, var_par, model, iter, steps):
     fixed_parameters=fix_par,
     iterations=iter,
     max_steps=steps,
-    model_reporters={"infected": lambda m: find_status(m,"infected")}, )
+    model_reporters={"infected": lambda m: get_infected(m)}, )
     batch_run.run_all() #run batchrunner
 
     data_list = list(batch_run.get_collector_model().values()) # saves batchrunner data in a list
@@ -67,7 +67,7 @@ def max_infected(fix_par, var_par, model, iter, steps):
     fixed_parameters=fix_par,
     iterations=iter,
     max_steps=steps,
-    model_reporters={"infected": lambda m: find_status(m,"infected")})
+    model_reporters={"infected": lambda m: get_infected(m)})
     batch_run.run_all() #run batchrunner
 
     data_list = list(batch_run.get_collector_model().values()) # saves batchrunner data in a list
@@ -96,7 +96,7 @@ def list_of_infected(j):
         fixed_parameters={"width": 26, "height": 33, "setUpType": [j,j,j]},
         iterations=iterationer,
         max_steps=skridt,
-        model_reporters={"infected": lambda m: find_status(m,"infected")})
+        model_reporters={"infected": lambda m: get_infected(m)})
     batch_run.run_all() #run batchrunner
     data_list = list(batch_run.get_collector_model().values()) #saves batchrunner data in list
     #next 7 lines is to determine max number of infected

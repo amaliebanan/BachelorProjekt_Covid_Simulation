@@ -22,25 +22,21 @@ percentages_of_vaccinated = 0 #Number 0<=x<1
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
 
-#Get the status of a given parameter at any time in model (infected, hasQuestion, recovered, etc).
-def find_status(model,parameter,agent_type=None,list=None):
-    agents_status = []
-    if agent_type is not None:
-        if list is not None:
-            for agent in list:
-                for i in range(len(agent_type)):
-                    if isinstance(agent, agent_type[i]):
-                        agents_status.append(getattr(agent,parameter))
-        else:
-            for agent in model.schedule.agents:
-                for i in range(len(agent_type)):
-                    if isinstance(agent, agent_type[i]):
-                        agents_status.append(getattr(agent,parameter))
-    else:
-        for agent in model.schedule.agents:
-            if is_human(agent) == True:
-                agents_status.append(getattr(agent,parameter))
-    return sum(agents_status)
+def get_infected(self):
+    agents = [a for a in self.schedule.agents if is_human(a) and a.infected == True]
+    return len(agents)
+
+def get_recovered(self):
+    agents = [a for a in self.schedule.agents if is_human(a) and a.recovered == True]
+    return len(agents)
+
+def get_home_sick(self):
+    agents = [a for a in self.schedule.agents if is_human(a) and a.is_home_sick == True]
+    return len(agents)
+
+def count_students_who_has_question(self,list_of_students):
+    agents = [a for a in self.schedule.agents if a in list_of_students and a.hasQuestion == True]
+    return len(agents)
 
 def is_human(agent_to_check):
     if isinstance(agent_to_check, ac.class_Agent) or isinstance(agent_to_check, ac.TA) or isinstance(agent_to_check, ac.canteen_Agent) or isinstance(agent_to_check, ac.employee_Agent):
@@ -48,12 +44,9 @@ def is_human(agent_to_check):
     else:
         return False
 
-def count_agents(model):
-    Agents = []
-    for agent in model.schedule.agents:
-        if not isinstance(agent, ac.door) and not isinstance(agent,ac.wall):
-            Agents.append(agent)
-    return len(Agents)
+def count_agents(self):
+    agents = [a for a in self.schedule.agents if is_human(a)]
+    return len(agents)
 
 def add_init_infected_to_grid(self,n):
     i = 0
@@ -66,7 +59,7 @@ def add_init_infected_to_grid(self,n):
         elif isinstance(randomAgent, ac.class_Agent) or isinstance(randomAgent, ac.TA) or isinstance(randomAgent, ac.canteen_Agent):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent
-            positive_agent.infected = 1
+            positive_agent.infected = True
             positive_agent.exposed = 0
             positive_agent.asymptomatic = 2*day_length
             self.schedule.add(positive_agent)
@@ -90,7 +83,7 @@ def add_init_cantine_agents_to_grid(self,N,n):
             next_door = [a for a in self.schedule.agents if isinstance(a,ac.door) and a.id == next_door_id]
             newAgent.door = next_door[0]
             newAgent.next_to_attend_class = True
-            newAgent.off_school = 1
+            newAgent.off_school = True
             x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
             if (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]+[(23,j) for j in range(4,20)]:# if placed in canteen, find another placement
                 while (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]+[(23,j) for j in range(4,20)]:
@@ -157,9 +150,6 @@ def add_init_employee_to_grid(self):
     self.grid.place_agent(lunchlady,(x2,y2))
     self.canteen_agents_at_work.append(cashier)
     self.canteen_agents_at_work.append(lunchlady)
-
-
-
 
 def set_canteen_agents_next_to_attend_class(self):
      canteens_agents = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent)
@@ -323,13 +313,13 @@ def make_classrooms_fit_to_grid(list_of_setuptypes,model):
     return seats
 
 def weekend(self):
-    infected_agents = [a for a in self.schedule.agents if is_human(a) and a.infected == 1]
+    infected_agents = [a for a in self.schedule.agents if is_human(a) and a.infected == True]
     ids_to_remove = []
     for a in infected_agents:
         a.asymptomatic = max(0,a.asymptomatic-2*day_length)  #Træk 2 dage fra asymtom
         a.infection_period = max(0,a.infection_period-2*day_length) #Træk 2 dage fra infektionsperiode
         a.exposed = max(0,a.exposed-2*day_length) #Træk 2 dage fra exposed
-        if a.is_home_sick == 1: #Agenten er hjemme, skal den tilbage nu?
+        if a.is_home_sick == True: #Agenten er hjemme, skal den tilbage nu?
             if a.infection_period == 0:
                 ac.send_agent_back_to_school(a) #Agenten er rask og skal tilbage i skole
                 ids_to_remove.append(a.id)
@@ -343,11 +333,10 @@ def weekend(self):
     n = new_positives_after_weekends
 
     while n>0:
-        infected_agents = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a, ac.class_Agent) or
-                                                               isinstance(a,ac.canteen_Agent)) and a.infected == 0 and a.recovered == 0 and a.vaccinated == 0]
+        infected_agents = [a for a in self.schedule.agents if is_human(a) and a.infected == False and a.recovered == False and a.vaccinated == False]
         if len(infected_agents)>0:
             positive_ = self.random.choice(infected_agents)
-            positive_.infected = 1
+            positive_.infected = True
 
         n-=1
 
@@ -410,11 +399,10 @@ class covid_Model(Model):
         self.grid = MultiGrid(width, height, torus=False) #torus wraps edges
         self.schedule = SimultaneousActivation(self)
         self.setUpType = setUpType
-        self.status = find_status(self,"infected", [ac.class_Agent])
-        self.datacollector = DataCollector(model_reporters={"infected": lambda m: find_status(self, "infected", [ac.class_Agent, ac.canteen_Agent, ac.TA]),
+        self.datacollector = DataCollector(model_reporters={"infected": lambda m: get_infected(self),
                                                             "Agent_count": lambda m: count_agents(self),
-                                                            "recovered": lambda m: find_status(self, "recovered", [ac.class_Agent, ac.canteen_Agent, ac.TA]),
-                                                            "Home":lambda m: find_status(self, "is_home_sick", [ac.class_Agent, ac.canteen_Agent, ac.TA])})
+                                                            "recovered": lambda m: get_recovered(self),
+                                                            "Home":lambda m: get_home_sick(self)})
 
         self.agents_at_home = []
         self.recovered_agents = []
@@ -519,13 +507,13 @@ class covid_Model(Model):
         if 0 <= percentages_of_vaccinated < 1:
             n_agents_has_been_vaccinated = math.floor(count_agents(self)*percentages_of_vaccinated)
             n = 0
-            agents = [a for a in self.schedule.agents if isinstance(a,ac.TA) or isinstance(a,ac.canteen_Agent) or isinstance(a, ac.class_Agent)]
+            agents = [a for a in self.schedule.agents if is_human(a)]
             while n_agents_has_been_vaccinated>n:
                 vaccinate_agent = self.random.choice(agents)
-                if vaccinate_agent.vaccinated == 1 or vaccinate_agent.infected == 1:
+                if vaccinate_agent.vaccinated == True or vaccinate_agent.infected == True:
                     continue
                 else:
-                    vaccinate_agent.vaccinated = 1
+                    vaccinate_agent.vaccinated = True
                     n+=1
 
 
