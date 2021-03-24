@@ -4,8 +4,8 @@ from mesa.space import MultiGrid
 import numpy as np
 import random
 import sys
-from Model import find_status, make_classrooms_fit_to_grid, covid_Model, is_human, dir
-
+from Model import make_classrooms_fit_to_grid, covid_Model, is_human, dir,count_students_who_has_question
+from scipy.stats import truncnorm
 
 day_length = 525
 other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
@@ -63,6 +63,8 @@ def change_direction(self, start_pos, end_pos):
     if start_pos == end_pos: #if agent doesn't move
         return self.coords
 
+def truncnorm_(lower,upper,mu,sigma):
+    return int(truncnorm((lower - mu) /sigma, (upper - mu) /sigma, loc = mu, scale=sigma))
 #Wander around function
 def wonder(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
@@ -81,7 +83,6 @@ def wonder(self):
 
     if self.pos in [self.model.canteen_table_1[i][0] for i in range(0,4)] or self.pos in [self.model.canteen_table_2[i][0] for i in range(0,4)] or self.pos in [self.model.canteen_table_3[i][0] for i in range(0,4)] or self.pos in [self.model.canteen_table_4[i][0] for i in range(0,4)]:
         self.sitting_in_canteen = 15
-
 
 #check direction between two agents
 def checkDirection(agent,neighbor):
@@ -102,7 +103,6 @@ def checkDirection(agent,neighbor):
     elif 314 <= angle_ <= 316: #næsten i samme retning
         return 315
     else: return angle_
-
 
 #Infect a person
 def infect(self):
@@ -125,49 +125,49 @@ def infect(self):
         for agent in closest_neighbors:
 
             #Dont infect neighbors that are home sick / not on campus
-            if agent.is_home_sick == 1 or (isinstance(self,canteen_Agent) and self.off_school == 1):
+            if agent.is_home_sick == True or (isinstance(self,canteen_Agent) and self.off_school == True):
                 continue
             #Dont infect neighbors that are vaccinated, recorvered or
-            if agent.vaccinated == 1 or agent.recovered == 1 or agent.infected == 1: # kan ikke blive smittet, da den er immun eller allerede infected
+            if agent.vaccinated == True or agent.recovered == True or agent.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
                 continue
 
             distance = getDistance(self.pos,agent.pos)
             if distance <= 0.1:
-                if self.mask == 1:
+                if self.mask == True:
                     pTA = np.random.poisson(0.25/100)
-                elif self.mask == 0:
+                elif self.mask == False:
                     pTA = np.random.poisson(2.5/100) #TA står meget tæt og snakker højt
                 if pTA == 1:
-                    agent.infected = 1
+                    agent.infected = True
                     self.model.infected_agents.append(agent)
                  #Indenfor 1 meters afstand
             elif distance > 0.5 and distance <= 1.0:
-                 if self.mask == 1:
+                 if self.mask == True:
                     p_1 = np.random.poisson(0.025/100)
-                 elif self.mask == 0:
+                 elif self.mask == False:
                      p_1 = np.random.poisson(0.25/100)
                  if p_1 == 1:
-                    agent.infected = 1
+                    agent.infected = True
                     self.model.infected_agents.append(agent)
 
                  #Mellem 1 og 2 meters afstand
             elif distance > 1.0 and distance <= 2.0:
-                if self.mask == 1:
+                if self.mask == True:
                     p_1_til_2 = np.random.poisson(0.022450/100)
-                elif self.mask == 0:
+                elif self.mask == False:
                      p_1_til_2 = np.random.poisson(0.22450/100)
                 if p_1_til_2 == 1:
-                    agent.infected = 1
+                    agent.infected = True
                     self.model.infected_agents.append(agent)
 
                 #Over 2 meters afstand
             elif distance>2.0:
-                if self.mask == 1:
+                if self.mask == True:
                     p_over_2 = np.random.poisson(0.02199651/100)
-                elif self.mask == 0:
+                elif self.mask == False:
                      p_over_2 = np.random.poisson(0.2199651/100)
                 if p_over_2 == 1:
-                    agent.infected = 1
+                    agent.infected = True
                     self.model.infected_agents.append(agent)
 
 
@@ -186,7 +186,6 @@ def change_obj_params(new,old):
                                              old.recovered,\
                                              old.mask
     new.pos = old.pos
-
 
 ###CHANGING OBJECT-TYPE###
 
@@ -238,7 +237,7 @@ def class_to_canteen(self):
     if self.TA is not ():
         students = self.TA.students
         #If student is present
-        if self in students and self.is_home_sick == 0:
+        if self in students and self.is_home_sick == False:
             students.remove(self)
         self.TA.students = students
 
@@ -316,6 +315,7 @@ def move_to_specific_pos(self,pos_):
             newY = random.randint(-1, 1)
             newAgent.pos = x-1,y+newY
             newAgent.coords = dir['W']
+            newAgent.mask = True
             self.model.grid.place_agent(newAgent, newAgent.pos)
             return
 
@@ -388,7 +388,7 @@ def force_agent_to_specific_pos(self,pos):
 
 
 def send_agent_home(self):
-    self.is_home_sick = 1
+    self.is_home_sick = True
     self.model.agents_at_home.append(self)
     if isinstance(self, employee_Agent):
         call_backup_employee(self)
@@ -400,20 +400,20 @@ def send_agent_back_to_school(self):
     self.model.agents_at_home = newList_at_home
 
     self.model.recovered_agents.append(self)
-    self.is_home_sick = 0
-    self.infected = 0
-    self.recovered = 1
+    self.is_home_sick = False
+    self.infected = False
+    self.recovered = True
     if isinstance(self, employee_Agent) and (self.id==1250 or self.id==1251):
         self.model.canteen_agents_at_work.append(self)
 
 
 def update_infection_parameters(self):
-    if self.is_home_sick == 1: #Agent is already home. Just update infection period
+    if self.is_home_sick == True: #Agent is already home. Just update infection period
         self.infection_period = max(0,self.infection_period-1)
         if self.infection_period == 0:
             send_agent_back_to_school(self)
         return
-    if self.recovered == 1:
+    if self.recovered == True:
         return              #Agent is recovered
 
     self.asymptomatic = max(0,self.asymptomatic-1)
@@ -429,8 +429,6 @@ def call_backup_employee(self):
     self.model.schedule.add(newLunchlady)
     self.model.grid.place_agent(newLunchlady, self.pos)
 
-
-
 class class_Agent(Agent):
     def __init__(self, id, model):
         super().__init__(id, model)
@@ -438,11 +436,11 @@ class class_Agent(Agent):
         self.model = model
         self.coords = ()
 
-        self.infected = 0
-        self.recovered = 0
-        self.mask = 0
-        self.is_home_sick = 0
-        self.vaccinated = 0
+        self.infected = False
+        self.recovered = False
+        self.mask = False
+        self.is_home_sick = False
+        self.vaccinated = False
 
           #Infection parameters
         self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
@@ -460,7 +458,7 @@ class class_Agent(Agent):
         self.seat = ()
 
         #Relevant for classroom only
-        self.hasQuestion = 0
+        self.hasQuestion = False
         self.hasEnteredDoor = []
 
     def move(self,timestep=False):
@@ -478,7 +476,7 @@ class class_Agent(Agent):
 
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
-        if self.infected == 1:
+        if self.infected == True:
             #Try to infect
             infect(self)
             update_infection_parameters(self)
@@ -495,16 +493,15 @@ class class_Agent(Agent):
 
         self.move(True)
 
-
 class TA(Agent):
     def __init__(self,id,model):
         super().__init__(id,model)
         self.id = id
-        self.infected = 0
-        self.recovered = 0
-        self.mask = 1
-        self.is_home_sick = 0
-        self.vaccinated = 0
+        self.infected = False
+        self.recovered = False
+        self.mask = True
+        self.is_home_sick = False
+        self.vaccinated = False
 
         self.time_remaining = 105
 
@@ -524,7 +521,7 @@ class TA(Agent):
 
         x,y = student.pos
         if self.timeToTeach == 0:           #Student has recieved help for 5 minutes
-            student.hasQuestion = 0            #Student does not have question anymore
+            student.hasQuestion = False            #Student does not have question anymore
             self.timeToTeach = 5          #Reset timer
 
         elif self.timeToTeach == 4:   #Student has not recieved help yet, go to that student
@@ -542,9 +539,9 @@ class TA(Agent):
 
         #Get the correct students, because they can overlap when a class is ending and new one is starting
         if self.id in [1001,1002,1003]:
-            self.students = [a for a in ss if a.id in range(0,(self.model.n_agents+1)*3) and a.is_home_sick != 1]
+            self.students = [a for a in ss if a.id in range(0,(self.model.n_agents+1)*3) and a.is_home_sick == False]
         elif self.id in [1004,1005,1006]:
-            self.students = [a for a in ss if a.id not in range(0,(self.model.n_agents+1)*3) and a.is_home_sick != 1]
+            self.students = [a for a in ss if a.id not in range(0,(self.model.n_agents+1)*3) and a.is_home_sick == False]
 
         #Apply TA to students
         for s in self.students:
@@ -552,11 +549,11 @@ class TA(Agent):
 
     def move(self):
         start_pos = self.pos
-        questionStatus = find_status(self.model,"hasQuestion", [class_Agent], self.students)
+        question_count = count_students_who_has_question(self.model, self.students)
 
-        if questionStatus > 0 and len(self.students) > 15:  #Class is started and somebody a question
+        if question_count > 0 and len(self.students) > 15:  #Class is started and somebody a question
             for s in self.students:
-                if s.hasQuestion == 1:
+                if s.hasQuestion == True:
                     self.move_to_student(s)
         else:
             wonder(self)
@@ -568,7 +565,7 @@ class TA(Agent):
       self.time_remaining -=1
       self.connect_TA_and_students()
 
-      if self.infected == 1:
+      if self.infected == True:
          infect(self)
          update_infection_parameters(self)
 
@@ -585,11 +582,11 @@ class canteen_Agent(Agent):
         super().__init__(id, model)
         #Person parameters
         self.id = id
-        self.infected = 0
-        self.recovered = 0
-        self.mask = 0
-        self.is_home_sick = 0
-        self.vaccinated = 0
+        self.infected = False
+        self.recovered = False
+        self.mask = False
+        self.is_home_sick = False
+        self.vaccinated = False
         self.queue = 0
         self.buying_lunch = 0
         self.sitting_in_canteen = 0
@@ -631,12 +628,10 @@ class canteen_Agent(Agent):
 
 
     def step(self):
-        if self.infected == 1:
+        if self.infected == True:
             infect(self)
             update_infection_parameters(self)
 
-      #  if self.is_home_sick == 1:
-      #      update_infection_parameters(self)
         if self.pos in [(22,3),(23,3),(24,3)]: #in beginning of queue area
             if self.off_school ==0 and self.is_home_sick ==0:
                 self.queue =1 #stands in line for canteen
@@ -662,11 +657,11 @@ class employee_Agent(Agent):
     def __init__(self,id,model):
         super().__init__(id,model)
         self.id = id
-        self.infected = 0
-        self.recovered = 0
-        self.mask = 1
-        self.is_home_sick = 0
-        self.vaccinated = 0
+        self.infected = False
+        self.recovered = False
+        self.mask = True
+        self.is_home_sick = False
+        self.vaccinated = False
 
         self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
         self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
@@ -675,11 +670,10 @@ class employee_Agent(Agent):
         self.coords = ()
 
     def step(self):
-        if self.infected == 1:
+        if self.infected == True:
             infect(self)
             update_infection_parameters(self)
-            #if self.is_home_sick == 1:
-             #   update_infection_parameters(self)
+
 
         if self.id %2 == 0:
             self.move()

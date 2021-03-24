@@ -1,7 +1,7 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement
 from mesa.visualization.ModularVisualization import ModularServer
 import AgentClass as ac
-from Model import covid_Model, find_status
+from Model import covid_Model,get_infected
 import numpy as np
 from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
@@ -17,7 +17,7 @@ class infected_Element(TextElement):
         pass
 
     def render(self, model):
-        return "Infected agents: " + str(find_status(model, "infected", [ac.class_Agent, ac.canteen_Agent, ac.TA]))
+        return "Infected agents: " + str(get_infected(model))
 
 class count_Days(TextElement):
     '''
@@ -47,27 +47,27 @@ def covid_draw(agent):
             portrayal["Color"] = "purple"
         if agent.infected == 0:
             portrayal["Color"] = "green"
-        if agent.infected == 1 and agent.exposed == 0:
+        if agent.infected == True and agent.exposed == 0:
                 portrayal["Shape"] = "resources/corona.png"
                 portrayal["scale"] = 0.9
-        if agent.infected == 1 and agent.exposed > 0:
+        if agent.infected == True and agent.exposed > 0:
                 portrayal["Shape"] = "resources/exposed.png"
                 portrayal["scale"] = 0.9
 
-        if isinstance(agent, ac.class_Agent) and agent.hasQuestion == 1:
-            if agent.infected == 1:
+        if isinstance(agent, ac.class_Agent) and agent.hasQuestion == True:
+            if agent.infected == True:
                 portrayal["Color"] = "black"
-            if agent.infected == 0:
+            if agent.infected == False:
                 portrayal["Color"] = "Blue"
     if agent.id in [1001,1002,1003,1004,1005,1006]:
-        if agent.infected == 0:
-            if agent.mask == 1:
+        if agent.infected == False:
+            if agent.mask == True:
                 portrayal["Shape"] = "resources/mundbind_TA.png"
                 portrayal["scale"] = 0.9
             else:
                 portrayal["Color"] = "Brown"
                 portrayal["scale"] = 0.9
-        elif agent.infected == 1:
+        elif agent.infected == True:
             portrayal["Color"] = "Pink"
             portrayal["scale"] = 0.9
     if isinstance(agent,ac.door):
@@ -120,7 +120,7 @@ def covid_draw(agent):
             portrayal["Shape"] = "resources/blueburger.png"
             portrayal["scale"] = 0.9
     if ac.is_human(agent):
-            if agent.is_home_sick == 1:
+            if agent.is_home_sick == True:
                 portrayal["Shape"] = "resources/white.jpg"
                 portrayal["scale"] = 0.9
             if agent.recovered == 1:
@@ -130,7 +130,6 @@ def covid_draw(agent):
           if agent.off_school == 1:
                 portrayal["Shape"] = "resources/white.jpg"
                 portrayal["scale"] = 0.9
-
     return portrayal
 
 infected_element = infected_Element()
