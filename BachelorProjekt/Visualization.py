@@ -59,17 +59,14 @@ def covid_draw(agent):
                 portrayal["Color"] = "black"
             if agent.infected == 0:
                 portrayal["Color"] = "Blue"
-    if agent.id in [1001,1002,1003]:
+    if agent.id in [1001,1002,1003,1004,1005,1006]:
         if agent.infected == 0:
-            portrayal["Color"] = "blue"
-            portrayal["scale"] = 0.9
-        elif agent.infected == 1:
-            portrayal["Color"] = "Pink"
-            portrayal["scale"] = 0.9
-    if agent.id in [1004,1005,1006]:
-        if agent.infected == 0:
-            portrayal["Color"] = "brown"
-            portrayal["scale"] = 0.9
+            if agent.mask == 1:
+                portrayal["Shape"] = "resources/mundbind_TA.png"
+                portrayal["scale"] = 0.9
+            else:
+                portrayal["Color"] = "Brown"
+                portrayal["scale"] = 0.9
         elif agent.infected == 1:
             portrayal["Color"] = "Pink"
             portrayal["scale"] = 0.9

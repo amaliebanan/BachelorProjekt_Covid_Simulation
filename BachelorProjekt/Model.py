@@ -446,17 +446,21 @@ class covid_Model(Model):
     def step(self):
         off_school(self,go_home_in_breaks)
 
-        aa = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.canteen_Agent) or isinstance(a, ac.class_Agent)) and a.vaccinated == 1]
-      #  print(len(aa))
+
         aa = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.canteen_Agent) or isinstance(a, ac.class_Agent))]
-      #  print(len(aa))
+        aasym = [a.asymptomatic for a in aa]
+      #  print(aasym)
 
         #Every 10th timestep add asking student
-        if (self.minute_count) % 10 == 0:
-            for ta in self.TAs:
-                if len(ta.students) == 0:
-                    continue
-                if len(ta.students)>10:
+
+
+        for ta in self.TAs:
+            p = np.random.poisson(20/100)==1
+            if len(ta.students) == 0 or p == 0:
+                continue
+            if len(ta.students)>10 and p == 1:
+                questions_ = [a for a in ta.students if a.hasQuestion == 1]
+                if questions_ == []: #Only answer question if no one is recieving help at the moment
                     TAs_students = ta.students
                     randomStudent = self.random.choice(TAs_students)
                     randomStudent.hasQuestion = 1

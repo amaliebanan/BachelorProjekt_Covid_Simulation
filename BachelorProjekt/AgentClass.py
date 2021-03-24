@@ -13,6 +13,7 @@ ids = [i for i in range(0,78)]
 
 #From sugerscape_cg
 ##Helper functionss
+'''
 def getDistance(pos1,pos2):
     x1,y1 = pos1
     x2,y2 = pos2
@@ -21,6 +22,10 @@ def getDistance(pos1,pos2):
     dy = abs(y1-y2)
 
     return math.sqrt(dx**2+dy**2)
+'''
+
+def getDistance(pos1,pos2):
+    return math.sqrt((pos2[0]-pos1[0])**2+(pos2[1]-pos1[1])**2)
 def dotproduct(v1, v2):
   return v1[0]*v2[0]+v1[1]*v2[1]
 def length(v):
@@ -90,17 +95,12 @@ def infect(self):
             #Dont infect neighbors that are home sick / not on campus
             if agent.is_home_sick == 1 or (isinstance(self,canteen_Agent) and self.off_school == 1):
                 continue
-            #Dont infect neighbors that are vaccinated
-            if agent.vaccinated == 1:
+            #Dont infect neighbors that are vaccinated, recorvered or
+            if agent.vaccinated == 1 or agent.recovered == 1 or agent.infected == 1: # kan ikke blive smittet, da den er immun eller allerede infected
                 continue
-            distance = getDistance(self.pos,agent.pos)
-            agent_status = agent.infected
-            agent_recovered_status = agent.recovered
 
-            if agent_recovered_status == 1 or agent_status == 1: # kan ikke blive smittet, da den er immun eller allerede infected
-                continue
-            elif distance <= 0.1:
-             #   print(agent,agent.pos,self.pos,self)
+            distance = getDistance(self.pos,agent.pos)
+            if distance <= 0.1:
                 if self.mask == 1:
                     pTA = np.random.poisson(0.25/100)
                 elif self.mask == 0:

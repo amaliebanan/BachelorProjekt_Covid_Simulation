@@ -14,6 +14,7 @@ iterationer = 5
 skridt = 525*20
 
 
+
 "Below is to plot infected vs timestep and susceptible vs timestep for a single set up type"
 
 def plot_infected(fix_par, var_par, model, iter, steps):
