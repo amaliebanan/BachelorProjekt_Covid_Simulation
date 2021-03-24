@@ -486,7 +486,7 @@ class covid_Model(Model):
 
 
     def step(self):
-        print(self.minute_count,get_infected(self))
+       # print(self.minute_count,get_infected(self))
         off_school(self,go_home_in_breaks)
 
 
