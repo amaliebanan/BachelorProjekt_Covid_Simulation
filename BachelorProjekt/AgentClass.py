@@ -4,26 +4,14 @@ from mesa.space import MultiGrid
 import numpy as np
 import random
 import sys
-from Model import make_classrooms_fit_to_grid, covid_Model, is_human, dir,count_students_who_has_question
+from Model import make_classrooms_fit_to_grid, covid_Model, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage
 from scipy.stats import truncnorm
 
 day_length = 525
 other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
 ids = [i for i in range(0,78)]
 
-#From sugerscape_cg
 ##Helper functions
-'''
-def getDistance(pos1,p
-    os2):
-    x1,y1 = pos1
-    x2,y2 = pos2
-
-    dx = abs(x1-x2)
-    dy = abs(y1-y2)
-
-    return math.sqrt(dx**2+dy**2)
-'''
 
 def getDistance(pos1,pos2):
     return math.sqrt((pos2[0]-pos1[0])**2+(pos2[1]-pos1[1])**2)
@@ -71,7 +59,7 @@ def wonder(self):
     possible_empty_steps = []
     for position in possible_steps:
         if isinstance(self, canteen_Agent):
-            if self.off_school ==1 or self.is_home_sick ==1:
+            if self.off_school ==1 or self.is_home_sick ==1: #if invisible
                 if self.model.grid.is_cell_empty(position) and position not in[(23,18), (23,19)]+[(22,4), (23,4), (24,4)]:
                     possible_empty_steps.append(position)
             elif position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
@@ -144,18 +132,18 @@ def infect(self):
             distance = getDistance(self.pos,agent.pos)
             if distance <= 0.1:
                 if self.mask == True:
-                    pTA = np.random.poisson(0.25/100)
+                    pTA = np.random.poisson(calculate_percentage(10*infection_rate,infection_decrease_with_mask_pct))
                 elif self.mask == False:
-                    pTA = np.random.poisson(2.5/100) #TA står meget tæt og snakker højt
+                    pTA = np.random.poisson(10*infection_rate) #TA står meget tæt og snakker højt
                 if pTA == 1:
                     agent.infected = True
                     self.model.infected_agents.append(agent)
                  #Indenfor 1 meters afstand
             elif distance > 0.5 and distance <= 1.0:
                  if self.mask == True:
-                    p_1 = np.random.poisson(0.025/100)
+                    p_1 = np.random.poisson(calculate_percentage(infection_rate, infection_decrease_with_mask_pct)) #70 percent decrease if masks
                  elif self.mask == False:
-                     p_1 = np.random.poisson(0.25/100)
+                     p_1 = np.random.poisson(infection_rate)
                  if p_1 == 1:
                     agent.infected = True
                     self.model.infected_agents.append(agent)
@@ -163,9 +151,9 @@ def infect(self):
                  #Mellem 1 og 2 meters afstand
             elif distance > 1.0 and distance <= 2.0:
                 if self.mask == True:
-                    p_1_til_2 = np.random.poisson(0.022450/100)
+                    p_1_til_2 = np.random.poisson(calculate_percentage(infection_rate_1_to_2_meter,infection_decrease_with_mask_pct))
                 elif self.mask == False:
-                     p_1_til_2 = np.random.poisson(0.22450/100)
+                     p_1_til_2 = np.random.poisson(infection_rate_1_to_2_meter)
                 if p_1_til_2 == 1:
                     agent.infected = True
                     self.model.infected_agents.append(agent)
@@ -173,14 +161,15 @@ def infect(self):
                 #Over 2 meters afstand
             elif distance>2.0:
                 if self.mask == True:
-                    p_over_2 = np.random.poisson(0.02199651/100)
+                    p_over_2 = np.random.poisson(calculate_percentage(infection_rate_2plus_meter,infection_decrease_with_mask_pct))
                 elif self.mask == False:
-                     p_over_2 = np.random.poisson(0.2199651/100)
+                     p_over_2 = np.random.poisson(infection_rate_2plus_meter)
                 if p_over_2 == 1:
                     agent.infected = True
                     self.model.infected_agents.append(agent)
 
-
+def new_infect(self):
+    pass
 ###CHANGING OBJECT-TYPE###
 #Get all essential parameters transfered
 def change_obj_params(new,old):

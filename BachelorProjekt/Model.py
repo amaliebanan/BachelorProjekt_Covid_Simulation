@@ -8,11 +8,18 @@ from mesa import Agent, Model
 import numpy as np
 from mesa.datacollection import DataCollector
 
+def calculate_percentage(original_number, percent_to_subtract):
+    return original_number-(percent_to_subtract*original_number/100)
+
+
 day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
 init_canteen_agents = 90
-
+infection_rate = 0.025
+infection_rate_1_to_2_meter = calculate_percentage(0.025, 10.2)
+infection_rate_2plus_meter = calculate_percentage(infection_rate_1_to_2_meter,2.02)
+infection_decrease_with_mask_pct = 70
 
 go_home_in_breaks = False
 family_groups = False
@@ -21,6 +28,7 @@ percentages_of_vaccinated = 0 #Number 0<=x<1
 
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
+
 
 def get_infected(self):
     agents = [a for a in self.schedule.agents if is_human(a) and a.infected == True]
