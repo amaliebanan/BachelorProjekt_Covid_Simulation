@@ -12,7 +12,8 @@ other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
 ids = [i for i in range(0,78)]
 
 #From sugerscape_cg
-##Helper functions
+##Helper functionss
+'''
 def getDistance(pos1,pos2):
     x1,y1 = pos1
     x2,y2 = pos2
@@ -21,6 +22,10 @@ def getDistance(pos1,pos2):
     dy = abs(y1-y2)
 
     return math.sqrt(dx**2+dy**2)
+'''
+
+def getDistance(pos1,pos2):
+    return math.sqrt((pos2[0]-pos1[0])**2+(pos2[1]-pos1[1])**2)
 def dotproduct(v1, v2):
   return v1[0]*v2[0]+v1[1]*v2[1]
 def length(v):
@@ -80,7 +85,6 @@ def infect(self):
             all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
         closest_neighbors = []
 
-        print(len(all_neighbors_within_radius))
         for neighbor in all_neighbors_within_radius:
             if not self.model.grid.is_cell_empty(neighbor.pos):
                 if isinstance(neighbor, class_Agent) or isinstance(neighbor, TA) or isinstance(neighbor, canteen_Agent):
@@ -97,7 +101,6 @@ def infect(self):
 
             distance = getDistance(self.pos,agent.pos)
             if distance <= 0.1:
-             #   print(agent,agent.pos,self.pos,self)
                 if self.mask == 1:
                     pTA = np.random.poisson(0.25/100)
                 elif self.mask == 0:
@@ -394,8 +397,8 @@ class class_Agent(Agent):
             #Try to infect
             infect(self)
             update_infection_parameters(self)
-        if self.is_home_sick == 1:
-            update_infection_parameters(self)
+        #if self.is_home_sick == 1:
+         #   update_infection_parameters(self)
 
         ##MOVE###
         if self.model.day_count == 1:
@@ -476,13 +479,15 @@ class TA(Agent):
       self.time_remaining -=1
       self.connect_TA_and_students()
 
+      if self.infected == 1:
+         infect(self)
+         update_infection_parameters(self)
+
       if self.time_remaining <= 0 and len(self.students)<5:
           TA_to_class(self)
           return
 
-      if self.infected == 1:
-         infect(self)
-         update_infection_parameters(self)
+
 
       self.move()
 
@@ -520,12 +525,11 @@ class canteen_Agent(Agent):
 
     def step(self):
         if self.infected == 1:
-            if self.off_school == 0:
-                infect(self)
-                update_infection_parameters(self)
-
-        if self.is_home_sick == 1:
+            infect(self)
             update_infection_parameters(self)
+
+      #  if self.is_home_sick == 1:
+      #      update_infection_parameters(self)
 
         #When should canteen agent go to door?
         if self.model.day_count == 1:
