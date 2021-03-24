@@ -59,7 +59,7 @@ def covid_draw(agent):
                 portrayal["Color"] = "black"
             if agent.infected == False:
                 portrayal["Color"] = "Blue"
-    if agent.id in [1001,1002,1003,1004,1005,1006]:
+    if isinstance(agent,ac.TA):
         if agent.infected == False:
             if agent.mask == True:
                 portrayal["Shape"] = "resources/mundbind_TA.png"
@@ -134,8 +134,8 @@ def covid_draw(agent):
                 portrayal["scale"] = 0.9
     if isinstance(agent,ac.canteen_Agent):
           if agent.off_school == 1:
-                portrayal["Shape"] = "resources/white.jpg"
-                portrayal["scale"] = 0.9
+                 portrayal["Shape"] = "resources/white.jpg"
+                 portrayal["scale"] = 0.9
     return portrayal
 
 infected_element = infected_Element()

@@ -11,7 +11,7 @@ from mesa.datacollection import DataCollector
 day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
-init_canteen_agents = 90
+init_canteen_agents = 26*3+0
 
 
 go_home_in_breaks = False
@@ -178,7 +178,7 @@ def setUp(N,model,setUpType,i):
             x, y = model.grid.find_empty()#Place agent randomly in empty cell on grid
             newAgent.coords = random.choice(list(dir.values()))   #Give agent random direction to look at
             model.grid.place_agent(newAgent, (x,y))
-    elif setUpType == 2: #Horseshoe
+    elif setUpType == 2: #Hestesko
         if model.n_agents<26:
             list = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_2]
             list_ = random.sample(list,k=len(list))
@@ -226,7 +226,6 @@ def setUp(N,model,setUpType,i):
         model.TAs.append(TA)
 
 
-
         for j in range(N*i,(i+1)*N):
             newAgent = ac.class_Agent(j, model)
             model.schedule.add(newAgent)
@@ -240,7 +239,6 @@ def setUp(N,model,setUpType,i):
             newAgent.TA = TA
             newAgent.seat = (x,y)
             students.append(newAgent)
-            model.ft_batch.append(newAgent)
         TA.students = students
 
         #Place walls
@@ -437,9 +435,6 @@ class covid_Model(Model):
         self.day_count = 1
         self.door = ()
 
-        self.ft_batch = []
-        self.sf_batch = []
-
         self.class_times = [105,120,225,300,405,420,525]
 
         self.other_courses = []
@@ -497,9 +492,11 @@ class covid_Model(Model):
         self.seat = ()
 
 
-        self.canteen_table_1 = [((22,y), dir['E']) for y in range(25,33)]+[((23,y), dir['W']) for y in range(25,33)]
-        self.canteen_table_2 = [((18,y), dir['E']) for y in range(25,33)]+[((19,y), dir['W']) for y in range(25,33)]
+        self.canteen_table_1 = [((22,y), dir['E']) for y in range(25,29)]+[((22,y), dir['E']) for y in range(30,33)]+[((23,y), dir['W']) for y in range(25,29)]+[((23,y), dir['W']) for y in range(30,33)]
+        self.canteen_table_2 = [((18,y), dir['E']) for y in range(25,29)]+[((18,y), dir['E']) for y in range(30,33)]+[((19,y), dir['W']) for y in range(25,29)]+[((19,y), dir['W']) for y in range(30,33)]
 
+        self.canteen_attraction_pos = [(i,3) for i in range (21,25)]+[(i,2) for i in range (21,25)]+[(i,1) for i in range (21,25)]+[(i,0) for i in range (21,25)]
+        self.canteen_ending = [(23,18), (23,19)]
         if go_home_in_breaks == False:
                 add_init_employee_to_grid(self)
                 set_up_canteen(self)

@@ -70,20 +70,31 @@ def wonder(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
     possible_empty_steps = []
     for position in possible_steps:
+
+        #Checking if agent should queue or not
         if isinstance(self, canteen_Agent):
             if self.off_school ==1 or self.is_home_sick ==1:
-                if self.model.grid.is_cell_empty(position) and position not in[(23,18), (23,19)]+[(22,4), (23,4), (24,4)]:
+                if self.model.grid.is_cell_empty(position) and position not in self.model.canteen_ending+self.model.canteen_attraction_pos:
                     possible_empty_steps.append(position)
-            elif position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
+            elif position not in self.model.canteen_ending :#cant walk wrong way through canteen
                 if self.model.grid.is_cell_empty(position):
                     possible_empty_steps.append(position)
                 elif isinstance(self.model.grid.get_cell_list_contents(position)[0],table):
                     possible_empty_steps.append(position)
-        elif position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
+
+        #Check neighbors
+        elif position not in self.model.canteen_ending:#cant walk wrong way through canteen
             if self.model.grid.is_cell_empty(position):
                 possible_empty_steps.append(position)
-            elif isinstance(self.model.grid.get_cell_list_contents(position)[0],table):
-                possible_empty_steps.append(position)
+            else:
+                agent_at_pos = self.model.grid.get_cell_list_contents(position)[0]
+                #If human, and either off school or home sick, add that pos
+                if is_human(agent_at_pos) and ((isinstance(agent_at_pos,canteen_Agent) and agent_at_pos.off_school == True) \
+                        or agent_at_pos.is_home_sick == True):
+                    possible_empty_steps.append(position)
+                #If table, add pos
+                if isinstance(self.model.grid.get_cell_list_contents(position)[0],table):
+                    possible_empty_steps.append(position)
 
 
 
@@ -179,7 +190,6 @@ def infect(self):
                 if p_over_2 == 1:
                     agent.infected = True
                     self.model.infected_agents.append(agent)
-
 
 ###CHANGING OBJECT-TYPE###
 #Get all essential parameters transfered
@@ -387,9 +397,17 @@ def move_to_specific_pos(self,pos_):
 
     #to prevent logic-flaw when student cannot get to seat
     #???? if student isnt making it to class in time ???
-    if self.model.minute_count in [50,170,350,480]:
+ #       self.class_times = [105,120,225,300,405,420,525
+
+    if self.model.minute_count in [40,160,340,470]:
+        if pos_ in [(8,5),(8,16),(8,27)]: #If pos is door
+            x,y = pos_
+            force_agent_to_specific_pos(self,(x-1,y))
+            return
+    if self.model.minute_count in [42,162,342,472]:
         force_agent_to_specific_pos(self,pos_)
         return
+
     self.model.grid.move_agent(self,(x_,y_))
 
 
@@ -642,9 +660,9 @@ class canteen_Agent(Agent):
             infect(self)
             update_infection_parameters(self)
 
-        if self.pos in [(22,3),(23,3),(24,3)]: #in beginning of queue area
+        if self.pos in self.model.canteen_attraction_pos: #in beginning of queue area
             if self.off_school ==0 and self.is_home_sick ==0:
-                self.queue =1 #stands in line for canteen
+                self.queue = 1 #stands in line for canteen
         if self.pos in [(23,j) for j in range(4,19)]:
             self.queue=1
         if self.pos == (23,20):
