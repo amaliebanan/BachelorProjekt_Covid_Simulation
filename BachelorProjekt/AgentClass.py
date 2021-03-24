@@ -4,7 +4,7 @@ from mesa.space import MultiGrid
 import numpy as np
 import random
 import sys
-from Model import find_status, make_classrooms_fit_to_grid, covid_Model
+from Model import find_status, make_classrooms_fit_to_grid, covid_Model, is_human, dir
 
 
 day_length = 525
@@ -12,9 +12,10 @@ other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
 ids = [i for i in range(0,78)]
 
 #From sugerscape_cg
-##Helper functionss
+##Helper functions
 '''
-def getDistance(pos1,pos2):
+def getDistance(pos1,p
+    os2):
     x1,y1 = pos1
     x2,y2 = pos2
 
@@ -39,23 +40,53 @@ def intersect(list1,list2):
     if list3 == []:
         return False        #Intersection is the empty set
     else: return True       #Intersection is not the empty set
+def change_direction(self, start_pos, end_pos):
+    if end_pos == None:
+        return dir['E']
+    change_of_pos = np.subtract(start_pos, end_pos)
+    if (np.array(change_of_pos)==np.array([1,1])).all(): #if agent moves SW
+        return dir['SW']
+    if (np.array(change_of_pos)==np.array([1,0])).all(): #if agent moves W
+        return dir['W']
+    if (np.array(change_of_pos)==np.array([1,-1])).all(): #if agent moves NW
+        return dir['NW']
+    if (np.array(change_of_pos)==np.array([0,-1])).all(): #if agent moves N
+        return dir['N']
+    if (np.array(change_of_pos)==np.array([-1,-1])).all(): #if agent moves NE
+        return dir['NE']
+    if (np.array(change_of_pos)==np.array([-1,0])).all(): #if agent moves E
+        return dir['E']
+    if (np.array(change_of_pos)==np.array([-1,1])).all(): #if agent moves SE
+        return dir['SE']
+    if (np.array(change_of_pos)==np.array([0,1])).all(): #if agent moves S
+        return dir['S']
+    if start_pos == end_pos: #if agent doesn't move
+        return self.coords
 
 #Wander around function
 def wonder(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
     possible_empty_steps = []
     for position in possible_steps:
-        if self.model.grid.is_cell_empty(position):
+        if self == canteen_Agent:
+            if self.off_school ==1 or self.is_home_sick ==1:
+                if self.model.grid.is_cell_empty(position) and position not in[(23,18), (23,19)]+[(22,4), (23,4), (24,4)]:
+                    possible_empty_steps.append(position)
+        elif self.model.grid.is_cell_empty(position) and position not in [(23,18), (23,19)]: #cant walk wrong way through canteen
             possible_empty_steps.append(position)
 
     if len(possible_empty_steps) != 0:
         next_move = self.random.choice(possible_empty_steps)
         self.model.grid.move_agent(self, next_move)
 
+    if self.pos in [self.model.canteen_table_1[i][0] for i in range(0,4)] or self.pos in [self.model.canteen_table_2[i][0] for i in range(0,4)] or self.pos in [self.model.canteen_table_3[i][0] for i in range(0,4)] or self.pos in [self.model.canteen_table_4[i][0] for i in range(0,4)]:
+        self.sitting_in_canteen = 15
+
+
 #check direction between two agents
 def checkDirection(agent,neighbor):
     dirA,dirN = agent.coords, neighbor.coords
-    angle_ = angle((1,0),(-1,1))
+    angle_ = angle(dirA,dirN)
     if -1 <= angle_ <= 1: #The look in the same direction
         return 0
     elif 179 <= angle_ <= 181: #They look in opposite direction
@@ -72,6 +103,7 @@ def checkDirection(agent,neighbor):
         return 315
     else: return angle_
 
+
 #Infect a person
 def infect(self):
         if self.exposed != 0:   #Agent smitter ikke endnu.
@@ -87,7 +119,7 @@ def infect(self):
 
         for neighbor in all_neighbors_within_radius:
             if not self.model.grid.is_cell_empty(neighbor.pos):
-                if isinstance(neighbor, class_Agent) or isinstance(neighbor, TA) or isinstance(neighbor, canteen_Agent):
+                if is_human(neighbor):
                     closest_neighbors.append(neighbor)
 
         for agent in closest_neighbors:
@@ -138,6 +170,7 @@ def infect(self):
                     agent.infected = 1
                     self.model.infected_agents.append(agent)
 
+
 ###CHANGING OBJECT-TYPE###
 #Get all essential parameters transfered
 def change_obj_params(new,old):
@@ -153,6 +186,8 @@ def change_obj_params(new,old):
                                              old.recovered,\
                                              old.mask
     new.pos = old.pos
+
+
 ###CHANGING OBJECT-TYPE###
 
 #Turn canteen-object to class-object
@@ -175,6 +210,7 @@ def canteen_to_class(self):
     self.model.schedule.add(c_agent)
 
     return c_agent,seat
+
 
 #Turn class-object to canteen-object
 def class_to_canteen(self):
@@ -212,11 +248,13 @@ def class_to_canteen(self):
 
     return c_agent
 
+
 #Turn TA-object to class-object
 def TA_to_class(self):
     c_agent = class_Agent(self.id, self.model)
     change_obj_params(c_agent,self)
 
+    c_agent.coords = dir['E']
     c_agent.door, c_agent.moving_to_door = self.door, 1
     if self.courses == (): #First time, we need to initialize TA's courses
         c_agent.courses = [0,0]
@@ -228,6 +266,7 @@ def TA_to_class(self):
 
     self.model.schedule.add(c_agent)
     self.model.grid.place_agent(c_agent,c_agent.pos)
+
 
 #Turn canteen-object to TA-object
 def canteen_to_TA(self):
@@ -246,6 +285,28 @@ def canteen_to_TA(self):
 
     return c_agent
 
+
+def move_in_queue(self, pos_):
+    if self.buying_lunch != 0:
+        self.buying_lunch -= 1
+        if self.buying_lunch == 0:
+            self.coords = dir['N']
+    else:
+        possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
+        possible_empty_steps = [cell for cell in possible_steps if self.model.grid.is_cell_empty(cell)]
+        if possible_empty_steps == []: #if someone in front of you - dont move
+            return
+        distances = [(pos,getDistance(pos_,pos)) for pos in possible_empty_steps]
+        x_,y_ = min(distances,key=lambda x:x[1])[0]
+        if min(getDistance((x_,y_), pos_), getDistance(self.pos, pos_)) == getDistance(self.pos, pos_):
+            return
+        else:
+            self.model.grid.move_agent(self,(x_,y_))
+            if self.pos == (23,17):
+                self.buying_lunch = 3
+                self.coords = dir['E']
+
+
 def move_to_specific_pos(self,pos_):
     if self.id in [1001,1002,1003,1004,1005,1006]:
         if isinstance(self,canteen_Agent):
@@ -254,8 +315,10 @@ def move_to_specific_pos(self,pos_):
             x,y = pos_                      #Door position
             newY = random.randint(-1, 1)
             newAgent.pos = x-1,y+newY
+            newAgent.coords = dir['W']
             self.model.grid.place_agent(newAgent, newAgent.pos)
             return
+
 
     possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
     possible_empty_steps = [cell for cell in possible_steps if self.model.grid.is_cell_empty(cell)]
@@ -263,7 +326,7 @@ def move_to_specific_pos(self,pos_):
     #If no cell is empty, agent can go through others "person"-agents (to avoid bottleneck)
     #Back-up list contains cells with covid,TA and canteen agents in
     pos_other_agents = [cell for cell in self.model.grid.get_neighbors(self.pos,moore=True,include_center=False)
-                        if isinstance(cell, class_Agent) or isinstance(cell, TA) or isinstance(cell, canteen_Agent)]
+                        if is_human(cell)]
     back_up_empty_cells = [cell.pos for cell in pos_other_agents]
 
     #If goal-position is in possible steps, go there
@@ -276,6 +339,7 @@ def move_to_specific_pos(self,pos_):
                 x,y = pos_                         #Door position
                 newY = random.randint(-1, 1)
                 newAgent.pos = x+1,y+newY
+                newAgent.coords = dir['E']
                 self.model.grid.place_agent(newAgent, newAgent.pos)
                 return
             elif isinstance(self,canteen_Agent):
@@ -285,6 +349,7 @@ def move_to_specific_pos(self,pos_):
                     newY = random.randint(-1, 1)
                     newAgent.pos = x-1,y+newY
                     newAgent.seat = seat_
+                    newAgent.coords = dir['W']
                     self.model.grid.place_agent(newAgent, newAgent.pos)
                     return
         #If goal-position is the seat, go there
@@ -317,12 +382,18 @@ def move_to_specific_pos(self,pos_):
         return
     self.model.grid.move_agent(self,(x_,y_))
 
+
 def force_agent_to_specific_pos(self,pos):
     self.model.grid.move_agent(self,pos)
+
 
 def send_agent_home(self):
     self.is_home_sick = 1
     self.model.agents_at_home.append(self)
+    if isinstance(self, employee_Agent):
+        call_backup_employee(self)
+        self.model.canteen_agents_at_work.remove(self)
+
 
 def send_agent_back_to_school(self):
     newList_at_home = [a for a in self.model.agents_at_home if a.id != self.id]
@@ -332,6 +403,9 @@ def send_agent_back_to_school(self):
     self.is_home_sick = 0
     self.infected = 0
     self.recovered = 1
+    if isinstance(self, employee_Agent) and (self.id==1250 or self.id==1251):
+        self.model.canteen_agents_at_work.append(self)
+
 
 def update_infection_parameters(self):
     if self.is_home_sick == 1: #Agent is already home. Just update infection period
@@ -347,6 +421,15 @@ def update_infection_parameters(self):
         send_agent_home(self)
     self.exposed = max(0,self.exposed-1)    #If already 0 stay there, if larger than 0 subtract one
     self.infection_period = max(0,self.infection_period-1)
+
+
+def call_backup_employee(self):
+    newLunchlady = employee_Agent(self.id+2,self.model)
+    newLunchlady.coords = dir['W']
+    self.model.schedule.add(newLunchlady)
+    self.model.grid.place_agent(newLunchlady, self.pos)
+
+
 
 class class_Agent(Agent):
     def __init__(self, id, model):
@@ -381,6 +464,7 @@ class class_Agent(Agent):
         self.hasEnteredDoor = []
 
     def move(self,timestep=False):
+        start_pos = self.pos
         if timestep is True:
             if self.moving_to_door == 1: #Agents go to door
                 move_to_specific_pos(self,self.door.pos)
@@ -389,7 +473,8 @@ class class_Agent(Agent):
                 move_to_specific_pos(self,self.seat)
                # move_to_specific_pos(self,self.seat)
         else: wonder(self)
-
+        end_pos = self.pos
+        self.coords = change_direction(self, start_pos, end_pos)
 
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
@@ -409,6 +494,7 @@ class class_Agent(Agent):
             self.moving_to_door = 1
 
         self.move(True)
+
 
 class TA(Agent):
     def __init__(self,id,model):
@@ -465,6 +551,7 @@ class TA(Agent):
             s.TA = self
 
     def move(self):
+        start_pos = self.pos
         questionStatus = find_status(self.model,"hasQuestion", [class_Agent], self.students)
 
         if questionStatus > 0 and len(self.students) > 15:  #Class is started and somebody a question
@@ -474,6 +561,8 @@ class TA(Agent):
         else:
             wonder(self)
             wonder(self)
+        end_pos = self.pos
+        self.coords = change_direction(self, start_pos, end_pos)
 
     def step(self):
       self.time_remaining -=1
@@ -501,6 +590,9 @@ class canteen_Agent(Agent):
         self.mask = 0
         self.is_home_sick = 0
         self.vaccinated = 0
+        self.queue = 0
+        self.buying_lunch = 0
+        self.sitting_in_canteen = 0
 
         self.off_school = 0
         self.coords = ()
@@ -519,9 +611,24 @@ class canteen_Agent(Agent):
 
 
     def move(self,timestep=False):
+        start_pos = self.pos #for changing direction
         if timestep is True: #Agents go to door
-            move_to_specific_pos(self,self.door.pos)
+            if self.queue == 0 and self.sitting_in_canteen == 0:
+                move_to_specific_pos(self,self.door.pos)
+            else:
+                self.queue = 0
+                self.sitting_in_canteen=0
+                force_agent_to_specific_pos(self, (23,21))
+                move_to_specific_pos(self,self.door.pos)
+
+        elif self.queue == 1:
+            move_in_queue(self, (23,20)) # moves towards end of canteen
+        elif self.sitting_in_canteen != 0:
+            self.sitting_in_canteen = max(0, self.sitting_in_canteen -1)
         else: wonder(self)
+        end_pos = self.pos
+        self.coords = change_direction(self, start_pos, end_pos)
+
 
     def step(self):
         if self.infected == 1:
@@ -530,6 +637,13 @@ class canteen_Agent(Agent):
 
       #  if self.is_home_sick == 1:
       #      update_infection_parameters(self)
+        if self.pos in [(22,3),(23,3),(24,3)]: #in beginning of queue area
+            if self.off_school ==0 and self.is_home_sick ==0:
+                self.queue =1 #stands in line for canteen
+        if self.pos in [(23,j) for j in range(4,19)]:
+            self.queue=1
+        if self.pos == (23,20):
+            self.queue = 0 #done in line
 
         #When should canteen agent go to door?
         if self.model.day_count == 1:
@@ -541,7 +655,44 @@ class canteen_Agent(Agent):
 
         if self.moving_to_door == 1:
             self.move(True)
-        else: self.move()
+        else:
+            self.move()
+
+class employee_Agent(Agent):
+    def __init__(self,id,model):
+        super().__init__(id,model)
+        self.id = id
+        self.infected = 0
+        self.recovered = 0
+        self.mask = 1
+        self.is_home_sick = 0
+        self.vaccinated = 0
+
+        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
+        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
+        self.exposed = self.asymptomatic-2*day_length
+
+        self.coords = ()
+
+    def step(self):
+        if self.infected == 1:
+            infect(self)
+            update_infection_parameters(self)
+            #if self.is_home_sick == 1:
+             #   update_infection_parameters(self)
+
+        if self.id %2 == 0:
+            self.move()
+        if self.id > 1251 and len(self.model.canteen_agents_at_work)==2: #if both other employees is at work
+            self.model.canteen_backups_to_go_home.append(self)
+
+
+
+    def move(self):
+        start_pos = self.pos
+        wonder(self)
+        end_pos = self.pos
+        self.coords = change_direction(self, start_pos, end_pos)
 
 class wall(Agent):
     """" Door for people to enter by and to exit by end of class"""
@@ -558,6 +709,15 @@ class door(Agent):
         self.id = id
         self.model = model
         self.classroom = 0
+
+class desk(Agent):
+    """" Desk is for the canteen. Get's ID"""
+    def __init__(self, id, pos, model):
+        super().__init__(id, model)
+        self.id = id
+        self.pos=pos
+
+
 
 #Places in canteen to attract people
 #Toilets, canteen, tables in hall, etc.

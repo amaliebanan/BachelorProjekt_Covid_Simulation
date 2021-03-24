@@ -93,7 +93,7 @@ def list_of_infected(j):
     """
     batch_run = BatchRunner(covid_Model,
         variable_parameters=variable_params,
-        fixed_parameters={"width": 20, "height": 33, "setUpType": [j,j,j]},
+        fixed_parameters={"width": 26, "height": 33, "setUpType": [j,j,j]},
         iterations=iterationer,
         max_steps=skridt,
         model_reporters={"infected": lambda m: find_status(m,"infected")})
