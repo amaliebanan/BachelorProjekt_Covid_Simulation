@@ -4,7 +4,7 @@ from mesa.space import MultiGrid
 import numpy as np
 import random
 import sys
-from Model import make_classrooms_fit_to_grid, covid_Model, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage
+from Model import is_student, covid_Model, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage
 from scipy.stats import truncnorm
 
 day_length = 525
@@ -60,7 +60,7 @@ def wander(self):
     possible_empty_steps = []
     for position in possible_steps:
         if isinstance(self, canteen_Agent):
-            if self.off_school == 1 or self.is_home_sick ==1: #if invisible
+            if self.off_school == True or self.is_home_sick ==True or self.day_off == True: #if invisible
                 if self.model.grid.is_cell_empty(position) and position not in [(23,18), (23,19)]+[(22,4), (23,4), (24,4)]:
                     possible_empty_steps.append(position)
             elif position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
@@ -73,8 +73,6 @@ def wander(self):
                 possible_empty_steps.append(position)
             elif isinstance(self.model.grid.get_cell_list_contents(position)[0],table):
                 possible_empty_steps.append(position)
-
-
 
     if len(possible_empty_steps) != 0:
         next_move = self.random.choice(possible_empty_steps)
@@ -107,7 +105,8 @@ def checkDirection(agent,neighbor):
 def infect(self):
         if self.exposed != 0:   #Agent smitter ikke endnu.
             return
-        if (self.is_home_sick == 1) or (isinstance(self,canteen_Agent) and self.off_school == 1): #Agenten er derhjemme og kan ikke smitte
+        if (self.is_home_sick == 1) or (isinstance(self,canteen_Agent) and self.off_school == 1) \
+                or (is_student(self) and self.day_off == True): #Agenten er derhjemme og kan ikke smitte
             return
 
         if isinstance(self, TA):
@@ -272,11 +271,12 @@ def change_obj_params(new,old):
 
     new.infection_period,new.exposed, new.asymptomatic = old.infection_period,\
                                                          old.exposed,\
-                                                         old.asymptomatic,
-    #Set up TA agent to have same paramters as prior canteen-agent
+                                                         old.asymptomatic
+
     new.infected, new.recovered,  new.mask = old.infected,\
                                              old.recovered,\
                                              old.mask
+    new.day_off = old.day_off
     new.pos = old.pos
 
 ###CHANGING OBJECT-TYPE###
@@ -540,7 +540,7 @@ class class_Agent(Agent):
         self.exposed = self.asymptomatic-2*day_length
 
 
-
+        self.day_off = False
         self.moving_to_door = 0
         self.door = ()
         self.courses = [0,0]
@@ -602,6 +602,7 @@ class TA(Agent):
         self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
         self.exposed = self.asymptomatic-2*day_length
 
+        self.day_off = False
         self.timeToTeach = 5
         self.courses = ()
         self.door = ()
@@ -693,6 +694,7 @@ class canteen_Agent(Agent):
 
         #Class-schedule parameters
         self.next_to_attend_class = False
+        self.day_off = False
         self.door = ()
         self.courses = ()
         self.moving_to_door = 0

@@ -132,6 +132,9 @@ def covid_draw(agent):
             if agent.recovered == 1:
                 portrayal["Shape"] = "resources/healthy.png"
                 portrayal["scale"] = 0.9
+    if (isinstance(agent,ac.canteen_Agent) or  isinstance(agent,ac.TA) or  isinstance(agent,ac.class_Agent)) and agent.day_off == True:
+            portrayal["Shape"] = "resources/white.jpg"
+            portrayal["scale"] = 0.9
     if isinstance(agent,ac.canteen_Agent):
           if agent.off_school == 1:
                 portrayal["Shape"] = "resources/white.jpg"
