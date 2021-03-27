@@ -53,14 +53,15 @@ def change_direction(self, start_pos, end_pos):
 
 def truncnorm_(lower,upper,mu,sigma):
     return int(truncnorm((lower - mu) /sigma, (upper - mu) /sigma, loc = mu, scale=sigma))
+
 #Wander around function
-def wonder(self):
+def wander(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
     possible_empty_steps = []
     for position in possible_steps:
         if isinstance(self, canteen_Agent):
-            if self.off_school ==1 or self.is_home_sick ==1: #if invisible
-                if self.model.grid.is_cell_empty(position) and position not in[(23,18), (23,19)]+[(22,4), (23,4), (24,4)]:
+            if self.off_school == 1 or self.is_home_sick ==1: #if invisible
+                if self.model.grid.is_cell_empty(position) and position not in [(23,18), (23,19)]+[(22,4), (23,4), (24,4)]:
                     possible_empty_steps.append(position)
             elif position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
                 if self.model.grid.is_cell_empty(position):
@@ -561,7 +562,7 @@ class class_Agent(Agent):
             elif self.moving_to_door == 0: #Agents go to seat
                 move_to_specific_pos(self,self.seat)
                # move_to_specific_pos(self,self.seat)
-        else: wonder(self)
+        else: wander(self)
         end_pos = self.pos
         self.coords = change_direction(self, start_pos, end_pos)
 
@@ -647,8 +648,8 @@ class TA(Agent):
                 if s.hasQuestion == True:
                     self.move_to_student(s)
         else:
-            wonder(self)
-            wonder(self)
+            wander(self)
+            wander(self)
         end_pos = self.pos
         self.coords = change_direction(self, start_pos, end_pos)
 
@@ -713,7 +714,7 @@ class canteen_Agent(Agent):
             move_in_queue(self, (23,20)) # moves towards end of canteen
         elif self.sitting_in_canteen != 0:
             self.sitting_in_canteen = max(0, self.sitting_in_canteen -1)
-        else: wonder(self)
+        else: wander(self)
         end_pos = self.pos
         self.coords = change_direction(self, start_pos, end_pos)
 
@@ -774,7 +775,7 @@ class employee_Agent(Agent):
 
     def move(self):
         start_pos = self.pos
-        wonder(self)
+        wander(self)
         end_pos = self.pos
         self.coords = change_direction(self, start_pos, end_pos)
 
