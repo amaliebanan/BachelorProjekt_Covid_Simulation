@@ -56,7 +56,7 @@ def covid_draw(agent):
 
         if isinstance(agent, ac.class_Agent) and agent.hasQuestion == True:
             if agent.infected == True:
-                portrayal["Color"] = "black"
+                portrayal["Color"] = "#000"
             if agent.infected == False:
                 portrayal["Color"] = "Blue"
     if agent.id in [1001,1002,1003,1004,1005,1006]:
