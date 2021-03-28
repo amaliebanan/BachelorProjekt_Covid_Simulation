@@ -1,7 +1,7 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement
 from mesa.visualization.ModularVisualization import ModularServer
 import AgentClass as ac
-from Model import covid_Model,get_infected
+from Model import covid_Model,get_infected,is_invisible,is_student
 import numpy as np
 from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
@@ -41,9 +41,10 @@ def covid_draw(agent):
     if agent is None:
         return
     portrayal = {"Shape": "circle", "r": 0.8, "Filled": "true", "Layer": 0}
+    #if is_invisible(agent):
+    #    portrayal["text"]=agent.id
 
     if isinstance(agent, ac.class_Agent) or isinstance(agent, ac.canteen_Agent):
-
         if agent.recovered == 1:
             portrayal["Color"] = "purple"
         if agent.infected == 0:
@@ -127,19 +128,15 @@ def covid_draw(agent):
             portrayal["Shape"] = "resources/blueburger.png"
             portrayal["scale"] = 0.9
     if ac.is_human(agent):
-            if agent.is_home_sick == True:
-                portrayal["Shape"] = "resources/white.jpg"
-                portrayal["scale"] = 0.9
             if agent.recovered == 1:
                 portrayal["Shape"] = "resources/healthy.png"
                 portrayal["scale"] = 0.9
-    if (isinstance(agent,ac.canteen_Agent) or  isinstance(agent,ac.TA) or  isinstance(agent,ac.class_Agent)) and agent.day_off == True:
+    if is_invisible(agent):
             portrayal["Shape"] = "resources/white.jpg"
             portrayal["scale"] = 0.9
-    if isinstance(agent,ac.canteen_Agent):
-          if agent.off_school == 1:
-                portrayal["Shape"] = "resources/white.jpg"
-                portrayal["scale"] = 0.9
+    if is_student(agent) and agent.day_off == True:
+        portrayal["Shape"] = "resources/healthy.png"
+        portrayal["scale"] = 0.9
     return portrayal
 
 def covid_draw_arrow(agent):

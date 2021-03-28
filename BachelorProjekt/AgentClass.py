@@ -4,7 +4,7 @@ from mesa.space import MultiGrid
 import numpy as np
 import random
 import sys
-from Model import is_student, covid_Model, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage
+from Model import covid_Model,with_mask, is_invisible, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage
 from scipy.stats import truncnorm
 
 day_length = 525
@@ -53,6 +53,9 @@ def change_direction(self, start_pos, end_pos):
     else:
         return self.coords
 
+def get_agent_at_cell(self,pos):
+    return self.model.grid.get_cell_list_contents(pos)[0]
+
 def truncnorm_(lower,upper,mu,sigma):
     return int(truncnorm((lower - mu) /sigma, (upper - mu) /sigma, loc = mu, scale=sigma))
 
@@ -62,18 +65,15 @@ def wander(self):
     possible_empty_steps = []
     for position in possible_steps:
         if isinstance(self, canteen_Agent):
-            if self.off_school == True or self.is_home_sick ==True or self.day_off == True: #if invisible
-                if self.model.grid.is_cell_empty(position) and position not in [(23,18), (23,19)]+[(22,4), (23,4), (24,4)]:
+            if position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
+                if self.model.grid.is_cell_empty(position) or is_invisible(get_agent_at_cell(self,position)) or\
+                        isinstance(get_agent_at_cell(self,position),table):
                     possible_empty_steps.append(position)
-            elif position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
-                if self.model.grid.is_cell_empty(position):
-                    possible_empty_steps.append(position)
-                elif isinstance(self.model.grid.get_cell_list_contents(position)[0],table):
-                    possible_empty_steps.append(position)
+
         elif position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
             if self.model.grid.is_cell_empty(position):
                 possible_empty_steps.append(position)
-            elif isinstance(self.model.grid.get_cell_list_contents(position)[0],table):
+            elif isinstance(get_agent_at_cell(self,position),table):
                 possible_empty_steps.append(position)
 
     if len(possible_empty_steps) != 0:
@@ -107,9 +107,6 @@ def checkDirection(agent,neighbor):
 def infect(self):
         if self.exposed != 0:   #Agent smitter ikke endnu.
             return
-        if (self.is_home_sick == 1) or (isinstance(self,canteen_Agent) and self.off_school == 1) \
-                or (is_student(self) and self.day_off == True): #Agenten er derhjemme og kan ikke smitte
-            return
 
         if isinstance(self, TA):
             all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=True,radius=2)
@@ -125,21 +122,22 @@ def infect(self):
         for agent in closest_neighbors:
 
             #Dont infect neighbors that are home sick / not on campus
-            if agent.is_home_sick == True or (isinstance(self,canteen_Agent) and self.off_school == True):
-                continue
+            if is_invisible(agent) or (is_human(agent) and agent.is_home_sick == True):
+                return
             #Dont infect neighbors that are vaccinated, recorvered or
             if agent.vaccinated == True or agent.recovered == True or agent.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
                 continue
 
             distance = getDistance(self.pos,agent.pos)
             if distance <= 0.1:
-                if self.mask == True:
-                    pTA = np.random.poisson(calculate_percentage(100*infection_rate,infection_decrease_with_mask_pct))
-                elif self.mask == False:
-                    pTA = np.random.poisson(100*infection_rate) #TA står meget tæt og snakker højt
-                if pTA == 1:
-                    agent.infected = True
-                    self.model.infected_agents.append(agent)
+                 ##De er i indgangen, smit mindre
+                    if self.mask == True:
+                        pTA = np.random.poisson(calculate_percentage(10*infection_rate,infection_decrease_with_mask_pct))
+                    elif self.mask == False:
+                        pTA = np.random.poisson(10*infection_rate)
+                    if pTA == 1:
+                        agent.infected = True
+                        self.model.infected_agents.append(agent)
                  #Indenfor 1 meters afstand
             elif distance > 0.5 and distance <= 1.0:
                  if self.mask == True:
@@ -294,7 +292,12 @@ def canteen_to_class(self):
     i = self.door.id-501
 
     #Get a seat
-    seat = self.model.seats[i].pop()
+    try:
+        seat = self.model.seats[i].pop()
+    except:
+        seat = (0,0)
+        print(self.model.day_count,self.model.minute_count, self.pos,self.id ,"fuck")
+
 
     self.model.schedule.remove(self)
     self.model.grid.remove_agent(self)
@@ -402,13 +405,13 @@ def move_to_specific_pos(self,pos_):
             newY = random.randint(-1, 1)
             newAgent.pos = x-1,y+newY
             newAgent.coords = dir['W']
-            newAgent.mask = True
+            newAgent.mask = with_mask  #From Model
             self.model.grid.place_agent(newAgent, newAgent.pos)
             return
 
 
     possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
-    possible_empty_steps = [cell for cell in possible_steps if self.model.grid.is_cell_empty(cell)]
+    possible_empty_steps = [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos) or is_invisible(get_agent_at_cell(self,pos))]
 
     #If no cell is empty, agent can go through others "person"-agents (to avoid bottleneck)
     #Back-up list contains cells with covid,TA and canteen agents in
@@ -478,7 +481,8 @@ def send_agent_home(self):
     self.model.agents_at_home.append(self)
     if isinstance(self, employee_Agent) and self.id not in [1252,1253]:
         call_backup_employee(self)
-        self.model.canteen_agents_at_work.remove(self)
+        if self in self.model.canteen_agents_at_work:
+            self.model.canteen_agents_at_work.remove(self)
 
 def send_agent_back_to_school(self):
     newList_at_home = [a for a in self.model.agents_at_home if a.id != self.id]
@@ -490,7 +494,6 @@ def send_agent_back_to_school(self):
     self.recovered = True
     if isinstance(self, employee_Agent) and (self.id==1250 or self.id==1251):
         self.model.canteen_agents_at_work.append(self)
-
 
 def update_infection_parameters(self):
     if self.is_home_sick == True: #Agent is already home. Just update infection period
@@ -506,7 +509,6 @@ def update_infection_parameters(self):
         send_agent_home(self)
     self.exposed = max(0,self.exposed-1)    #If already 0 stay there, if larger than 0 subtract one
     self.infection_period = max(0,self.infection_period-1)
-
 
 def call_backup_employee(self):
     newLunchlady = employee_Agent(self.id+2,self.model)
@@ -531,7 +533,6 @@ class class_Agent(Agent):
         self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
         self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
         self.exposed = self.asymptomatic-2*day_length
-
 
         self.day_off = False
         self.moving_to_door = 0
@@ -561,6 +562,11 @@ class class_Agent(Agent):
 
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
+        if is_invisible(self):
+            if self.pos in self.model.entre:
+                return
+            else:
+                self.model.grid.move_agent(self,self.model.entre[random.randint(0,2)])
         if self.infected == True:
             #Try to infect
             infect(self)
@@ -649,6 +655,11 @@ class TA(Agent):
             self.coords = change_direction(self, start_pos, end_pos)
 
     def step(self):
+        if is_invisible(self):
+            if self.pos in self.model.entre:
+                return
+            else:
+                self.model.grid.move_agent(self,self.model.entre[random.randint(0,2)])
         self.time_remaining -=1
         self.connect_TA_and_students()
 
@@ -725,8 +736,13 @@ class canteen_Agent(Agent):
         else: wander(self)
 
 
-
     def step(self):
+        if is_invisible(self):
+            if self.pos in self.model.entre:
+                return
+            else:
+                self.model.grid.move_agent(self,self.model.entre[random.randint(0,2)])
+
         start_pos = self.pos #for changing direction
         if self.infected == True:
             infect(self)
@@ -746,7 +762,6 @@ class canteen_Agent(Agent):
         end_pos = self.pos
         self.coords = change_direction(self, start_pos, end_pos)
 
-
 class employee_Agent(Agent):
     def __init__(self,id,model):
         super().__init__(id,model)
@@ -764,6 +779,8 @@ class employee_Agent(Agent):
         self.coords = ()
 
     def step(self):
+        if is_invisible(self):
+            return
         if self.infected == True:
             infect(self)
             update_infection_parameters(self)
