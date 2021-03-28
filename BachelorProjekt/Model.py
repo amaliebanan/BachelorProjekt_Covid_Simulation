@@ -51,6 +51,11 @@ def is_human(agent_to_check):
         return True
     else:
         return False
+def is_student(agent_to_check):
+     if isinstance(agent_to_check, ac.class_Agent) or isinstance(agent_to_check, ac.TA) or isinstance(agent_to_check, ac.canteen_Agent):
+        return True
+     else:
+        return False
 
 def count_agents(self):
     agents = [a for a in self.schedule.agents if is_human(a)]
@@ -420,6 +425,16 @@ def off_school(self,breaks=False):
             for a in first_third_class+first_third_TAs:
                 a.off_school = 0
 
+def day_off(self,who,free):
+    if who == "ft":
+        TAs = [a for a in self.schedule.agents if a.id in [1001,1002,1003]]
+        class_ = [a for a in self.schedule.agents if a.id in range(0,(self.n_agents)*len(self.setUpType))]
+    elif who == "sf":
+        TAs = [a for a in self.schedule.agents if a.id in [1004,1005,1006]]
+        class_ = [a for a in self.schedule.agents if a.id in range((self.n_agents)*len(self.setUpType),2*(self.n_agents)*len(self.setUpType))]
+    for a in TAs+class_:
+        a.day_off = free
+
 
 class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
@@ -549,14 +564,6 @@ class covid_Model(Model):
     def step(self):
         off_school(self,go_home_in_breaks)
 
-
-        aa = [a for a in self.schedule.agents if (isinstance(a,ac.TA) or isinstance(a,ac.canteen_Agent) or isinstance(a, ac.class_Agent))]
-        aasym = [a.asymptomatic for a in aa]
-      #  print(aasym)
-
-        #Every 10th timestep add asking student
-
-
         for ta in self.TAs:
             p = np.random.poisson(20/100)==1
             if len(ta.students) == 0 or p == 0:
@@ -568,36 +575,25 @@ class covid_Model(Model):
                     randomStudent = self.random.choice(TAs_students)
                     randomStudent.hasQuestion = 1
 
-        self.schedule.step()
         for agent in self.canteen_backups_to_go_home:
             self.grid.remove_agent(agent)
             self.schedule.remove(agent)
             self.canteen_backups_to_go_home.remove(agent)
 
-        self.datacollector.collect(self)
+        #Day off for the students + TAs, 2nd day of week and 4th day of week respetively
+        if self.day_count%5 == 2 and self.minute_count == 1:
+            day_off(self,"ft",True)
+        elif self.day_count%5 == 4 and self.minute_count == 1:
+            day_off(self,"sf",True)
+        elif self.day_count%5 == 3 and self.minute_count == 1:
+             day_off(self,"ft",False)
+        elif self.day_count%5 == 0 and self.minute_count == 1:
+             day_off(self,"sf",False)
 
         if self.day_count>1 and self.minute_count in [100,220,400,520]:
             set_canteen_agents_next_to_attend_class(self)
         elif self.minute_count in [220,400,520]:
             set_canteen_agents_next_to_attend_class(self)
-
-
-        #Terminate model when everyone is healthy
-        #if find_status(self,"infected") == 0:
-         #  self.running = False
-
-        if self.minute_count in [100,220,400,520]:
-            TAs = [a.id for a in self.schedule.agents if (isinstance(a, ac.TA))]
-            if len(TAs) < len(self.setUpType):
-                all_tas = [a for a in self.schedule.agents if a.id in [1001,1002,1003,1004,1005,1006]]
-                all_tas_pos = [a.pos for a in all_tas]
-                all_tas_id = [a.id for a in all_tas]
-                all_tas_status = [a.infected for a in all_tas]
-                are_home = [a.is_home_sick for a in all_tas]
-                print(self.day_count,self.minute_count,len(TAs),TAs)
-                print("status",all_tas_status,"are home",are_home)
-                print(all_tas_pos,all_tas_id)
-
 
         if self.minute_count in [1,100,200,300,400]:
              #Reset list of seats so new agents can pop from original list of seats in classrooms
@@ -606,6 +602,9 @@ class covid_Model(Model):
             for list in self.seat:
                  self.seats.append(random.sample(list,k=len(list)))
 
+
+        self.schedule.step()
+        self.datacollector.collect(self)
         #Time count
         self.minute_count += 1
         if self.minute_count % 60 == 0:

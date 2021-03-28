@@ -56,7 +56,7 @@ def covid_draw(agent):
 
         if isinstance(agent, ac.class_Agent) and agent.hasQuestion == True:
             if agent.infected == True:
-                portrayal["Color"] = "black"
+                portrayal["Color"] = "#000"
             if agent.infected == False:
                 portrayal["Color"] = "Blue"
     if agent.id in [1001,1002,1003,1004,1005,1006]:
@@ -132,6 +132,9 @@ def covid_draw(agent):
             if agent.recovered == 1:
                 portrayal["Shape"] = "resources/healthy.png"
                 portrayal["scale"] = 0.9
+    if (isinstance(agent,ac.canteen_Agent) or  isinstance(agent,ac.TA) or  isinstance(agent,ac.class_Agent)) and agent.day_off == True:
+            portrayal["Shape"] = "resources/white.jpg"
+            portrayal["scale"] = 0.9
     if isinstance(agent,ac.canteen_Agent):
           if agent.off_school == 1:
                 portrayal["Shape"] = "resources/white.jpg"
