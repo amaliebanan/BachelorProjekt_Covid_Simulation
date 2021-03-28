@@ -134,9 +134,9 @@ def infect(self):
             distance = getDistance(self.pos,agent.pos)
             if distance <= 0.1:
                 if self.mask == True:
-                    pTA = np.random.poisson(calculate_percentage(10*infection_rate,infection_decrease_with_mask_pct))
+                    pTA = np.random.poisson(calculate_percentage(100*infection_rate,infection_decrease_with_mask_pct))
                 elif self.mask == False:
-                    pTA = np.random.poisson(10*infection_rate) #TA står meget tæt og snakker højt
+                    pTA = np.random.poisson(100*infection_rate) #TA står meget tæt og snakker højt
                 if pTA == 1:
                     agent.infected = True
                     self.model.infected_agents.append(agent)
@@ -262,7 +262,6 @@ def new_infect(self):
             else:
                 neighbor_in_front.append(agent)
 
-
 ###CHANGING OBJECT-TYPE###
 #Get all essential parameters transfered
 def change_obj_params(new,old):
@@ -303,7 +302,6 @@ def canteen_to_class(self):
 
     return c_agent,seat
 
-
 #Turn class-object to canteen-object
 def class_to_canteen(self):
     c_agent = canteen_Agent(self.id,self.model)
@@ -340,7 +338,6 @@ def class_to_canteen(self):
 
     return c_agent
 
-
 #Turn TA-object to class-object
 def TA_to_class(self):
     c_agent = class_Agent(self.id, self.model)
@@ -359,8 +356,6 @@ def TA_to_class(self):
     self.model.grid.place_agent(c_agent,c_agent.pos)
     c_agent.coords = dir['E']
 
-
-
 #Turn canteen-object to TA-object
 def canteen_to_TA(self):
     c_agent = TA(self.id,self.model)
@@ -377,7 +372,6 @@ def canteen_to_TA(self):
     self.model.schedule.add(c_agent)
 
     return c_agent
-
 
 def move_in_queue(self, pos_):
     if self.buying_lunch != 0:
@@ -398,7 +392,6 @@ def move_in_queue(self, pos_):
             if self.pos == (23,17):
                 self.buying_lunch = 3
                 self.coords = dir['E']
-
 
 def move_to_specific_pos(self,pos_):
     if self.id in [1001,1002,1003,1004,1005,1006]:
@@ -473,10 +466,9 @@ def move_to_specific_pos(self,pos_):
     #???? if student isnt making it to class in time ???
     if self.model.minute_count in [40,160,340,470]:
         x,y = pos_
-        force_agent_to_specific_pos(self,(x-1,y))
+        force_agent_to_specific_pos(self,(x+1,y))
         return
     self.model.grid.move_agent(self,(x_,y_))
-
 
 def force_agent_to_specific_pos(self,pos):
     self.model.grid.move_agent(self,pos)
@@ -592,7 +584,7 @@ class TA(Agent):
         self.id = id
         self.infected = False
         self.recovered = False
-        self.mask = True
+        self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
 

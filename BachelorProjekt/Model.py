@@ -16,7 +16,7 @@ day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
 init_canteen_agents = 90
-infection_rate = 0.025/100
+infection_rate = (0.025/100)*2
 infection_rate_1_to_2_meter = calculate_percentage(infection_rate, 10.2)
 infection_rate_2plus_meter = calculate_percentage(infection_rate_1_to_2_meter,2.02)
 infection_decrease_with_mask_pct = 70
@@ -24,6 +24,7 @@ infection_decrease_with_mask_pct = 70
 go_home_in_breaks = False
 family_groups = False
 with_mask = False
+day_off = False
 percentages_of_vaccinated = 0 #Number 0<=x<1
 
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
@@ -580,15 +581,17 @@ class covid_Model(Model):
             self.schedule.remove(agent)
             self.canteen_backups_to_go_home.remove(agent)
 
-        #Day off for the students + TAs, 2nd day of week and 4th day of week respetively
-        if self.day_count%5 == 2 and self.minute_count == 1:
-            day_off(self,"ft",True)
-        elif self.day_count%5 == 4 and self.minute_count == 1:
-            day_off(self,"sf",True)
-        elif self.day_count%5 == 3 and self.minute_count == 1:
-             day_off(self,"ft",False)
-        elif self.day_count%5 == 0 and self.minute_count == 1:
-             day_off(self,"sf",False)
+        if day_off == True:
+            #Day off for the students + TAs, 2nd day of week and 4th day of week respetively
+            if self.day_count%5 == 2 and self.minute_count == 1:
+                day_off(self,"ft",True)
+            elif self.day_count%5 == 4 and self.minute_count == 1:
+                day_off(self,"sf",True)
+            elif self.day_count%5 == 3 and self.minute_count == 1:
+                 day_off(self,"ft",False)
+            elif self.day_count%5 == 0 and self.minute_count == 1:
+                 day_off(self,"sf",False)
+
 
         if self.day_count>1 and self.minute_count in [100,220,400,520]:
             set_canteen_agents_next_to_attend_class(self)
