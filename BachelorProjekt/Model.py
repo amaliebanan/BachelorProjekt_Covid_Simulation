@@ -59,7 +59,7 @@ def is_student(agent_to_check):
         return True
      else:
         return False
-def is_invisible(agent_to_check):
+def is_off_campus(agent_to_check):
     if is_student(agent_to_check) and agent_to_check.day_off == True:
         return True
     elif isinstance(agent_to_check, ac.canteen_Agent) and agent_to_check.off_school == True:
@@ -578,9 +578,6 @@ class covid_Model(Model):
 
 
     def step(self):
-
-            #Reset list of seats so new agents can pop from original list of seats in classrooms
-        #len(list(chain.from_iterable(self.seats))) == 0 or
         if self.minute_count in [1,119,299,419]:
             self.seats = make_classrooms_fit_to_grid(self.setUpType,self)
 

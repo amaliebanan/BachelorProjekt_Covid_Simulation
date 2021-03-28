@@ -1,7 +1,7 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement
 from mesa.visualization.ModularVisualization import ModularServer
 import AgentClass as ac
-from Model import covid_Model,get_infected,is_invisible,is_student
+from Model import covid_Model,get_infected,is_off_campus,is_student
 import numpy as np
 from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
@@ -131,7 +131,7 @@ def covid_draw(agent):
             if agent.recovered == 1:
                 portrayal["Shape"] = "resources/healthy.png"
                 portrayal["scale"] = 0.9
-    if is_invisible(agent):
+    if is_off_campus(agent):
             portrayal["Shape"] = "resources/white.jpg"
             portrayal["scale"] = 0.9
     if is_student(agent) and agent.day_off == True:
