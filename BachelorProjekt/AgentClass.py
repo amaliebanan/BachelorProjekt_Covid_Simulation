@@ -4,7 +4,7 @@ from mesa.space import MultiGrid
 import numpy as np
 import random
 import sys
-from Model import covid_Model,with_mask, is_invisible, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage
+from Model import covid_Model,with_mask,is_same_object, is_invisible, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage
 from scipy.stats import truncnorm
 
 day_length = 525
@@ -130,13 +130,22 @@ def infect(self):
 
             distance = getDistance(self.pos,agent.pos)
             if distance <= 0.1:
-                if self.mask == True:
-                    pTA = np.random.poisson(calculate_percentage(100*infection_rate,infection_decrease_with_mask_pct))
-                elif self.mask == False:
-                    pTA = np.random.poisson(100*infection_rate) #TA står meget tæt og snakker højt
-                if pTA == 1:
-                    agent.infected = True
-                    self.model.infected_agents.append(agent)
+                if is_same_object(self,agent) == False: #Its a TA
+                    if self.mask == True:
+                        pTA = np.random.poisson(calculate_percentage(100*infection_rate,infection_decrease_with_mask_pct))
+                    elif self.mask == False:
+                        pTA = np.random.poisson(100*infection_rate) #TA står meget tæt og snakker højt
+                    if pTA == 1:
+                        agent.infected = True
+                        self.model.infected_agents.append(agent)
+                else: ##De er i indgangen, smit mindre
+                    if self.mask == True:
+                        pTA = np.random.poisson(calculate_percentage(10*infection_rate,infection_decrease_with_mask_pct))
+                    elif self.mask == False:
+                        pTA = np.random.poisson(10*infection_rate)
+                    if pTA == 1:
+                        agent.infected = True
+                        self.model.infected_agents.append(agent)
                  #Indenfor 1 meters afstand
             elif distance > 0.5 and distance <= 1.0:
                  if self.mask == True:

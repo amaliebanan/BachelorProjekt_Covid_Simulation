@@ -2,6 +2,7 @@ import AgentClass as ac
 from mesa.time import SimultaneousActivation,RandomActivation
 from mesa.space import MultiGrid
 import random
+from itertools import chain
 import copy
 import math
 from mesa import Agent, Model
@@ -64,6 +65,11 @@ def is_invisible(agent_to_check):
     elif is_student(agent_to_check) and agent_to_check.day_off == True:
         return True
     elif isinstance(agent_to_check, ac.canteen_Agent) and agent_to_check.off_school == True:
+        return True
+    else:
+        return False
+def is_same_object(agent1,agent2):
+    if isinstance(agent1,agent2):
         return True
     else:
         return False
@@ -529,7 +535,6 @@ class covid_Model(Model):
                            ((5,6),dir['N']),((5,7),dir['S']),((5,9),dir['N']),((0,5),dir['S']),
                            ((0,2),dir['N']),((6,8),dir['S']),((6,2),dir['N']),((0,8),dir['S'])]
         self.seats = []
-        self.copy_of_seats = []
         self.seat = ()
 
 
@@ -612,9 +617,10 @@ class covid_Model(Model):
         elif self.minute_count in [220,400,520]:
             set_canteen_agents_next_to_attend_class(self)
 
-      #  if self.minute_count in [1,100,200,280,390,500]:
+
             #Reset list of seats so new agents can pop from original list of seats in classrooms
-        self.seats = copy.deepcopy(self.copy_of_seats)
+        if len(list(chain.from_iterable(self.seats))) == 0:
+            self.seats = make_classrooms_fit_to_grid(self.setUpType,self)
 
         self.schedule.step()
         self.datacollector.collect(self)
@@ -622,6 +628,7 @@ class covid_Model(Model):
         self.minute_count += 1
         if self.minute_count % 60 == 0:
             self.hour_count += 1
+
 
         if self.minute_count % 525 == 0:
             self.day_count += 1
