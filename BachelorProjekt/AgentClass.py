@@ -263,7 +263,6 @@ def new_infect(self):
                 neighbor_in_front.append(agent)
 
 
-
 ###CHANGING OBJECT-TYPE###
 #Get all essential parameters transfered
 def change_obj_params(new,old):
@@ -472,8 +471,9 @@ def move_to_specific_pos(self,pos_):
 
     #to prevent logic-flaw when student cannot get to seat
     #???? if student isnt making it to class in time ???
-    if self.model.minute_count in [50,170,350,480]:
-        force_agent_to_specific_pos(self,pos_)
+    if self.model.minute_count in [40,160,340,470]:
+        x,y = pos_
+        force_agent_to_specific_pos(self,(x-1,y))
         return
     self.model.grid.move_agent(self,(x_,y_))
 
@@ -481,14 +481,12 @@ def move_to_specific_pos(self,pos_):
 def force_agent_to_specific_pos(self,pos):
     self.model.grid.move_agent(self,pos)
 
-
 def send_agent_home(self):
     self.is_home_sick = True
     self.model.agents_at_home.append(self)
     if isinstance(self, employee_Agent):
         call_backup_employee(self)
         self.model.canteen_agents_at_work.remove(self)
-
 
 def send_agent_back_to_school(self):
     newList_at_home = [a for a in self.model.agents_at_home if a.id != self.id]

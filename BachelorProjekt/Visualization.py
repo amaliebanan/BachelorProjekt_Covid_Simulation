@@ -43,6 +43,7 @@ def covid_draw(agent):
     portrayal = {"Shape": "circle", "r": 0.8, "Filled": "true", "Layer": 0}
 
     if isinstance(agent, ac.class_Agent) or isinstance(agent, ac.canteen_Agent):
+
         if agent.recovered == 1:
             portrayal["Color"] = "purple"
         if agent.infected == 0:
@@ -261,7 +262,7 @@ def covid_draw_arrow(agent):
 
 infected_element = infected_Element()
 days_chart = count_Days()
-grid = CanvasGrid(covid_draw_arrow, width, height, 500, 500)
+grid = CanvasGrid(covid_draw, width, height, 1000, 1000)
 
 infected_chart = ChartModule([{"Label":"infected","Color":"Black"}], data_collector_name="datacollector")
 
