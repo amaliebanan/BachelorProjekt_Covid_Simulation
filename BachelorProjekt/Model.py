@@ -524,6 +524,9 @@ class covid_Model(Model):
         self.canteen_table_1 = [((22,y), dir['E']) for y in range(25,33)]+[((23,y), dir['W']) for y in range(25,33)]
         self.canteen_table_2 = [((18,y), dir['E']) for y in range(25,33)]+[((19,y), dir['W']) for y in range(25,33)]
 
+        self.enter_canteen_area12 = [(x,y) for y in range(0,4) for x in range(17,26)]
+        self.enter_canteen_area10 = [(x,y) for y in range(0,4) for x in range(21,26)]
+
         if go_home_in_breaks == False:
                 add_init_employee_to_grid(self)
                 set_up_canteen(self)
@@ -563,6 +566,14 @@ class covid_Model(Model):
 
 
     def step(self):
+        for agent in self.canteen_backups_to_go_home: #sending home spare employees
+            if not agent.pos is None:
+                self.grid.remove_agent(agent)
+                self.schedule.remove(agent)
+                self.canteen_backups_to_go_home.remove(agent)
+            else:
+                self.canteen_backups_to_go_home.remove(agent)
+
         off_school(self,go_home_in_breaks)
 
         for ta in self.TAs:
@@ -576,10 +587,7 @@ class covid_Model(Model):
                     randomStudent = self.random.choice(TAs_students)
                     randomStudent.hasQuestion = 1
 
-        for agent in self.canteen_backups_to_go_home:
-            self.grid.remove_agent(agent)
-            self.schedule.remove(agent)
-            self.canteen_backups_to_go_home.remove(agent)
+
 
         if day_off == True:
             #Day off for the students + TAs, 2nd day of week and 4th day of week respetively

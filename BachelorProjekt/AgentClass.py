@@ -476,7 +476,7 @@ def force_agent_to_specific_pos(self,pos):
 def send_agent_home(self):
     self.is_home_sick = True
     self.model.agents_at_home.append(self)
-    if isinstance(self, employee_Agent):
+    if isinstance(self, employee_Agent) and self.id not in [1252,1253]:
         call_backup_employee(self)
         self.model.canteen_agents_at_work.remove(self)
 
@@ -691,6 +691,19 @@ class canteen_Agent(Agent):
         self.moving_to_door = 0
         self.TA = ()
 
+    def update_queue_parameters(self):
+        if self.model.minute_count in range(225,301):
+            if self.pos in self.model.enter_canteen_area12: #in beginning of queue area at lunchbreak
+                if self.off_school ==0 and self.is_home_sick ==0:
+                    self.queue =1 #stands in line for canteen
+        else:
+            if self.pos in self.model.enter_canteen_area10: #in beginning of queue area at 10break
+                if self.off_school ==0 and self.is_home_sick ==0:
+                    self.queue =1 #stands in line for canteen
+        if self.pos in [(23,j) for j in range(4,20)]: #already in queue area
+            self.queue=1
+        elif self.pos == (23,20):
+            self.queue = 0 #done in line
 
     def move(self,timestep=False):
         if timestep is True: #Agents go to door
@@ -703,7 +716,10 @@ class canteen_Agent(Agent):
                 move_to_specific_pos(self,self.door.pos)
 
         elif self.queue == 1:
-            move_in_queue(self, (23,20)) # moves towards end of canteen
+            if self.pos in [(23,j) for j in range(0,20)]:
+                move_in_queue(self, (23,20)) # moves towards end of canteen
+            else:
+                move_in_queue(self, (23,3))
         elif self.sitting_in_canteen != 0:
             self.sitting_in_canteen = max(0, self.sitting_in_canteen -1)
         else: wander(self)
@@ -715,13 +731,7 @@ class canteen_Agent(Agent):
         if self.infected == True:
             infect(self)
             update_infection_parameters(self)
-        if self.pos in [(22,3),(23,3),(24,3)]: #in beginning of queue area
-            if self.off_school ==0 and self.is_home_sick ==0:
-                self.queue =1 #stands in line for canteen
-        if self.pos in [(23,j) for j in range(4,19)]:
-            self.queue=1
-        if self.pos == (23,20):
-            self.queue = 0 #done in line
+        self.update_queue_parameters()
             #When should canteen agent go to door?
         if self.model.day_count == 1:
             if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 0 and self.next_to_attend_class is True:
@@ -761,9 +771,8 @@ class employee_Agent(Agent):
 
         if self.id %2 == 0:
             self.move()
-        if self.id > 1251 and len(self.model.canteen_agents_at_work)==2: #if both other employees is at work
+        if self.id in [1252,1253] and len(self.model.canteen_agents_at_work)==2: #if both other employees is at work
             self.model.canteen_backups_to_go_home.append(self)
-
 
 
     def move(self):
