@@ -34,21 +34,23 @@ def change_direction(self, start_pos, end_pos):
     change_of_pos = np.subtract(start_pos, end_pos)
     if (np.array(change_of_pos)==np.array([1,1])).all(): #if agent moves SW
         return dir['SW']
-    if (np.array(change_of_pos)==np.array([1,0])).all(): #if agent moves W
+    elif (np.array(change_of_pos)==np.array([1,0])).all(): #if agent moves W
         return dir['W']
-    if (np.array(change_of_pos)==np.array([1,-1])).all(): #if agent moves NW
+    elif (np.array(change_of_pos)==np.array([1,-1])).all(): #if agent moves NW
         return dir['NW']
-    if (np.array(change_of_pos)==np.array([0,-1])).all(): #if agent moves N
+    elif (np.array(change_of_pos)==np.array([0,-1])).all(): #if agent moves N
         return dir['N']
-    if (np.array(change_of_pos)==np.array([-1,-1])).all(): #if agent moves NE
+    elif (np.array(change_of_pos)==np.array([-1,-1])).all(): #if agent moves NE
         return dir['NE']
-    if (np.array(change_of_pos)==np.array([-1,0])).all(): #if agent moves E
+    elif (np.array(change_of_pos)==np.array([-1,0])).all(): #if agent moves E
         return dir['E']
-    if (np.array(change_of_pos)==np.array([-1,1])).all(): #if agent moves SE
+    elif (np.array(change_of_pos)==np.array([-1,1])).all(): #if agent moves SE
         return dir['SE']
-    if (np.array(change_of_pos)==np.array([0,1])).all(): #if agent moves S
+    elif (np.array(change_of_pos)==np.array([0,1])).all(): #if agent moves S
         return dir['S']
-    if start_pos == end_pos: #if agent doesn't move
+    elif start_pos == end_pos: #if agent doesn't move
+        return self.coords
+    else:
         return self.coords
 
 def truncnorm_(lower,upper,mu,sigma):
@@ -344,7 +346,6 @@ def TA_to_class(self):
     c_agent = class_Agent(self.id, self.model)
     change_obj_params(c_agent,self)
 
-    c_agent.coords = dir['E']
     c_agent.door, c_agent.moving_to_door = self.door, 1
     if self.courses == (): #First time, we need to initialize TA's courses
         c_agent.courses = [0,0]
@@ -356,6 +357,8 @@ def TA_to_class(self):
 
     self.model.schedule.add(c_agent)
     self.model.grid.place_agent(c_agent,c_agent.pos)
+    c_agent.coords = dir['E']
+
 
 
 #Turn canteen-object to TA-object
@@ -639,34 +642,32 @@ class TA(Agent):
             s.TA = self
 
     def move(self):
-        start_pos = self.pos
         question_count = count_students_who_has_question(self.model, self.students)
 
         if question_count > 0 and len(self.students) > 15:  #Class is started and somebody a question
             for s in self.students:
                 if s.hasQuestion == True:
                     self.move_to_student(s)
+                    self.coords = s.coords
         else:
             wonder(self)
+            start_pos = self.pos
             wonder(self)
-        end_pos = self.pos
-        self.coords = change_direction(self, start_pos, end_pos)
+            end_pos = self.pos
+            self.coords = change_direction(self, start_pos, end_pos)
 
     def step(self):
-      self.time_remaining -=1
-      self.connect_TA_and_students()
+        self.time_remaining -=1
+        self.connect_TA_and_students()
 
-      if self.infected == True:
-         infect(self)
-         update_infection_parameters(self)
+        if self.infected == True:
+            infect(self)
+            update_infection_parameters(self)
+        if self.time_remaining <= 0 and len(self.students)<5:
+            TA_to_class(self)
+            return
 
-      if self.time_remaining <= 0 and len(self.students)<5:
-          TA_to_class(self)
-          return
-
-
-
-      self.move()
+        self.move()
 
 class canteen_Agent(Agent):
     def __init__(self, id, model):
@@ -699,7 +700,6 @@ class canteen_Agent(Agent):
 
 
     def move(self,timestep=False):
-        start_pos = self.pos #for changing direction
         if timestep is True: #Agents go to door
             if self.queue == 0 and self.sitting_in_canteen == 0:
                 move_to_specific_pos(self,self.door.pos)
@@ -714,11 +714,11 @@ class canteen_Agent(Agent):
         elif self.sitting_in_canteen != 0:
             self.sitting_in_canteen = max(0, self.sitting_in_canteen -1)
         else: wonder(self)
-        end_pos = self.pos
-        self.coords = change_direction(self, start_pos, end_pos)
+
 
 
     def step(self):
+        start_pos = self.pos #for changing direction
         if self.infected == True:
             infect(self)
             update_infection_parameters(self)
@@ -729,19 +729,21 @@ class canteen_Agent(Agent):
             self.queue=1
         if self.pos == (23,20):
             self.queue = 0 #done in line
-
-        #When should canteen agent go to door?
+            #When should canteen agent go to door?
         if self.model.day_count == 1:
             if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 0 and self.next_to_attend_class is True:
                 self.moving_to_door = 1
         elif (self.model.minute_count == 0 or (self.model.minute_count in self.model.class_times+[2] and self.model.minute_count%2 == 0))\
                 and self.next_to_attend_class is True:
             self.moving_to_door = 1
-
         if self.moving_to_door == 1:
             self.move(True)
         else:
             self.move()
+        end_pos = self.pos
+        self.coords = change_direction(self, start_pos, end_pos)
+        if self.coords is None:
+            print('last', self.coords, self.id, start_pos, end_pos)
 
 class employee_Agent(Agent):
     def __init__(self,id,model):
