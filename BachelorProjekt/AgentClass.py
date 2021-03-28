@@ -4,7 +4,7 @@ from mesa.space import MultiGrid
 import numpy as np
 import random
 import sys
-from Model import covid_Model,with_mask,is_same_object, is_invisible, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage
+from Model import covid_Model,with_mask, is_invisible, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage
 from scipy.stats import truncnorm
 
 day_length = 525
@@ -122,7 +122,7 @@ def infect(self):
         for agent in closest_neighbors:
 
             #Dont infect neighbors that are home sick / not on campus
-            if is_invisible(agent):
+            if is_invisible(agent) or (is_human(agent) and agent.is_home_sick == True):
                 return
             #Dont infect neighbors that are vaccinated, recorvered or
             if agent.vaccinated == True or agent.recovered == True or agent.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
@@ -130,15 +130,7 @@ def infect(self):
 
             distance = getDistance(self.pos,agent.pos)
             if distance <= 0.1:
-                if is_same_object(self,agent) == False: #Its a TA
-                    if self.mask == True:
-                        pTA = np.random.poisson(calculate_percentage(100*infection_rate,infection_decrease_with_mask_pct))
-                    elif self.mask == False:
-                        pTA = np.random.poisson(100*infection_rate) #TA står meget tæt og snakker højt
-                    if pTA == 1:
-                        agent.infected = True
-                        self.model.infected_agents.append(agent)
-                else: ##De er i indgangen, smit mindre
+                 ##De er i indgangen, smit mindre
                     if self.mask == True:
                         pTA = np.random.poisson(calculate_percentage(10*infection_rate,infection_decrease_with_mask_pct))
                     elif self.mask == False:
@@ -300,7 +292,12 @@ def canteen_to_class(self):
     i = self.door.id-501
 
     #Get a seat
-    seat = self.model.seats[i].pop()
+    try:
+        seat = self.model.seats[i].pop()
+    except:
+        seat = (0,0)
+        print(self.model.day_count,self.model.minute_count, self.pos,self.id ,"fuck")
+
 
     self.model.schedule.remove(self)
     self.model.grid.remove_agent(self)

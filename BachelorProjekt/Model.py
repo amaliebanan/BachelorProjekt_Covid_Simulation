@@ -60,19 +60,13 @@ def is_student(agent_to_check):
      else:
         return False
 def is_invisible(agent_to_check):
-    if is_human(agent_to_check) and agent_to_check.is_home_sick == True:
-        return True
-    elif is_student(agent_to_check) and agent_to_check.day_off == True:
+    if is_student(agent_to_check) and agent_to_check.day_off == True:
         return True
     elif isinstance(agent_to_check, ac.canteen_Agent) and agent_to_check.off_school == True:
         return True
     else:
         return False
-def is_same_object(agent1,agent2):
-    if isinstance(agent1,agent2):
-        return True
-    else:
-        return False
+
 
 def count_agents(self):
     agents = [a for a in self.schedule.agents if is_human(a)]
@@ -581,6 +575,12 @@ class covid_Model(Model):
 
 
     def step(self):
+
+            #Reset list of seats so new agents can pop from original list of seats in classrooms
+        #len(list(chain.from_iterable(self.seats))) == 0 or
+        if self.minute_count in [1,119,299,419]:
+            self.seats = make_classrooms_fit_to_grid(self.setUpType,self)
+
         off_school(self,go_home_in_breaks)
 
         for ta in self.TAs:
@@ -596,15 +596,18 @@ class covid_Model(Model):
 
 
         for agent in self.canteen_backups_to_go_home:
-            self.grid.remove_agent(agent)
-            self.schedule.remove(agent)
-            self.canteen_backups_to_go_home.remove(agent)
+            try:
+                self.grid.remove_agent(agent)
+                self.schedule.remove(agent)
+                self.canteen_backups_to_go_home.remove(agent)
+            except:
+                print("ku ik fjerne canteen backup")
 
 
         #Day off for the students + TAs, 2nd day of week and 4th day of week respetively
         if self.day_count%5 == 2 and self.minute_count == 1:
             day_off(self,"ft",True)
-        elif self.day_count%5 == 4 and self.minute_count == 1:
+        elif self.day_count%5 == 4 and self.minute_count == 30:
             day_off(self,"sf",True)
         elif self.day_count%5 == 3 and self.minute_count == 1:
              day_off(self,"ft",False)
@@ -617,10 +620,6 @@ class covid_Model(Model):
         elif self.minute_count in [220,400,520]:
             set_canteen_agents_next_to_attend_class(self)
 
-
-            #Reset list of seats so new agents can pop from original list of seats in classrooms
-        if len(list(chain.from_iterable(self.seats))) == 0:
-            self.seats = make_classrooms_fit_to_grid(self.setUpType,self)
 
         self.schedule.step()
         self.datacollector.collect(self)
