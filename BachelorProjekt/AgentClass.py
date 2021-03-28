@@ -122,8 +122,8 @@ def infect(self):
         for agent in closest_neighbors:
 
             #Dont infect neighbors that are home sick / not on campus
-            if agent.is_home_sick == True or (isinstance(self,canteen_Agent) and self.off_school == True):
-                continue
+            if is_invisible(agent):
+                return
             #Dont infect neighbors that are vaccinated, recorvered or
             if agent.vaccinated == True or agent.recovered == True or agent.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
                 continue
@@ -475,7 +475,8 @@ def send_agent_home(self):
     self.model.agents_at_home.append(self)
     if isinstance(self, employee_Agent):
         call_backup_employee(self)
-        self.model.canteen_agents_at_work.remove(self)
+        if self in self.model.canteen_agents_at_work:
+            self.model.canteen_agents_at_work.remove(self)
 
 def send_agent_back_to_school(self):
     newList_at_home = [a for a in self.model.agents_at_home if a.id != self.id]
@@ -487,7 +488,6 @@ def send_agent_back_to_school(self):
     self.recovered = True
     if isinstance(self, employee_Agent) and (self.id==1250 or self.id==1251):
         self.model.canteen_agents_at_work.append(self)
-
 
 def update_infection_parameters(self):
     if self.is_home_sick == True: #Agent is already home. Just update infection period
@@ -503,7 +503,6 @@ def update_infection_parameters(self):
         send_agent_home(self)
     self.exposed = max(0,self.exposed-1)    #If already 0 stay there, if larger than 0 subtract one
     self.infection_period = max(0,self.infection_period-1)
-
 
 def call_backup_employee(self):
     newLunchlady = employee_Agent(self.id+2,self.model)

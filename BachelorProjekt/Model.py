@@ -612,9 +612,9 @@ class covid_Model(Model):
         elif self.minute_count in [220,400,520]:
             set_canteen_agents_next_to_attend_class(self)
 
-        if self.minute_count in [1,100,200,280,390,500]:
+      #  if self.minute_count in [1,100,200,280,390,500]:
             #Reset list of seats so new agents can pop from original list of seats in classrooms
-            self.seats = copy.deepcopy(self.copy_of_seats)
+        self.seats = copy.deepcopy(self.copy_of_seats)
 
         self.schedule.step()
         self.datacollector.collect(self)
