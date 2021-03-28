@@ -2,6 +2,7 @@ import AgentClass as ac
 from mesa.time import SimultaneousActivation,RandomActivation
 from mesa.space import MultiGrid
 import random
+import copy
 import math
 from mesa import Agent, Model
 
@@ -56,6 +57,15 @@ def is_student(agent_to_check):
      if isinstance(agent_to_check, ac.class_Agent) or isinstance(agent_to_check, ac.TA) or isinstance(agent_to_check, ac.canteen_Agent):
         return True
      else:
+        return False
+def is_invisible(agent_to_check):
+    if is_human(agent_to_check) and agent_to_check.is_home_sick == True:
+        return True
+    elif is_student(agent_to_check) and agent_to_check.day_off == True:
+        return True
+    elif isinstance(agent_to_check, ac.canteen_Agent) and agent_to_check.off_school == True:
+        return True
+    else:
         return False
 
 def count_agents(self):
@@ -139,7 +149,7 @@ def add_init_cantine_agents_to_grid(self,N,n):
             newAgent.coords = random.choice(list(dir.values()))
 
             if with_mask == True:
-                newAgent.mask = 1
+                newAgent.mask = True
 
             x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
             if (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:
@@ -254,7 +264,6 @@ def setUp(N,model,setUpType,i):
             newAgent.TA = TA
             newAgent.seat = (x,y)
             students.append(newAgent)
-            model.ft_batch.append(newAgent)
         TA.students = students
 
         #Place walls
@@ -427,15 +436,18 @@ def off_school(self,breaks=False):
                 a.off_school = 0
 
 def day_off(self,who,free):
+    TAs,class_ = [],[]
     if who == "ft":
         TAs = [a for a in self.schedule.agents if a.id in [1001,1002,1003]]
         class_ = [a for a in self.schedule.agents if a.id in range(0,(self.n_agents)*len(self.setUpType))]
     elif who == "sf":
         TAs = [a for a in self.schedule.agents if a.id in [1004,1005,1006]]
         class_ = [a for a in self.schedule.agents if a.id in range((self.n_agents)*len(self.setUpType),2*(self.n_agents)*len(self.setUpType))]
-    for a in TAs+class_:
+    for a in class_:
         a.day_off = free
-
+    for a in TAs:
+        a.day_off = free
+        a.off_school = free
 
 class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
@@ -461,8 +473,7 @@ class covid_Model(Model):
         self.day_count = 1
         self.door = ()
 
-        self.ft_batch = []
-        self.sf_batch = []
+        self.entre = [(15,0),(16,0),(17,0)]
 
         self.class_times = [105,120,225,300,405,420,525]
 
@@ -518,6 +529,7 @@ class covid_Model(Model):
                            ((5,6),dir['N']),((5,7),dir['S']),((5,9),dir['N']),((0,5),dir['S']),
                            ((0,2),dir['N']),((6,8),dir['S']),((6,2),dir['N']),((0,8),dir['S'])]
         self.seats = []
+        self.copy_of_seats = []
         self.seat = ()
 
 
@@ -545,6 +557,7 @@ class covid_Model(Model):
                 self.seats.append(random.sample(list,k=len(list)))
             elif family_groups == True: #Dont shuffle
                 self.seats.append(list)
+        self.copy_of_seats = self.seats
         self.datacollector.collect(self)
         self.running = True
 
@@ -576,21 +589,22 @@ class covid_Model(Model):
                     randomStudent = self.random.choice(TAs_students)
                     randomStudent.hasQuestion = 1
 
+
         for agent in self.canteen_backups_to_go_home:
             self.grid.remove_agent(agent)
             self.schedule.remove(agent)
             self.canteen_backups_to_go_home.remove(agent)
 
-        if day_off == True:
-            #Day off for the students + TAs, 2nd day of week and 4th day of week respetively
-            if self.day_count%5 == 2 and self.minute_count == 1:
-                day_off(self,"ft",True)
-            elif self.day_count%5 == 4 and self.minute_count == 1:
-                day_off(self,"sf",True)
-            elif self.day_count%5 == 3 and self.minute_count == 1:
-                 day_off(self,"ft",False)
-            elif self.day_count%5 == 0 and self.minute_count == 1:
-                 day_off(self,"sf",False)
+
+        #Day off for the students + TAs, 2nd day of week and 4th day of week respetively
+        if self.day_count%5 == 2 and self.minute_count == 1:
+            day_off(self,"ft",True)
+        elif self.day_count%5 == 4 and self.minute_count == 1:
+            day_off(self,"sf",True)
+        elif self.day_count%5 == 3 and self.minute_count == 1:
+             day_off(self,"ft",False)
+        elif self.day_count%5 == 0 and self.minute_count == 1:
+             day_off(self,"sf",False)
 
 
         if self.day_count>1 and self.minute_count in [100,220,400,520]:
@@ -598,13 +612,9 @@ class covid_Model(Model):
         elif self.minute_count in [220,400,520]:
             set_canteen_agents_next_to_attend_class(self)
 
-        if self.minute_count in [1,100,200,300,400]:
-             #Reset list of seats so new agents can pop from original list of seats in classrooms
-            self.seats = []
-            self.seat = make_classrooms_fit_to_grid(self.setUpType,self)
-            for list in self.seat:
-                 self.seats.append(random.sample(list,k=len(list)))
-
+        if self.minute_count in [1,100,200,280,390,500]:
+            #Reset list of seats so new agents can pop from original list of seats in classrooms
+            self.seats = copy.deepcopy(self.copy_of_seats)
 
         self.schedule.step()
         self.datacollector.collect(self)

@@ -1,7 +1,7 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement
 from mesa.visualization.ModularVisualization import ModularServer
 import AgentClass as ac
-from Model import covid_Model,get_infected
+from Model import covid_Model,get_infected,is_invisible
 import numpy as np
 from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
@@ -41,9 +41,9 @@ def covid_draw(agent):
     if agent is None:
         return
     portrayal = {"Shape": "circle", "r": 0.8, "Filled": "true", "Layer": 0}
-
+    #if is_invisible(agent):
+    #    portrayal["text"]=agent.id
     if isinstance(agent, ac.class_Agent) or isinstance(agent, ac.canteen_Agent):
-
         if agent.recovered == 1:
             portrayal["Color"] = "purple"
         if agent.infected == 0:
