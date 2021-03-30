@@ -128,6 +128,9 @@ def covid_draw(agent):
             portrayal["Shape"] = "resources/blueburger.png"
             portrayal["scale"] = 0.9
     if ac.is_human(agent):
+            if agent.is_home_sick == True:
+                portrayal["Shape"] = "resources/white.jpg"
+                portrayal["scale"] = 0.9
             if agent.recovered == 1:
                 portrayal["Shape"] = "resources/healthy.png"
                 portrayal["scale"] = 0.9

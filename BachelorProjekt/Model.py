@@ -4,6 +4,7 @@ from mesa.space import MultiGrid
 import random
 from itertools import chain
 import copy
+from operator import itemgetter
 import math
 from mesa import Agent, Model
 
@@ -18,10 +19,11 @@ day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
 init_canteen_agents = 90
-infection_rate = (0.025/100)*2
+infection_rate = (0.025/100)
 infection_rate_1_to_2_meter = calculate_percentage(infection_rate, 10.2)
 infection_rate_2plus_meter = calculate_percentage(infection_rate_1_to_2_meter,2.02)
 infection_decrease_with_mask_pct = 70
+distribution = "p"
 
 go_home_in_breaks = False
 family_groups = False
@@ -59,6 +61,7 @@ def is_student(agent_to_check):
         return True
      else:
         return False
+
 def is_off_campus(agent_to_check):
     if is_student(agent_to_check) and agent_to_check.day_off == True:
         return True
@@ -578,6 +581,9 @@ class covid_Model(Model):
 
 
     def step(self):
+       # a = [a for a in self.schedule.agents if is_human(a) and a.is_home_sick == True]
+       # print(len(a),a)
+
         if self.minute_count in [1,119,299,419]:
             self.seats = make_classrooms_fit_to_grid(self.setUpType,self)
 

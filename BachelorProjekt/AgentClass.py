@@ -3,9 +3,10 @@ import math
 from mesa.space import MultiGrid
 import numpy as np
 import random
+from operator import itemgetter
 import sys
-from Model import covid_Model,with_mask, is_off_campus, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage
-from scipy.stats import truncnorm
+from Model import covid_Model,with_mask,is_student, is_off_campus, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage
+from scipy.stats import truncnorm,bernoulli
 
 day_length = 525
 other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
@@ -52,7 +53,6 @@ def change_direction(self, start_pos, end_pos):
         return self.coords
     else:
         return self.coords
-
 def get_agent_at_cell(self,pos):
     return self.model.grid.get_cell_list_contents(pos)[0]
 
@@ -103,7 +103,6 @@ def checkDirection(agent,neighbor):
         return 315
     else: return angle_
 
-#Infect a person
 def infect(self):
         if self.exposed != 0:   #Agent smitter ikke endnu.
             return
@@ -123,7 +122,7 @@ def infect(self):
 
             #Dont infect neighbors that are home sick / not on campus
             if is_off_campus(agent) or (is_human(agent) and agent.is_home_sick == True):
-                return
+                continue
             #Dont infect neighbors that are vaccinated, recorvered or
             if agent.vaccinated == True or agent.recovered == True or agent.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
                 continue
@@ -133,26 +132,26 @@ def infect(self):
                 if isinstance(self,TA) or isinstance(agent,TA): #Vi er i en TA-situation
                  ##De er i indgangen, smit mindre
                     if self.mask == True:
-                        pTA = np.random.poisson(calculate_percentage(100*infection_rate,infection_decrease_with_mask_pct))
+                        pTA = bernoulli.rvs(calculate_percentage(100*infection_rate,infection_decrease_with_mask_pct))
                     elif self.mask == False:
-                        pTA = np.random.poisson(100*infection_rate)
+                        pTA = bernoulli.rvs(100*infection_rate)
                     if pTA == 1:
                         agent.infected = True
                         self.model.infected_agents.append(agent)
                 else:
                     if self.mask == True:
-                        pTA = np.random.poisson(calculate_percentage(10*infection_rate,infection_decrease_with_mask_pct))
+                        pTA = bernoulli.rvs(calculate_percentage(10*infection_rate,infection_decrease_with_mask_pct))
                     elif self.mask == False:
-                        pTA = np.random.poisson(10*infection_rate)
+                        pTA = bernoulli.rvs(10*infection_rate)
                     if pTA == 1:
                         agent.infected = True
                         self.model.infected_agents.append(agent)
                  #Indenfor 1 meters afstand
             elif distance > 0.5 and distance <= 1.0:
                  if self.mask == True:
-                    p_1 = np.random.poisson(calculate_percentage(infection_rate, infection_decrease_with_mask_pct)) #70 percent decrease if masks
+                    p_1 = bernoulli.rvs(calculate_percentage(infection_rate, infection_decrease_with_mask_pct)) #70 percent decrease if masks
                  elif self.mask == False:
-                     p_1 = np.random.poisson(infection_rate)
+                     p_1 = bernoulli.rvs(infection_rate)
                  if p_1 == 1:
                     agent.infected = True
                     self.model.infected_agents.append(agent)
@@ -160,9 +159,9 @@ def infect(self):
                  #Mellem 1 og 2 meters afstand
             elif distance > 1.0 and distance <= 2.0:
                 if self.mask == True:
-                    p_1_til_2 = np.random.poisson(calculate_percentage(infection_rate_1_to_2_meter,infection_decrease_with_mask_pct))
+                    p_1_til_2 = bernoulli.rvs(calculate_percentage(infection_rate_1_to_2_meter,infection_decrease_with_mask_pct))
                 elif self.mask == False:
-                     p_1_til_2 = np.random.poisson(infection_rate_1_to_2_meter)
+                     p_1_til_2 = bernoulli.rvs(infection_rate_1_to_2_meter)
                 if p_1_til_2 == 1:
                     agent.infected = True
                     self.model.infected_agents.append(agent)
@@ -170,12 +169,71 @@ def infect(self):
                 #Over 2 meters afstand
             elif distance>2.0:
                 if self.mask == True:
-                    p_over_2 = np.random.poisson(calculate_percentage(infection_rate_2plus_meter,infection_decrease_with_mask_pct))
+                    p_over_2 = bernoulli.rvs(calculate_percentage(infection_rate_2plus_meter,infection_decrease_with_mask_pct))
                 elif self.mask == False:
-                     p_over_2 = np.random.poisson(infection_rate_2plus_meter)
+                     p_over_2 = bernoulli.rvs(infection_rate_2plus_meter)
                 if p_over_2 == 1:
                     agent.infected = True
                     self.model.infected_agents.append(agent)
+
+def infect_p(self):
+        if self.exposed != 0:   #Agent smitter ikke endnu.
+            return
+
+        if isinstance(self, TA):
+            all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=True,radius=2)
+        else:
+            all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
+        closest_neighbors = []
+
+        for n in all_neighbors_within_radius:
+            if not self.model.grid.is_cell_empty(n.pos):
+                if is_human(n):
+                    if (not is_off_campus(n) or not n.is_home_sick)\
+                            and not n.vaccinated and not n.recovered and not n.infected:
+                        closest_neighbors.append(n)
+
+        for agent in closest_neighbors:
+             if is_off_campus(agent) or (is_human(agent) and agent.is_home_sick == True):
+                closest_neighbors.remove(agent)
+             if agent.vaccinated == True or agent.recovered == True or agent.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
+                closest_neighbors.remove(agent)
+
+        poission_ = np.random.poisson(1/525)
+        if poission_ > 0:
+            distances = [(a,getDistance(self.pos,a.pos)) for a in closest_neighbors]
+            sorted_distances = sorted(distances,key=itemgetter(1))
+
+            l,l1,l2,l3,l4=[],[],[],[],[]
+            for t in sorted_distances:
+                if t[1]<=0.1:
+                    l1.append(t)
+                elif 0.5<t[1]<=1.0:
+                    l2.append(t)
+                elif 1.0<t[1]<=2.0:
+                    l3.append(t)
+                elif 2.0<t[1]:
+                    l4.append(t)
+            l.append(l1)
+            l.append(l2)
+            l.append(l3)
+            l.append(l4)
+
+            temp = l
+            counter=0
+            print(poission_)
+            while counter<poission_:
+                if not any(temp): #If all the lists are empty
+                    return
+                item =random.choices(temp, weights=(60,25,10,5), k=3)
+                if item[0] == []:
+                    continue
+                get_a = random.choices(item[0])[0]
+                temp = [[ele for ele in sub if ele != get_a] for sub in temp]
+                counter+=1
+                print("Iteration:", counter, "Weighted Random choice is", item[0],"and it got",get_a[0],poission_)
+                get_a[0].infected = True
+
 
 def new_infect(self):
     if self.exposed != 0:   #Agent smitter ikke endnu.
@@ -571,17 +629,19 @@ class class_Agent(Agent):
 
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
+        if self.infected == True:
+            update_infection_parameters(self)
+
         if is_off_campus(self):
             if self.pos in self.model.entre:
                 return
             else:
                 self.model.grid.move_agent(self,self.model.entre[random.randint(0,2)])
-        if self.infected == True:
-            #Try to infect
-            infect(self)
-            update_infection_parameters(self)
-        #if self.is_home_sick == 1:
-         #   update_infection_parameters(self)
+
+        if is_off_campus(self) == False and self.is_home_sick == False:
+            if self.infected == True:
+                #Try to infect
+                infect(self)
 
         ##MOVE###
         if self.model.day_count == 1:
@@ -616,7 +676,6 @@ class TA(Agent):
         self.door = ()
         self.students = []
         self.coords = ()
-
 
     def move_to_student(self,student):
 
@@ -664,6 +723,8 @@ class TA(Agent):
             self.coords = change_direction(self, start_pos, end_pos)
 
     def step(self):
+        if self.infected == True:
+            update_infection_parameters(self)
         if is_off_campus(self):
             if self.pos in self.model.entre:
                 return
@@ -672,9 +733,9 @@ class TA(Agent):
         self.time_remaining -=1
         self.connect_TA_and_students()
 
-        if self.infected == True:
-            infect(self)
-            update_infection_parameters(self)
+        if is_off_campus(self) == False and self.is_home_sick == False:
+            if self.infected == True:
+                infect(self)
         if self.time_remaining <= 0 and len(self.students)<5:
             TA_to_class(self)
             return
@@ -746,6 +807,10 @@ class canteen_Agent(Agent):
 
 
     def step(self):
+        if self.infected == True:
+            update_infection_parameters(self)
+        self.update_queue_parameters()
+
         if is_off_campus(self):
             if self.pos in self.model.entre:
                 return
@@ -753,10 +818,12 @@ class canteen_Agent(Agent):
                 self.model.grid.move_agent(self,self.model.entre[random.randint(0,2)])
 
         start_pos = self.pos #for changing direction
-        if self.infected == True:
-            infect(self)
-            update_infection_parameters(self)
-        self.update_queue_parameters()
+
+        if is_off_campus(self) == False and self.is_home_sick == False:
+            if self.infected == True:
+                infect(self)
+
+
             #When should canteen agent go to door?
         if self.model.day_count == 1:
             if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 0 and self.next_to_attend_class is True:
