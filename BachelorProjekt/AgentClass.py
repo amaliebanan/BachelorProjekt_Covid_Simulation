@@ -64,11 +64,14 @@ def wander(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
     possible_empty_steps = []
     for position in possible_steps:
-        if isinstance(self, canteen_Agent):
+        if isinstance(self, canteen_Agent) and self.sitting_in_canteen == 0:
             if position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
                 if self.model.grid.is_cell_empty(position) or is_off_campus(get_agent_at_cell(self, position)) or\
                         isinstance(get_agent_at_cell(self,position),table):
                     possible_empty_steps.append(position)
+        elif isinstance(self, canteen_Agent) and self.sitting_in_canteen != 0:
+            if self.model.grid.is_cell_empty(position) or is_off_campus(get_agent_at_cell(self, position)):
+                possible_empty_steps.append(position)
 
         elif position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
             if self.model.grid.is_cell_empty(position):
@@ -81,7 +84,11 @@ def wander(self):
         self.model.grid.move_agent(self, next_move)
 
     if self.pos in [x for (x,y) in self.model.canteen_table_1]+[x for (x,y) in self.model.canteen_table_2]:
-        self.sitting_in_canteen = 15
+        if self.sitting_in_canteen == 0:
+            if self.model.minute_count in range(225,301):
+                self.sitting_in_canteen = 70
+            else:
+                self.sitting_in_canteen = 60
 
 #check direction between two agents
 def checkDirection(agent,neighbor):
@@ -740,8 +747,11 @@ class canteen_Agent(Agent):
                 move_in_queue(self, (23,20)) # moves towards end of canteen
             else:
                 move_in_queue(self, (23,3))
-        elif self.sitting_in_canteen != 0:
+        elif self.sitting_in_canteen > 45:
             self.sitting_in_canteen = max(0, self.sitting_in_canteen -1)
+        elif self.sitting_in_canteen in range(0,46):
+            self.sitting_in_canteen = max(0, self.sitting_in_canteen -1)
+            wander(self)
         else: wander(self)
 
 
@@ -770,6 +780,8 @@ class canteen_Agent(Agent):
             self.move()
         end_pos = self.pos
         self.coords = change_direction(self, start_pos, end_pos)
+        if self.sitting_in_canteen != 0:
+            print(self.sitting_in_canteen, self.id)
 
 class employee_Agent(Agent):
     def __init__(self,id,model):
