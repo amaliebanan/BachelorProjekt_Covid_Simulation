@@ -121,10 +121,10 @@ def covid_draw(agent):
         portrayal["w"] = 0.2
         portrayal["h"] = 1
     if isinstance(agent, ac.canteen_Agent):
-        if agent.queue==1 or agent.sitting_in_canteen!=0:
+        if agent.queue==1 or agent.sitting_in_canteen > 45:
             portrayal["Shape"] = "resources/burger.png"
             portrayal["scale"] = 0.9
-        if (agent.queue ==1 or agent.sitting_in_canteen!=0) and agent.infected ==1:
+        elif (agent.queue ==1 or agent.sitting_in_canteen in range(45,75)) and agent.infected ==1:
             portrayal["Shape"] = "resources/blueburger.png"
             portrayal["scale"] = 0.9
     if ac.is_human(agent):
@@ -240,11 +240,14 @@ def covid_draw_arrow(agent):
         portrayal["w"] = 0.2
         portrayal["h"] = 1
     if isinstance(agent, ac.canteen_Agent):
-        if agent.queue==1 or agent.sitting_in_canteen!=0:
+        if agent.queue==1:
             portrayal["Shape"] = "resources/burger.png"
             portrayal["scale"] = 0.9
-        if (agent.queue ==1 or agent.sitting_in_canteen!=0) and agent.infected ==1:
+        elif (agent.queue ==1 or agent.sitting_in_canteen in range(45,75)) and agent.infected ==1:
             portrayal["Shape"] = "resources/blueburger.png"
+            portrayal["scale"] = 0.9
+        elif agent.sitting_in_canteen > 45:
+            portrayal["Shape"] = "resources/burger.png"
             portrayal["scale"] = 0.9
     if ac.is_human(agent):
             if agent.is_home_sick == True:

@@ -56,19 +56,23 @@ def change_direction(self, start_pos, end_pos):
 def get_agent_at_cell(self,pos):
     return self.model.grid.get_cell_list_contents(pos)[0]
 
-def truncnorm_(lower,upper,mu,sigma):
-    return int(truncnorm((lower - mu) /sigma, (upper - mu) /sigma, loc = mu, scale=sigma))
+def truncnorm_(a,b,mu,sigma):
+        alpha, beta = (a-mu)/sigma, (b-mu)/sigma
+        return math.floor(truncnorm.rvs(alpha,beta,loc=mu,scale=sigma))
 
 #Wander around function
 def wander(self):
-    possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
+    possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=True)
     possible_empty_steps = []
     for position in possible_steps:
-        if isinstance(self, canteen_Agent):
+        if isinstance(self, canteen_Agent) and self.sitting_in_canteen == 0:
             if position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
                 if self.model.grid.is_cell_empty(position) or is_off_campus(get_agent_at_cell(self, position)) or\
                         isinstance(get_agent_at_cell(self,position),table):
                     possible_empty_steps.append(position)
+        elif isinstance(self, canteen_Agent) and self.sitting_in_canteen != 0:
+            if self.model.grid.is_cell_empty(position) or is_off_campus(get_agent_at_cell(self, position)):
+                possible_empty_steps.append(position)
 
         elif position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
             if self.model.grid.is_cell_empty(position):
@@ -81,7 +85,11 @@ def wander(self):
         self.model.grid.move_agent(self, next_move)
 
     if self.pos in [x for (x,y) in self.model.canteen_table_1]+[x for (x,y) in self.model.canteen_table_2]:
-        self.sitting_in_canteen = 15
+        if self.sitting_in_canteen == 0:
+            if self.model.minute_count in range(225,301):
+                self.sitting_in_canteen = 70
+            else:
+                self.sitting_in_canteen = 60
 
 #check direction between two agents
 def checkDirection(agent,neighbor):
@@ -118,12 +126,12 @@ def infect(self):
                 if is_human(neighbor):
                     closest_neighbors.append(neighbor)
 
+        newly_infected = []
         for agent in closest_neighbors:
-
             #Dont infect neighbors that are home sick / not on campus
             if is_off_campus(agent) or (is_human(agent) and agent.is_home_sick == True):
                 continue
-            #Dont infect neighbors that are vaccinated, recorvered or
+            #Dont infect neighbors that are vaccinated, recovered or
             if agent.vaccinated == True or agent.recovered == True or agent.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
                 continue
 
@@ -136,7 +144,7 @@ def infect(self):
                     elif self.mask == False:
                         pTA = bernoulli.rvs(100*infection_rate)
                     if pTA == 1:
-                        agent.infected = True
+                        newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
                 else:
                     if self.mask == True:
@@ -144,7 +152,7 @@ def infect(self):
                     elif self.mask == False:
                         pTA = bernoulli.rvs(10*infection_rate)
                     if pTA == 1:
-                        agent.infected = True
+                        newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
                  #Indenfor 1 meters afstand
             elif distance > 0.5 and distance <= 1.0:
@@ -153,7 +161,7 @@ def infect(self):
                  elif self.mask == False:
                      p_1 = bernoulli.rvs(infection_rate)
                  if p_1 == 1:
-                    agent.infected = True
+                    newly_infected.append(agent)
                     self.model.infected_agents.append(agent)
 
                  #Mellem 1 og 2 meters afstand
@@ -163,7 +171,7 @@ def infect(self):
                 elif self.mask == False:
                      p_1_til_2 = bernoulli.rvs(infection_rate_1_to_2_meter)
                 if p_1_til_2 == 1:
-                    agent.infected = True
+                    newly_infected.append(agent)
                     self.model.infected_agents.append(agent)
 
                 #Over 2 meters afstand
@@ -173,8 +181,14 @@ def infect(self):
                 elif self.mask == False:
                      p_over_2 = bernoulli.rvs(infection_rate_2plus_meter)
                 if p_over_2 == 1:
-                    agent.infected = True
+                    newly_infected.append(agent)
                     self.model.infected_agents.append(agent)
+
+        for a in newly_infected:
+            a.infected = True
+            a.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)#How long are they sick?
+            a.asymptomatic = truncnorm_(3*day_length,a.infection_period,5*day_length,1*day_length) #Agents are asymptomatic for 5 days
+            a.exposed = a.asymptomatic-2*day_length
 
 def infect_p(self):
         if self.exposed != 0:   #Agent smitter ikke endnu.
@@ -359,12 +373,8 @@ def canteen_to_class(self):
     i = self.door.id-501
 
     #Get a seat
-    try:
-        seat = self.model.seats[i].pop()
-    except:
-        seat = (0,0)
-        print(self.model.day_count,self.model.minute_count, self.pos,self.id ,"fuck")
 
+    seat = self.model.seats[i].pop()
 
     self.model.schedule.remove(self)
     self.model.grid.remove_agent(self)
@@ -596,10 +606,11 @@ class class_Agent(Agent):
         self.is_home_sick = False
         self.vaccinated = False
 
-          #Infection parameters
-        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
-        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
-        self.exposed = self.asymptomatic-2*day_length
+        #Infection parameters
+
+        self.infection_period = 0#How long are they sick?
+        self.asymptomatic = 0 #Agents are asymptomatic for 5 days
+        self.exposed = math.pi
 
         self.day_off = False
         self.moving_to_door = 0
@@ -666,9 +677,9 @@ class TA(Agent):
         self.time_remaining = 105
 
           #Infection parameters
-        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
-        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
-        self.exposed = self.asymptomatic-2*day_length
+        self.infection_period = 0#How long are they sick?
+        self.asymptomatic = 0 #Agents are asymptomatic for 5 days
+        self.exposed = math.pi #Dummy
 
         self.day_off = False
         self.timeToTeach = 5
@@ -760,9 +771,9 @@ class canteen_Agent(Agent):
         self.coords = ()
 
         #Infection parameters
-        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
-        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
-        self.exposed = self.asymptomatic-2*day_length
+        self.infection_period = 0#How long are they sick?
+        self.asymptomatic = 0 #Agents are asymptomatic for 5 days
+        self.exposed = math.pi
 
         #Class-schedule parameters
         self.next_to_attend_class = False
@@ -801,8 +812,11 @@ class canteen_Agent(Agent):
                 move_in_queue(self, (23,20)) # moves towards end of canteen
             else:
                 move_in_queue(self, (23,3))
-        elif self.sitting_in_canteen != 0:
+        elif self.sitting_in_canteen > 45:
             self.sitting_in_canteen = max(0, self.sitting_in_canteen -1)
+        elif self.sitting_in_canteen in range(0,46):
+            self.sitting_in_canteen = max(0, self.sitting_in_canteen -1)
+            wander(self)
         else: wander(self)
 
 
@@ -848,9 +862,9 @@ class employee_Agent(Agent):
         self.is_home_sick = False
         self.vaccinated = False
 
-        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
-        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
-        self.exposed = self.asymptomatic-2*day_length
+        self.infection_period = 0#How long are they sick?
+        self.asymptomatic = 0 #Agents are asymptomatic for 5 days
+        self.exposed = math.pi
 
         self.coords = ()
 

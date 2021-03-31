@@ -10,6 +10,10 @@ from mesa import Agent, Model
 
 import numpy as np
 from mesa.datacollection import DataCollector
+from scipy.stats import truncnorm,bernoulli
+
+def truncnorm_(lower,upper,mu,sigma):
+    return int(truncnorm.rvs((lower - mu) /sigma, (upper - mu) /sigma, loc = mu, scale=sigma))
 
 def calculate_percentage(original_number, percent_to_subtract):
     return original_number-(percent_to_subtract*original_number/100)
@@ -82,12 +86,12 @@ def add_init_infected_to_grid(self,n):
         randomAgent = self.random.choice(self.schedule.agents)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
-        elif isinstance(randomAgent, ac.canteen_Agent):
-        #elif is_human(randomAgent):
+        #elif isinstance(randomAgent, ac.canteen_Agent):
+        elif is_human(randomAgent):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent
             positive_agent.infected = True
-            positive_agent.exposed = 0
+            positive_agent.infection_period = ac.truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)-2*day_length
             positive_agent.asymptomatic = 2*day_length
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
@@ -384,6 +388,9 @@ def weekend(self):
         if len(infected_agents)>0:
             positive_ = self.random.choice(infected_agents)
             positive_.infected = True
+            a.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)#How long are they sick?
+            a.asymptomatic = truncnorm_(3*day_length,a.infection_period,5*day_length,1*day_length) #Agents are asymptomatic for 5 days
+            a.exposed = a.asymptomatic-2*day_length
 
         n-=1
 
@@ -581,8 +588,7 @@ class covid_Model(Model):
 
 
     def step(self):
-       # a = [a for a in self.schedule.agents if is_human(a) and a.is_home_sick == True]
-       # print(len(a),a)
+
 
         if self.minute_count in [1,119,299,419]:
             self.seats = make_classrooms_fit_to_grid(self.setUpType,self)
@@ -599,7 +605,7 @@ class covid_Model(Model):
         off_school(self,go_home_in_breaks)
 
         for ta in self.TAs:
-            p = np.random.poisson(20/100)==1
+            p = np.random.poisson(20/100) == 1
             if len(ta.students) == 0 or p == 0:
                 continue
             if len(ta.students)>10 and p == 1:
@@ -615,7 +621,7 @@ class covid_Model(Model):
         #Day off for the students + TAs, 2nd day of week and 4th day of week respetively
         if self.day_count%5 == 2 and self.minute_count == 1:
             day_off(self,"ft",True)
-        elif self.day_count%5 == 4 and self.minute_count == 30:
+        elif self.day_count%5 == 4 and self.minute_count == 1:
             day_off(self,"sf",True)
         elif self.day_count%5 == 3 and self.minute_count == 1:
              day_off(self,"ft",False)
