@@ -3,9 +3,10 @@ import math
 from mesa.space import MultiGrid
 import numpy as np
 import random
+from operator import itemgetter
 import sys
-from Model import covid_Model,with_mask, is_off_campus, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage
-from scipy.stats import truncnorm
+from Model import covid_Model,with_mask,is_student, is_off_campus, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage, with_dir
+from scipy.stats import truncnorm,bernoulli
 
 day_length = 525
 other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
@@ -65,12 +66,13 @@ def angle_between(selfdirection, agentdirection): #virker
 def get_agent_at_cell(self,pos):
     return self.model.grid.get_cell_list_contents(pos)[0]
 
-def truncnorm_(lower,upper,mu,sigma):
-    return int(truncnorm((lower - mu) /sigma, (upper - mu) /sigma, loc = mu, scale=sigma))
+def truncnorm_(a,b,mu,sigma):
+        alpha, beta = (a-mu)/sigma, (b-mu)/sigma
+        return math.floor(truncnorm.rvs(alpha,beta,loc=mu,scale=sigma))
 
 #Wander around function
 def wander(self):
-    possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=False)
+    possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=True)
     possible_empty_steps = []
     for position in possible_steps:
         if isinstance(self, canteen_Agent) and self.sitting_in_canteen == 0:
@@ -95,8 +97,17 @@ def wander(self):
     if self.pos in [x for (x,y) in self.model.canteen_table_1]+[x for (x,y) in self.model.canteen_table_2]:
         if self.sitting_in_canteen == 0:
             if self.model.minute_count in range(225,301):
+                if self.pos in [x for (x,y) in self.model.canteen_table_1]:
+                    self.coords = dir['E']
+                else:
+                    self.coords = dir['W']
                 self.sitting_in_canteen = 70
+
             else:
+                if self.pos in [x for (x,y) in self.model.canteen_table_1]:
+                    self.coords = dir['E']
+                else:
+                    self.coords = dir['W']
                 self.sitting_in_canteen = 60
 
 #check direction between two agents
@@ -119,8 +130,7 @@ def checkDirection(agent,neighbor):
         return 315
     else: return angle_
 
-#Infect a person
-def infect(self):
+def infect_(self):
         if self.exposed != 0:   #Agent smitter ikke endnu.
             return
 
@@ -135,12 +145,12 @@ def infect(self):
                 if is_human(neighbor):
                     closest_neighbors.append(neighbor)
 
+        newly_infected = []
         for agent in closest_neighbors:
-
             #Dont infect neighbors that are home sick / not on campus
             if is_off_campus(agent) or (is_human(agent) and agent.is_home_sick == True):
-                return
-            #Dont infect neighbors that are vaccinated, recorvered or
+                continue
+            #Dont infect neighbors that are vaccinated, recovered or
             if agent.vaccinated == True or agent.recovered == True or agent.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
                 continue
 
@@ -149,51 +159,116 @@ def infect(self):
                 if isinstance(self,TA) or isinstance(agent,TA): #Vi er i en TA-situation
                  ##De er i indgangen, smit mindre
                     if self.mask == True:
-                        pTA = np.random.poisson(calculate_percentage(100*infection_rate,infection_decrease_with_mask_pct))
+                        pTA = bernoulli.rvs(calculate_percentage(100*infection_rate,infection_decrease_with_mask_pct))
                     elif self.mask == False:
-                        pTA = np.random.poisson(100*infection_rate)
+                        pTA = bernoulli.rvs(100*infection_rate)
                     if pTA == 1:
-                        agent.infected = True
+                        newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
                 else:
                     if self.mask == True:
-                        pTA = np.random.poisson(calculate_percentage(10*infection_rate,infection_decrease_with_mask_pct))
+                        pTA = bernoulli.rvs(calculate_percentage(10*infection_rate,infection_decrease_with_mask_pct))
                     elif self.mask == False:
-                        pTA = np.random.poisson(10*infection_rate)
+                        pTA = bernoulli.rvs(10*infection_rate)
                     if pTA == 1:
-                        agent.infected = True
+                        newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
                  #Indenfor 1 meters afstand
             elif distance > 0.5 and distance <= 1.0:
                  if self.mask == True:
-                    p_1 = np.random.poisson(calculate_percentage(infection_rate, infection_decrease_with_mask_pct)) #70 percent decrease if masks
+                    p_1 = bernoulli.rvs(calculate_percentage(infection_rate, infection_decrease_with_mask_pct)) #70 percent decrease if masks
                  elif self.mask == False:
-                     p_1 = np.random.poisson(infection_rate)
+                     p_1 = bernoulli.rvs(infection_rate)
                  if p_1 == 1:
-                    agent.infected = True
+                    newly_infected.append(agent)
                     self.model.infected_agents.append(agent)
 
                  #Mellem 1 og 2 meters afstand
             elif distance > 1.0 and distance <= 2.0:
                 if self.mask == True:
-                    p_1_til_2 = np.random.poisson(calculate_percentage(infection_rate_1_to_2_meter,infection_decrease_with_mask_pct))
+                    p_1_til_2 = bernoulli.rvs(calculate_percentage(infection_rate_1_to_2_meter,infection_decrease_with_mask_pct))
                 elif self.mask == False:
-                     p_1_til_2 = np.random.poisson(infection_rate_1_to_2_meter)
+                     p_1_til_2 = bernoulli.rvs(infection_rate_1_to_2_meter)
                 if p_1_til_2 == 1:
-                    agent.infected = True
+                    newly_infected.append(agent)
                     self.model.infected_agents.append(agent)
 
                 #Over 2 meters afstand
             elif distance>2.0:
                 if self.mask == True:
-                    p_over_2 = np.random.poisson(calculate_percentage(infection_rate_2plus_meter,infection_decrease_with_mask_pct))
+                    p_over_2 = bernoulli.rvs(calculate_percentage(infection_rate_2plus_meter,infection_decrease_with_mask_pct))
                 elif self.mask == False:
-                     p_over_2 = np.random.poisson(infection_rate_2plus_meter)
+                     p_over_2 = bernoulli.rvs(infection_rate_2plus_meter)
                 if p_over_2 == 1:
-                    agent.infected = True
+                    newly_infected.append(agent)
                     self.model.infected_agents.append(agent)
 
-def new_infect(self):
+        for a in newly_infected:
+            a.infected = True
+            a.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)#How long are they sick?
+            a.asymptomatic = truncnorm_(3*day_length,a.infection_period,5*day_length,1*day_length) #Agents are asymptomatic for 5 days
+            a.exposed = a.asymptomatic-2*day_length
+
+def infect_p(self):
+        if self.exposed != 0:   #Agent smitter ikke endnu.
+            return
+
+        if isinstance(self, TA):
+            all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=True,radius=2)
+        else:
+            all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
+        closest_neighbors = []
+
+        for n in all_neighbors_within_radius:
+            if not self.model.grid.is_cell_empty(n.pos):
+                if is_human(n):
+                    if (not is_off_campus(n) or not n.is_home_sick)\
+                            and not n.vaccinated and not n.recovered and not n.infected:
+                        closest_neighbors.append(n)
+
+        for agent in closest_neighbors:
+             if is_off_campus(agent) or (is_human(agent) and agent.is_home_sick == True):
+                closest_neighbors.remove(agent)
+             if agent.vaccinated == True or agent.recovered == True or agent.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
+                closest_neighbors.remove(agent)
+
+        poission_ = np.random.poisson(1/525)
+        if poission_ > 0:
+            distances = [(a,getDistance(self.pos,a.pos)) for a in closest_neighbors]
+            sorted_distances = sorted(distances,key=itemgetter(1))
+
+            l,l1,l2,l3,l4=[],[],[],[],[]
+            for t in sorted_distances:
+                if t[1]<=0.1:
+                    l1.append(t)
+                elif 0.5<t[1]<=1.0:
+                    l2.append(t)
+                elif 1.0<t[1]<=2.0:
+                    l3.append(t)
+                elif 2.0<t[1]:
+                    l4.append(t)
+            l.append(l1)
+            l.append(l2)
+            l.append(l3)
+            l.append(l4)
+
+            temp = l
+            counter=0
+            #print(poission_)
+            while counter<poission_:
+                if not any(temp): #If all the lists are empty
+                    return
+                item =random.choices(temp, weights=(60,25,10,5), k=3)
+                if item[0] == []:
+                    continue
+                get_a = random.choices(item[0])[0]
+                temp = [[ele for ele in sub if ele != get_a] for sub in temp]
+                counter+=1
+                print("Iteration:", counter, "Weighted Random choice is", item[0],"and it got",get_a[0],poission_)
+                get_a[0].infected = True
+
+
+def infect(self):
     if self.exposed != 0:   #Agent smitter ikke endnu.
         return
     if (self.is_home_sick == 1) or (isinstance(self,canteen_Agent) and self.off_school == 1): #Agenten er derhjemme og kan ikke smitte
@@ -236,6 +311,7 @@ def new_infect(self):
     NW_list = []
     Behind_list = []
     Same_pos = []
+    newly_infected = []
     for agent in all_humans_within_radius:
         if agent.pos == self.pos:
             Same_pos.append(agent)
@@ -456,63 +532,223 @@ def new_infect(self):
                     """
 
         "Now we'll infect"
-    for agents in Same_pos:
-        continue
+    for agent in Same_pos:
+        if bernoulli.rvs(ir*10) == 1:
+            newly_infected.append(agent)
+            self.model.infected_agents.append(agent)
 
     for agent in N_list: #done
-            if angle_between(self.coords, agent.coords) == math.pi: #looks at eachother
-                continue #bernoulli 10x ir
-            elif angle_between(self.coords, agent.coords) in [math.pi*5/4, math.pi*3/4]:
-                continue #8x ir
-            elif angle_between(self.coords, agent.coords) in [math.pi*3/2, math.pi/2]:
-                continue #6xir
-            elif angle_between(self.coords, agent.coords) in [math.pi/4, math.pi*7/4, 0]:
-                continue #4xir
+        distance = getDistance(self.pos,agent.pos)
+        if angle_between(self.coords, agent.coords) == math.pi: #10xir
+            if 1 <= distance <= 2:
+                if bernoulli.rvs(ir1_2*10) == 1:
+                    newly_infected.append(agent)
+                    self.model.infected_agents.append(agent)
             else:
-                print('vinkel ikke defineret')
+                if bernoulli.rvs(ir2_plus*10) == 1:
+                    newly_infected.append(agent)
+                    self.model.infected_agents.append(agent)
+
+        elif angle_between(self.coords, agent.coords) in [math.pi*5/4, math.pi*3/4]: #8x ir
+            if 1 <= distance <= 2:
+                if bernoulli.rvs(ir1_2*8) == 1:
+                    newly_infected.append(agent)
+                    self.model.infected_agents.append(agent)
+            else:
+                if bernoulli.rvs(ir2_plus*8) == 1:
+                    newly_infected.append(agent)
+                    self.model.infected_agents.append(agent)
+        elif angle_between(self.coords, agent.coords) in [math.pi*3/2, math.pi/2]: #6xir
+            if 1 <= distance <= 2:
+                if bernoulli.rvs(ir1_2*6) == 1:
+                    newly_infected.append(agent)
+                    self.model.infected_agents.append(agent)
+            else:
+                if bernoulli.rvs(ir2_plus*6) == 1:
+                    newly_infected.append(agent)
+                    self.model.infected_agents.append(agent)
+        else: #4xir
+            if 1 <= distance <= 2:
+                if bernoulli.rvs(ir1_2*4) == 1:
+                    newly_infected.append(agent)
+                    self.model.infected_agents.append(agent)
+            else:
+                if bernoulli.rvs(ir2_plus*4) == 1:
+                    newly_infected.append(agent)
+                    self.model.infected_agents.append(agent)
 
     for agent in NE_list:
-            if angle_between(self.coords, agent.coords) == math.pi*3/4: #agent looks at self
-                continue #bernoulli 7xir
-            elif angle_between(self.coords, agent.coords) in [math.pi, math.pi/2]:
-                continue #5x ir
-            elif angle_between(self.coords, agent.coords) in [math.pi/4, math.pi*5/4]:
-                continue #3xir
-            else:
-                continue #2xir
+            distance = getDistance(self.pos,agent.pos)
+            if angle_between(self.coords, agent.coords) == math.pi*3/4: #7xir
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2*7) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus*7) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+            elif angle_between(self.coords, agent.coords) in [math.pi, math.pi/2]: #5xir
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2*5) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus*5) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+            elif angle_between(self.coords, agent.coords) in [math.pi/4, math.pi*5/4]: #3xir
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2*3) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus*3) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+            else: #2xir
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2*2) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus*2) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
 
     for agent in E_list:
-            if angle_between(self.coords, agent.coords) == math.pi/2: #looks at eachother
-                continue #bernoulli 4x ir
-            elif angle_between(self.coords, agent.coords) in [math.pi/4, math.pi*3/4]:
-                continue #3x ir
-            elif angle_between(self.coords, agent.coords) in [0, math.pi]:
-                continue #2xir
-            else:
-                continue #1xir
+            distance = getDistance(self.pos,agent.pos)
+            if angle_between(self.coords, agent.coords) == math.pi/2: #4xir
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2*4) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus*4) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+            elif angle_between(self.coords, agent.coords) in [math.pi/4, math.pi*3/4]: #3xir
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2*3) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus*3) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+            elif angle_between(self.coords, agent.coords) in [0, math.pi]: #2xir
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2*2) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus*2) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+            else: #1xir
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
 
-    for agent in Behind_list:
-        continue # 1x ir
+    for agent in Behind_list: #1xir
+        distance = getDistance(self.pos,agent.pos)
+        if 1 <= distance <= 2:
+                if bernoulli.rvs(ir1_2) == 1:
+                    newly_infected.append(agent)
+                    self.model.infected_agents.append(agent)
+        else:
+                if bernoulli.rvs(ir2_plus) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
 
     for agent in W_list:
-            if angle_between(self.coords, agent.coords) == math.pi*3/2: #looks at eachother
-                continue #bernoulli 4x ir
-            elif angle_between(self.coords, agent.coords) in [math.pi*7/4, math.pi*5/4]:
-                continue #3x ir
-            elif angle_between(self.coords, agent.coords) in [0, math.pi]:
-                continue #2xir
+            distance = getDistance(self.pos,agent.pos)
+            if angle_between(self.coords, agent.coords) == math.pi*3/2: #4xir
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2*4) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus*4) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+            elif angle_between(self.coords, agent.coords) in [math.pi*7/4, math.pi*5/4]: #3xir
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2*3) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus*3) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+            elif angle_between(self.coords, agent.coords) in [0, math.pi]: #2xir
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2*2) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus*2) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
             else: #1xir
-                continue
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
 
     for agent in NW_list:
-            if angle_between(self.coords, agent.coords) == math.pi*5/4: #looks at eachother
-                continue #bernoulli 7x ir
-            elif angle_between(self.coords, agent.coords) in [math.pi, math.pi*3/2]:
-                continue #5x ir
-            elif angle_between(self.coords, agent.coords) in [math.pi*7/4, math.pi*3/4]:
-                continue #3xir
-            else:
-                continue #2xir
+            distance = getDistance(self.pos,agent.pos)
+            if angle_between(self.coords, agent.coords) == math.pi*5/4: #7xir
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2*7) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus*7) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+            elif angle_between(self.coords, agent.coords) in [math.pi, math.pi*3/2]: #5xir
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2*5) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus*5) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+            elif angle_between(self.coords, agent.coords) in [math.pi*7/4, math.pi*3/4]: #3xir
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2*3) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus*3) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+            else: #2xir
+                if 1 <= distance <= 2:
+                    if bernoulli.rvs(ir1_2*2) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                else:
+                    if bernoulli.rvs(ir2_plus*2) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+    for a in newly_infected:
+            #print(a.coords, a.pos, self.coords, self.pos)
+            a.infected = True
+            a.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)#How long are they sick?
+            a.asymptomatic = truncnorm_(3*day_length,a.infection_period,5*day_length,1*day_length) #Agents are asymptomatic for 5 days
+            a.exposed = a.asymptomatic-2*day_length
 
 
 ###CHANGING OBJECT-TYPE###
@@ -547,12 +783,8 @@ def canteen_to_class(self):
     i = self.door.id-501
 
     #Get a seat
-    try:
-        seat = self.model.seats[i].pop()
-    except:
-        seat = (0,0)
-        print(self.model.day_count,self.model.minute_count, self.pos,self.id ,"fuck")
 
+    seat = self.model.seats[i].pop()
 
     self.model.schedule.remove(self)
     self.model.grid.remove_agent(self)
@@ -693,13 +925,15 @@ def move_to_specific_pos(self,pos_):
                     x,y = pos_                      #Door position
                     newY = random.randint(-1, 1)
                     newAgent.pos = x-1,y+newY
-                    newAgent.seat = seat_
+                    newAgent.seat = seat_[0]
+                    newAgent.seat_coords = seat_[1]
                     newAgent.coords = dir['W']
                     self.model.grid.place_agent(newAgent, newAgent.pos)
                     return
         #If goal-position is the seat, go there
         if isinstance(self, class_Agent) and pos_ == self.seat:
             self.model.grid.move_agent(self,pos_)
+            self.coords = self.seat_coords
             return
 
     #If you are already at your seat, stay there
@@ -784,10 +1018,11 @@ class class_Agent(Agent):
         self.is_home_sick = False
         self.vaccinated = False
 
-          #Infection parameters
-        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
-        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
-        self.exposed = self.asymptomatic-2*day_length
+        #Infection parameters
+
+        self.infection_period = 0#How long are they sick?
+        self.asymptomatic = 0 #Agents are asymptomatic for 5 days
+        self.exposed = math.pi
 
         self.day_off = False
         self.moving_to_door = 0
@@ -797,12 +1032,14 @@ class class_Agent(Agent):
 
         self.TA = ()
         self.seat = ()
+        self.seat_coords = ()
 
         #Relevant for classroom only
         self.hasQuestion = False
         self.hasEnteredDoor = []
 
     def move(self,timestep=False):
+
         start_pos = self.pos
         if timestep is True:
             if self.moving_to_door == 1: #Agents go to door
@@ -812,22 +1049,29 @@ class class_Agent(Agent):
                 move_to_specific_pos(self,self.seat)
                # move_to_specific_pos(self,self.seat)
         else: wander(self)
-        end_pos = self.pos
-        self.coords = change_direction(self, start_pos, end_pos)
+        if with_dir == True:
+            end_pos = self.pos
+            if self.pos != self.seat:
+                self.coords = change_direction(self, start_pos, end_pos)
+
 
     #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
+        if self.infected == True:
+            update_infection_parameters(self)
+
         if is_off_campus(self):
             if self.pos in self.model.entre:
                 return
             else:
                 self.model.grid.move_agent(self,self.model.entre[random.randint(0,2)])
-        if self.infected == True:
-            #Try to infect
-            infect(self)
-            update_infection_parameters(self)
-        #if self.is_home_sick == 1:
-         #   update_infection_parameters(self)
+
+        if is_off_campus(self) == False and self.is_home_sick == False:
+            if self.infected == True:
+                if with_dir == True:
+                    infect(self)
+                else:
+                    infect_(self)
 
         ##MOVE###
         if self.model.day_count == 1:
@@ -852,9 +1096,9 @@ class TA(Agent):
         self.time_remaining = 105
 
           #Infection parameters
-        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
-        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
-        self.exposed = self.asymptomatic-2*day_length
+        self.infection_period = 0#How long are they sick?
+        self.asymptomatic = 0 #Agents are asymptomatic for 5 days
+        self.exposed = math.pi #Dummy
 
         self.day_off = False
         self.timeToTeach = 5
@@ -862,7 +1106,6 @@ class TA(Agent):
         self.door = ()
         self.students = []
         self.coords = ()
-
 
     def move_to_student(self,student):
 
@@ -906,10 +1149,13 @@ class TA(Agent):
             wander(self)
             start_pos = self.pos
             wander(self)
-            end_pos = self.pos
-            self.coords = change_direction(self, start_pos, end_pos)
+            if with_dir == True:
+                end_pos = self.pos
+                self.coords = change_direction(self, start_pos, end_pos)
 
     def step(self):
+        if self.infected == True:
+            update_infection_parameters(self)
         if is_off_campus(self):
             if self.pos in self.model.entre:
                 return
@@ -918,9 +1164,12 @@ class TA(Agent):
         self.time_remaining -=1
         self.connect_TA_and_students()
 
-        if self.infected == True:
-            infect(self)
-            update_infection_parameters(self)
+        if is_off_campus(self) == False and self.is_home_sick == False:
+            if self.infected == True:
+                if with_dir == True:
+                    infect(self)
+                else:
+                    infect_(self)
         if self.time_remaining <= 0 and len(self.students)<5:
             TA_to_class(self)
             return
@@ -945,9 +1194,9 @@ class canteen_Agent(Agent):
         self.coords = ()
 
         #Infection parameters
-        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
-        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
-        self.exposed = self.asymptomatic-2*day_length
+        self.infection_period = 0#How long are they sick?
+        self.asymptomatic = 0 #Agents are asymptomatic for 5 days
+        self.exposed = math.pi
 
         #Class-schedule parameters
         self.next_to_attend_class = False
@@ -995,6 +1244,10 @@ class canteen_Agent(Agent):
 
 
     def step(self):
+        if self.infected == True:
+            update_infection_parameters(self)
+        self.update_queue_parameters()
+
         if is_off_campus(self):
             if self.pos in self.model.entre:
                 return
@@ -1002,10 +1255,15 @@ class canteen_Agent(Agent):
                 self.model.grid.move_agent(self,self.model.entre[random.randint(0,2)])
 
         start_pos = self.pos #for changing direction
-        if self.infected == True:
-            new_infect(self)
-            update_infection_parameters(self)
-        self.update_queue_parameters()
+
+        if is_off_campus(self) == False and self.is_home_sick == False:
+            if self.infected == True:
+                if with_dir == True:
+                    infect(self)
+                else:
+                    infect_(self)
+
+
             #When should canteen agent go to door?
         if self.model.day_count == 1:
             if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 0 and self.next_to_attend_class is True:
@@ -1017,8 +1275,9 @@ class canteen_Agent(Agent):
             self.move(True)
         else:
             self.move()
-        end_pos = self.pos
-        self.coords = change_direction(self, start_pos, end_pos)
+        if with_dir == True and self.sitting_in_canteen <= 45:
+            end_pos = self.pos
+            self.coords = change_direction(self, start_pos, end_pos)
 
 
 class employee_Agent(Agent):
@@ -1031,9 +1290,9 @@ class employee_Agent(Agent):
         self.is_home_sick = False
         self.vaccinated = False
 
-        self.infection_period = max(5*day_length,abs(round(np.random.normal(9*day_length,1*day_length))))#How long are they sick?
-        self.asymptomatic = min(max(3*day_length,abs(round(np.random.normal(5*day_length,1*day_length)))),self.infection_period) #Agents are asymptomatic for 5 days
-        self.exposed = self.asymptomatic-2*day_length
+        self.infection_period = 0#How long are they sick?
+        self.asymptomatic = 0 #Agents are asymptomatic for 5 days
+        self.exposed = math.pi
 
         self.coords = ()
 
@@ -1041,7 +1300,10 @@ class employee_Agent(Agent):
         if is_off_campus(self):
             return
         if self.infected == True:
-            infect(self)
+            if with_dir == True:
+                infect(self)
+            else:
+                infect_(self)
             update_infection_parameters(self)
 
 
@@ -1054,8 +1316,9 @@ class employee_Agent(Agent):
     def move(self):
         start_pos = self.pos
         wander(self)
-        end_pos = self.pos
-        self.coords = change_direction(self, start_pos, end_pos)
+        if with_dir == True:
+            end_pos = self.pos
+            self.coords = change_direction(self, start_pos, end_pos)
 
 class wall(Agent):
     """" Door for people to enter by and to exit by end of class"""

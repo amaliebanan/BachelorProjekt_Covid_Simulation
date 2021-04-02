@@ -4,11 +4,16 @@ from mesa.space import MultiGrid
 import random
 from itertools import chain
 import copy
+from operator import itemgetter
 import math
 from mesa import Agent, Model
 
 import numpy as np
 from mesa.datacollection import DataCollector
+from scipy.stats import truncnorm,bernoulli
+
+def truncnorm_(lower,upper,mu,sigma):
+    return int(truncnorm.rvs((lower - mu) /sigma, (upper - mu) /sigma, loc = mu, scale=sigma))
 
 def calculate_percentage(original_number, percent_to_subtract):
     return original_number-(percent_to_subtract*original_number/100)
@@ -18,15 +23,17 @@ day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
 init_canteen_agents = 90
-infection_rate = (0.025/100)*2
+infection_rate = (0.025/100)
 infection_rate_1_to_2_meter = calculate_percentage(infection_rate, 10.2)
 infection_rate_2plus_meter = calculate_percentage(infection_rate_1_to_2_meter,2.02)
 infection_decrease_with_mask_pct = 70
+distribution = "p"
 
 go_home_in_breaks = False
 family_groups = False
 with_mask = False
 day_off = False
+with_dir = False
 percentages_of_vaccinated = 0 #Number 0<=x<1
 
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
@@ -59,6 +66,7 @@ def is_student(agent_to_check):
         return True
      else:
         return False
+
 def is_off_campus(agent_to_check):
     if is_student(agent_to_check) and agent_to_check.day_off == True:
         return True
@@ -79,12 +87,12 @@ def add_init_infected_to_grid(self,n):
         randomAgent = self.random.choice(self.schedule.agents)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
-        elif isinstance(randomAgent, ac.canteen_Agent):
-        #elif is_human(randomAgent):
+        #elif isinstance(randomAgent, ac.class_Agent):
+        elif is_human(randomAgent):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent
             positive_agent.infected = True
-            positive_agent.exposed = 0
+            positive_agent.infection_period = ac.truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)-2*day_length
             positive_agent.asymptomatic = 2*day_length
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
@@ -228,6 +236,10 @@ def setUp(N,model,setUpType,i):
         listOfPositions = list_
     elif setUpType == 5:
          listOfPositions = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_5]
+
+    elif setUpType == 6:
+        listOfPositions = [((x,y+i*11),z) for ((x,y),(z)) in model.classroom_6]
+
     if setUpType is not 1:
 
         #Add door(s) to model and grid
@@ -292,7 +304,7 @@ def make_classrooms_fit_to_grid(list_of_setuptypes,model):
 
     for j in range(len(list_of_setuptypes)):
         number = str("classroom_") + str(list_of_setuptypes[j])    #Which type of class room are we constructing?
-        class_room = [(x,y+j*11) for ((x,y),z) in getattr(model,number)]
+        class_room = [((x,y+j*11),z) for ((x,y),z) in getattr(model,number)]
         seats.append(class_room)
     return seats
 
@@ -329,33 +341,7 @@ def set_up_canteen(self):
             self.schedule.add(newTable)
             self.grid.place_agent(newTable, pos)
             counter += 1
-'''
-        outer_wall_v = [(26,i) for i in range(0,22)]
-        #[(27,i) for i in range(0,39)]+[(28,i) for i in range(0,39)]+[(29,i) for i in range(0,39)
-        
-        counter = max([a.id for a in self.schedule.agents if isinstance(a,ac.wall)])+1
-        for i in range(0,len(outer_wall_v)):
-            p = outer_wall_v.pop()
-            print(p)
-            newBrick = ac.wall(counter, self)
-            newBrick.orientation = 'v'
-            self.schedule.add(newBrick)
-            self.grid.place_agent(newBrick, p)
-            counter+=1
 
-        outer_wall_h = [(i,21) for i in range(27,30)]
-        #[(27,i) for i in range(0,39)]+[(28,i) for i in range(0,39)]+[(29,i) for i in range(0,39)]
-
-        counter = max([a.id for a in self.schedule.agents if isinstance(a,ac.wall)])+1
-        for i in range(0,len(outer_wall_h)):
-            p = outer_wall_h.pop()
-            print(p)
-            newBrick = ac.wall(counter, self)
-            newBrick.orientation = 'h'
-            self.schedule.add(newBrick)
-            self.grid.place_agent(newBrick, p)
-            counter+=1
-'''
 def weekend(self):
     infected_agents = [a for a in self.schedule.agents if is_human(a) and a.infected == True]
     ids_to_remove = []
@@ -373,7 +359,6 @@ def weekend(self):
             ids_to_remove.append(a.id)
             continue
 
-
     n = new_positives_after_weekends
 
     while n>0:
@@ -381,8 +366,10 @@ def weekend(self):
         if len(infected_agents)>0:
             positive_ = self.random.choice(infected_agents)
             positive_.infected = True
-
-        n-=1
+            positive_.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)#How long are they sick?
+            positive_.asymptomatic = truncnorm_(3*day_length,positive_.infection_period,5*day_length,1*day_length) #Agents are asymptomatic for 5 days
+            positive_.exposed = positive_.asymptomatic-2*day_length
+            n-=1
 
 def off_school(self,breaks=False):
     first_third_TAs = [a for a in self.schedule.agents if a.id in [1001,1002,1003]]
@@ -528,12 +515,18 @@ class covid_Model(Model):
                            ((3,8),dir['E']),((3,9),dir['E']),((5,0),dir['N']),((5,1),dir['S']),((5,3),dir['N']),((5,4),dir['S']),
                            ((5,6),dir['N']),((5,7),dir['S']),((5,9),dir['N']),((0,5),dir['S']),
                            ((0,2),dir['N']),((6,8),dir['S']),((6,2),dir['N']),((0,8),dir['S'])]
+        self.classroom_6 = [((1,1),dir['E']),((2,0),dir['N']),((3,0),dir['N']),((4,0),dir['N']),((5,0),dir['N']),
+                           ((6,0),dir['N']),((1,2),dir['E']),((1,3),dir['E']),((2,3),dir['S']),((3,3),dir['S']),
+                           ((4,3),dir['S']),((5,3),dir['S']),((6,3),dir['S']),
+                           ((1,6),dir['E']),((2,6),dir['N']),((3,6),dir['N']),((4,6),dir['N']),((5,6),dir['N']),
+                           ((6,6),dir['N']),((1,7),dir['E']),((1,8),dir['E']),((2,9),dir['S']),((3,9),dir['S']),
+                           ((4,9),dir['S']),((5,9),dir['S']),((6,9),dir['S'])]
         self.seats = []
         self.seat = ()
 
 
-        self.canteen_table_1 = [((22,y), dir['E']) for y in range(25,33)]+[((23,y), dir['W']) for y in range(25,33)]
-        self.canteen_table_2 = [((18,y), dir['E']) for y in range(25,33)]+[((19,y), dir['W']) for y in range(25,33)]
+        self.canteen_table_1 = [((22,y), dir['E']) for y in range(25,33)]+[((18,y), dir['E']) for y in range(25,33)]
+        self.canteen_table_2 = [((23,y), dir['W']) for y in range(25,33)]+[((19,y), dir['W']) for y in range(25,33)]
 
         self.enter_canteen_area12 = [(x,y) for y in range(0,4) for x in range(17,26)]
         self.enter_canteen_area10 = [(x,y) for y in range(0,4) for x in range(21,26)]
@@ -578,6 +571,8 @@ class covid_Model(Model):
 
 
     def step(self):
+
+
         if self.minute_count in [1,119,299,419]:
             self.seats = make_classrooms_fit_to_grid(self.setUpType,self)
 
@@ -593,7 +588,7 @@ class covid_Model(Model):
         off_school(self,go_home_in_breaks)
 
         for ta in self.TAs:
-            p = np.random.poisson(20/100)==1
+            p = np.random.poisson(20/100) == 1
             if len(ta.students) == 0 or p == 0:
                 continue
             if len(ta.students)>10 and p == 1:
@@ -609,7 +604,7 @@ class covid_Model(Model):
         #Day off for the students + TAs, 2nd day of week and 4th day of week respetively
         if self.day_count%5 == 2 and self.minute_count == 1:
             day_off(self,"ft",True)
-        elif self.day_count%5 == 4 and self.minute_count == 30:
+        elif self.day_count%5 == 4 and self.minute_count == 1:
             day_off(self,"sf",True)
         elif self.day_count%5 == 3 and self.minute_count == 1:
              day_off(self,"ft",False)
