@@ -221,7 +221,7 @@ def covid_draw_arrow(agent):
                     portrayal["Shape"] = "resources/blackpizzaW.png"
                     portrayal["scale"] = 1
 
-        elif agent.exposed == 1:
+        elif agent.infected == True and agent.exposed > 0:
             portrayal["Shape"] = "resources/exposed.png"
             portrayal["scale"] = 0.9
         elif agent.infected == True:
@@ -280,7 +280,7 @@ def covid_draw_arrow(agent):
         if agent.is_home_sick == True:
             portrayal["Shape"] = "resources/white.jpg"
             portrayal["scale"] = 0.9
-        elif agent.exposed == 1:
+        elif agent.infected == True and agent.exposed > 0:
             portrayal["Shape"] = "resources/exposed.png"
             portrayal["scale"] = 0.9
         elif agent.infected == True:
