@@ -52,6 +52,15 @@ def change_direction(self, start_pos, end_pos):
         return self.coords
     else:
         return self.coords
+def angle_between(selfdirection, agentdirection): #virker
+    """
+    arctan takes in (y,x) which is why we invert the input vector.
+    ang1 and ang2 is two angels. each is the angle we get from creating  threesome with their (x,y) coordinates.
+    :return returns the difference between the two angels:
+    """
+    ang1 = np.arctan2(*agentdirection[::-1])
+    ang2 = np.arctan2(*selfdirection[::-1])
+    return ((ang1 - ang2) % (2 * np.pi))
 
 def get_agent_at_cell(self,pos):
     return self.model.grid.get_cell_list_contents(pos)[0]
@@ -197,84 +206,314 @@ def new_infect(self):
 
     all_humans_within_radius = []
     for neighbor in all_neighbors_within_radius:
+        if is_human(neighbor):
             #Dont infect neighbors that are home sick / not on campus
-        if neighbor.is_home_sick == True or (isinstance(neighbor,canteen_Agent) and neighbor.off_school == True):
-            continue
+            if neighbor.is_home_sick == True or (isinstance(neighbor,canteen_Agent) and neighbor.off_school == True):
+                continue
             #Dont infect neighbors that are vaccinated, recorvered or infected
-        if neighbor.vaccinated == True or neighbor.recovered == True or neighbor.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
-            continue
-        if not self.model.grid.is_cell_empty(neighbor.pos):
-            if is_human(neighbor):
-                all_humans_within_radius.append(neighbor)
-            """"HVIS UNDER EN METER VÆK, GÅ IKKE VIDERE"""
-    neighbor_in_front = []
-    neighbor_behind = []
-    neighbor_aligned = []
-    if self.coords == dir['N']:
-        for agent in all_humans_within_radius:
-            if agent.pos[1] > self.pos[1]:
-                neighbor_in_front.append(agent)
-            elif agent.pos[1] == self.pos[1]:
-                neighbor_aligned.append(agent)
-            else:
-                neighbor_behind.append(agent)
-    if self.coords == dir['NE']:
-        for agent in all_humans_within_radius:
-            if agent.pos in [(self.pos[0]+i,self.pos[1]-i) for i in range(-2,3)]:
-                neighbor_aligned.append(agent)
-            elif (agent.pos[0] >= self.pos[0] and agent.pos[1] >= self.pos[1]) or agent.pos in [(self.pos[0]+2, self.pos[1]-1), (self.pos[0]-1, self.pos[1]+2)]:
-                neighbor_in_front.append(agent)
-            else:
-                neighbor_behind.append(agent)
+            if neighbor.vaccinated == True or neighbor.recovered == True or neighbor.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
+                continue
+            if not self.model.grid.is_cell_empty(neighbor.pos):
+                    all_humans_within_radius.append(neighbor)
 
-    if self.coords == dir['E']:
-        for agent in all_humans_within_radius:
-            if agent.pos[0] > self.pos[0]:
-                neighbor_in_front.append(agent)
-            elif agent.pos[0] == self.pos[0]:
-                neighbor_aligned.append(agent)
+            "Define infection rates"
+    if self.mask == True:
+        ir = calculate_percentage(infection_rate, 70)
+        ir1_2 = calculate_percentage(infection_rate_1_to_2_meter, 70)
+        ir2_plus = calculate_percentage(infection_rate_2plus_meter, 70)
+    else:
+        ir = infection_rate
+        ir1_2 = infection_rate_1_to_2_meter
+        ir2_plus = infection_rate_2plus_meter
+
+
+    """"HVIS UNDER EN METER VÆK, GÅ IKKE VIDERE"""
+    "Splits neighbors into lists"
+    N_list = []
+    NE_list = []
+    E_list = []
+    W_list = []
+    NW_list = []
+    Behind_list = []
+    Same_pos = []
+    for agent in all_humans_within_radius:
+        if agent.pos == self.pos:
+            Same_pos.append(agent)
+        elif agent.pos[1] > self.pos[1] and agent.pos[0] == self.pos[0]:
+                if self.coords == dir['N']:
+                    N_list.append(agent)
+                elif self.coords == dir['E']:
+                    W_list.append(agent)
+                elif self.coords == dir['S']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['W']:
+                    E_list.append(agent)
+                elif self.coords == dir['NE']:
+                    NW_list.append(agent)
+                elif self.coords == dir['SE']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['NW']:
+                    NE_list.append(agent)
+                else:
+                    Behind_list.append(agent)
+        elif agent.pos[1] < self.pos[1] and agent.pos[0] == self.pos[0]:
+                if self.coords == dir['N']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['E']:
+                    E_list.append(agent)
+                elif self.coords == dir['S']:
+                    N_list.append(agent)
+                elif self.coords == dir['W']:
+                    W_list.append(agent)
+                elif self.coords == dir['NE']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['SE']:
+                    NE_list.append(agent)
+                elif self.coords == dir['NW']:
+                    Behind_list.append(agent)
+                else:
+                    NW_list.append(agent)
+        elif agent.pos[1] == self.pos[1] and agent.pos[0] > self.pos[0]:
+                if self.coords == dir['N']:
+                    E_list.append(agent)
+                elif self.coords == dir['E']:
+                    N_list.append(agent)
+                elif self.coords == dir['S']:
+                    W_list.append(agent)
+                elif self.coords == dir['W']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['NE']:
+                    NE_list.append(agent)
+                elif self.coords == dir['SE']:
+                    NW_list.append(agent)
+                elif self.coords == dir['NW']:
+                    Behind_list.append(agent)
+                else:
+                    Behind_list.append(agent)
+        elif agent.pos[1] == self.pos[1] and agent.pos[0] < self.pos[0]:
+                if self.coords == dir['N']:
+                    W_list.append(agent)
+                elif self.coords == dir['E']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['S']:
+                    E_list.append(agent)
+                elif self.coords == dir['W']:
+                    N_list.append(agent)
+                elif self.coords == dir['NE']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['SE']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['NW']:
+                    NW_list.append(agent)
+                else:
+                    NE_list.append(agent)
+        elif agent.pos[1] > self.pos[1] and agent.pos[0] > self.pos[0]:
+                if self.coords == dir['N']:
+                    NE_list.append(agent)
+                elif self.coords == dir['E']:
+                    NW_list.append(agent)
+                elif self.coords == dir['S']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['W']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['NE']:
+                    N_list.append(agent)
+                elif self.coords == dir['SE']:
+                    W_list.append(agent)
+                elif self.coords == dir['NW']:
+                    E_list.append(agent)
+                else:
+                    Behind_list.append(agent)
+        elif agent.pos[1] > self.pos[1] and agent.pos[0] < self.pos[0]:
+                if self.coords == dir['N']:
+                    NW_list.append(agent)
+                elif self.coords == dir['E']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['S']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['W']:
+                    NE_list.append(agent)
+                elif self.coords == dir['NE']:
+                    W_list.append(agent)
+                elif self.coords == dir['SE']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['NW']:
+                    N_list.append(agent)
+                else:
+                    E_list.append(agent)
+        elif agent.pos[1] < self.pos[1] and agent.pos[0] > self.pos[0]:
+                if self.coords == dir['N']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['E']:
+                    NE_list.append(agent)
+                elif self.coords == dir['S']:
+                    NW_list.append(agent)
+                elif self.coords == dir['W']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['NE']:
+                    E_list.append(agent)
+                elif self.coords == dir['SE']:
+                    N_list.append(agent)
+                elif self.coords == dir['NW']:
+                    Behind_list.append(agent)
+                else:
+                    W_list.append(agent)
+        elif agent.pos[1] < self.pos[1] and agent.pos[0] < self.pos[0]:
+                if self.coords == dir['N']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['E']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['S']:
+                    NE_list.append(agent)
+                elif self.coords == dir['W']:
+                    NW_list.append(agent)
+                elif self.coords == dir['NE']:
+                    Behind_list.append(agent)
+                elif self.coords == dir['SE']:
+                    E_list.append(agent)
+                elif self.coords == dir['NW']:
+                    W_list.append(agent)
+                else:
+                    N_list.append(agent)
+                    """
+        if self.coords in [dir['NE'], dir['SE'], dir['SW'], dir['NW']]:
+            if (agent.pos[1] == self.pos[1]+2 and agent.pos[0] in [self.pos[0]+i for i in range(-1,2)]) or\
+                    (agent.pos[1] == self.pos[1]+1 and agent.pos[0]==self.pos[0]):
+                if self.coords == dir['NE']:
+                    N_list.append(agent)
+                elif self.coords == dir['SE']:
+                    W_list.append(agent)
+                elif self.coords == dir['SW']:
+                    S_list.append(agent)
+                elif self.coords == dir['NW']:
+                    E_list.append(agent)
+            elif (agent.pos[1] == self.pos[1]-2 and agent.pos[0] in [self.pos[0]+i for i in range(-1,2)]) or\
+                    (agent.pos[1] == self.pos[1]-1 and agent.pos[0]==self.pos[0]):
+                if self.coords == dir['NE']:
+                    S_list.append(agent)
+                elif self.coords == dir['SE']:
+                    E_list.append(agent)
+                elif self.coords == dir['SW']:
+                    N_list.append(agent)
+                elif self.coords == dir['NW']:
+                    W_list.append(agent)
+            elif (agent.pos[0] == self.pos[0]+2 and agent.pos[1] in [self.pos[1]+i for i in range(-1,2)]) or\
+                    (agent.pos[0] == self.pos[0]+1 and agent.pos[1]==self.pos[1]):
+                if self.coords == dir['NE']:
+                    E_list.append(agent)
+                elif self.coords == dir['SE']:
+                    N_list.append(agent)
+                elif self.coords == dir['SW']:
+                    W_list.append(agent)
+                elif self.coords == dir['NW']:
+                    S_list.append(agent)
+            elif (agent.pos[0] == self.pos[0]-2 and agent.pos[1] in [self.pos[1]+i for i in range(-1,2)]) or\
+                    (agent.pos[0] == self.pos[0]-1 and agent.pos[1]==self.pos[1]):
+                if self.coords == dir['NE']:
+                    W_list.append(agent)
+                elif self.coords == dir['SE']:
+                    S_list.append(agent)
+                elif self.coords == dir['SW']:
+                    E_list.append(agent)
+                elif self.coords == dir['NW']:
+                    N_list.append(agent)
+            elif agent.pos in [(self.pos[0]+i,self.pos[1]+i) for i in range(1,3)]:
+                if self.coords == dir['NE']:
+                    NE_list.append(agent)
+                elif self.coords == dir['SE']:
+                    NW_list.append(agent)
+                elif self.coords == dir['SW']:
+                    SW_list.append(agent)
+                elif self.coords == dir['NW']:
+                    SE_list.append(agent)
+            elif agent.pos in [(self.pos[0]-i,self.pos[1]+i) for i in range(1,3)]:
+                if self.coords == dir['NE']:
+                    NW_list.append(agent)
+                elif self.coords == dir['SE']:
+                    SW_list.append(agent)
+                elif self.coords == dir['SW']:
+                    SE_list.append(agent)
+                elif self.coords == dir['NW']:
+                    NE_list.append(agent)
+            elif agent.pos in [(self.pos[0]+i,self.pos[1]-i) for i in range(1,3)]:
+                if self.coords == dir['NE']:
+                    SE_list.append(agent)
+                elif self.coords == dir['SE']:
+                    NE_list.append(agent)
+                elif self.coords == dir['SW']:
+                    NW_list.append(agent)
+                elif self.coords == dir['NW']:
+                    SW_list.append(agent)
+            elif agent.pos in [(self.pos[0]-i,self.pos[1]-i) for i in range(1,3)]:
+                if self.coords == dir['NE']:
+                    SW_list.append(agent)
+                elif self.coords == dir['SE']:
+                    SE_list.append(agent)
+                elif self.coords == dir['SW']:
+                    NE_list.append(agent)
+                elif self.coords == dir['NW']:
+                    NW_list.append(agent)
+                    """
+
+        "Now we'll infect"
+    for agents in Same_pos:
+        continue
+
+    for agent in N_list: #done
+            if angle_between(self.coords, agent.coords) == math.pi: #looks at eachother
+                continue #bernoulli 10x ir
+            elif angle_between(self.coords, agent.coords) in [math.pi*5/4, math.pi*3/4]:
+                continue #8x ir
+            elif angle_between(self.coords, agent.coords) in [math.pi*3/2, math.pi/2]:
+                continue #6xir
+            elif angle_between(self.coords, agent.coords) in [math.pi/4, math.pi*7/4, 0]:
+                continue #4xir
             else:
-                neighbor_behind.append(agent)
-    if self.coords == dir['SE']:
-        for agent in all_humans_within_radius:
-            if agent.pos in [(self.pos[0]+i,self.pos[1]+i) for i in range(-2,3)]:
-                neighbor_aligned.append(agent)
-            elif (agent.pos[0]>= self.pos[0] and agent.pos[1]<=self.pos[1]) or agent.pos in [(self.pos[0]-1,self.pos[1]-2), (self.pos[0]+2, self.pos[1]+1)]:
-                neighbor_in_front.append(agent)
+                print('vinkel ikke defineret')
+
+    for agent in NE_list:
+            if angle_between(self.coords, agent.coords) == math.pi*3/4: #agent looks at self
+                continue #bernoulli 7xir
+            elif angle_between(self.coords, agent.coords) in [math.pi, math.pi/2]:
+                continue #5x ir
+            elif angle_between(self.coords, agent.coords) in [math.pi/4, math.pi*5/4]:
+                continue #3xir
             else:
-                neighbor_behind.append(agent)
-    if self.coords == dir['S']:
-        for agent in all_humans_within_radius:
-            if agent.pos[1] < self.pos[1]:
-                neighbor_in_front.append(agent)
-            elif agent.pos[1] == self.pos[1]:
-                neighbor_aligned.append(agent)
+                continue #2xir
+
+    for agent in E_list:
+            if angle_between(self.coords, agent.coords) == math.pi/2: #looks at eachother
+                continue #bernoulli 4x ir
+            elif angle_between(self.coords, agent.coords) in [math.pi/4, math.pi*3/4]:
+                continue #3x ir
+            elif angle_between(self.coords, agent.coords) in [0, math.pi]:
+                continue #2xir
             else:
-                neighbor_behind.append(agent)
-    if self.coords == dir['SW']:
-        for agent in all_humans_within_radius:
-            if agent.pos in [(self.pos[0]+i,self.pos[1]-i) for i in range(-2,3)]:
-                neighbor_aligned.append(agent)
-            elif (agent.pos[0] >= self.pos[0] and agent.pos[1] >= self.pos[1]) or agent.pos in [(self.pos[0]+2, self.pos[1]-1), (self.pos[0]-1, self.pos[1]+2)]:
-                neighbor_behind.append(agent)
+                continue #1xir
+
+    for agent in Behind_list:
+        continue # 1x ir
+
+    for agent in W_list:
+            if angle_between(self.coords, agent.coords) == math.pi*3/2: #looks at eachother
+                continue #bernoulli 4x ir
+            elif angle_between(self.coords, agent.coords) in [math.pi*7/4, math.pi*5/4]:
+                continue #3x ir
+            elif angle_between(self.coords, agent.coords) in [0, math.pi]:
+                continue #2xir
+            else: #1xir
+                continue
+
+    for agent in NW_list:
+            if angle_between(self.coords, agent.coords) == math.pi*5/4: #looks at eachother
+                continue #bernoulli 7x ir
+            elif angle_between(self.coords, agent.coords) in [math.pi, math.pi*3/2]:
+                continue #5x ir
+            elif angle_between(self.coords, agent.coords) in [math.pi*7/4, math.pi*3/4]:
+                continue #3xir
             else:
-                neighbor_in_front.append(agent)
-    if self.coords == dir['W']:
-        for agent in all_humans_within_radius:
-            if agent.pos[0] < self.pos[0]:
-                neighbor_in_front.append(agent)
-            elif agent.pos[0] == self.pos[0]:
-                neighbor_aligned.append(agent)
-            else:
-                neighbor_behind.append(agent)
-    if self.coords == dir['NW']:
-        for agent in all_humans_within_radius:
-            if agent.pos in [(self.pos[0]+i,self.pos[1]+i) for i in range(-2,3)]:
-                neighbor_aligned.append(agent)
-            elif (agent.pos[0]>= self.pos[0] and agent.pos[1]<=self.pos[1]) or agent.pos in [(self.pos[0]-1,self.pos[1]-2), (self.pos[0]+2, self.pos[1]+1)]:
-                neighbor_behind.append(agent)
-            else:
-                neighbor_in_front.append(agent)
+                continue #2xir
+
 
 ###CHANGING OBJECT-TYPE###
 #Get all essential parameters transfered
@@ -764,7 +1003,7 @@ class canteen_Agent(Agent):
 
         start_pos = self.pos #for changing direction
         if self.infected == True:
-            infect(self)
+            new_infect(self)
             update_infection_parameters(self)
         self.update_queue_parameters()
             #When should canteen agent go to door?
@@ -780,8 +1019,7 @@ class canteen_Agent(Agent):
             self.move()
         end_pos = self.pos
         self.coords = change_direction(self, start_pos, end_pos)
-        if self.sitting_in_canteen != 0:
-            print(self.sitting_in_canteen, self.id)
+
 
 class employee_Agent(Agent):
     def __init__(self,id,model):
