@@ -154,10 +154,32 @@ def covid_draw_arrow(agent):
         if agent.off_school ==1 or agent.is_home_sick == True:
             portrayal["Shape"] = "resources/white.jpg"
             portrayal["scale"] = 0.9
-        elif agent.queue != 0 or agent.sitting_in_canteen > 45:
+        elif agent.queue != 0:
             if agent.infected == True:
-                portrayal["Shape"] = "resources/blueburger.png"
-                portrayal["scale"] = 0.9
+                if agent.coords == dir['N']:
+                    portrayal["Shape"] = "resources/pinkpizzaN.png"
+                    portrayal["scale"] = 1.1
+                elif agent.coords == dir['S']:
+                    portrayal["Shape"] = "resources/pinkpizzaS.png"
+                    portrayal["scale"] = 1.1
+                elif agent.coords == dir['E']:
+                    portrayal["Shape"] = "resources/pinkpizzaE.png"
+                    portrayal["scale"] = 1.1
+                elif agent.coords == dir['W']:
+                    portrayal["Shape"] = "resources/pinkpizzaW.png"
+                    portrayal["scale"] = 1.1
+                elif agent.coords == dir['NE']:
+                    portrayal["Shape"] = "resources/pinkpizzaNE.png"
+                    portrayal["scale"] = 1.1
+                elif agent.coords == dir['SE']:
+                    portrayal["Shape"] = "resources/pinkpizzaSE.png"
+                    portrayal["scale"] = 1.1
+                elif agent.coords == dir['NW']:
+                    portrayal["Shape"] = "resources/pinkpizzaNW.png"
+                    portrayal["scale"] = 1.1
+                elif agent.coords == dir['SW']:
+                    portrayal["Shape"] = "resources/pinkpizzaSW.png"
+                    portrayal["scale"] = 1.1
             else:
                 if agent.coords == dir['N']:
                     portrayal["Shape"] = "resources/pizzaN.png"
@@ -183,6 +205,22 @@ def covid_draw_arrow(agent):
                 elif agent.coords == dir['SW']:
                     portrayal["Shape"] = "resources/pizzaSW.png"
                     portrayal["scale"] = 1.1
+        elif agent.sitting_in_canteen > 45:
+            if agent.infected == True:
+                if agent.coords == dir['E']:
+                    portrayal["Shape"] = "resources/pinkblackE.png"
+                    portrayal["scale"] = 1
+                elif agent.coords == dir['W']:
+                    portrayal["Shape"] = "resources/pinkblackW.png"
+                    portrayal["scale"] = 1
+            else:
+                if agent.coords == dir['E']:
+                    portrayal["Shape"] = "resources/blackpizzaE.png"
+                    portrayal["scale"] = 1
+                elif agent.coords == dir['W']:
+                    portrayal["Shape"] = "resources/blackpizzaW.png"
+                    portrayal["scale"] = 1
+
         elif agent.exposed == 1:
             portrayal["Shape"] = "resources/exposed.png"
             portrayal["scale"] = 0.9
