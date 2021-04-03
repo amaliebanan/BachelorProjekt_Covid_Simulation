@@ -93,6 +93,7 @@ def add_init_infected_to_grid(self,n):
             positive_agent = randomAgent
             positive_agent.infected = True
             positive_agent.infection_period = ac.truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)-2*day_length
+            positive_agent.exposed = 0
             positive_agent.asymptomatic = 2*day_length
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
@@ -436,9 +437,27 @@ def day_off(self,who,free):
         a.day_off = free
         a.off_school = free
 
+def setUpToilet(self):
+     id_max = max([w.id for w in self.schedule.agents if isinstance(w,ac.wall)])
+     ids_ = [i for i in range(id_max+1,id_max+1+self.height-33)]
+     positions = [(8,i) for i in range(33,self.height)]
+
+     for i in range(len(ids_)):
+        if i == 0:
+            newBrick = ac.wall(ids_[i], self)
+            newBrick.orientation = 'v'
+            self.schedule.add(newBrick)
+            self.grid.place_agent(newBrick, positions.pop())
+        else:
+            newToilet = ac.toilet(ids_[i], self)
+            self.schedule.add(newToilet)
+            self.grid.place_agent(newToilet, positions.pop())
+
+
 class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
         self.n_agents = N
+        self.height = height
         self.TAs = []
         self.grid = MultiGrid(width, height, torus=False) #torus wraps edges
         self.schedule = SimultaneousActivation(self)
@@ -460,7 +479,7 @@ class covid_Model(Model):
         self.day_count = 1
         self.door = ()
 
-        self.entre = [(15,0),(16,0),(17,0)]
+        self.entre = [(15,0),(16,0),(17,0),(25,35),(25,36)]
 
         self.class_times = [105,120,225,300,405,420,525]
 
@@ -555,6 +574,7 @@ class covid_Model(Model):
         self.copy_of_seats = self.seats
         self.datacollector.collect(self)
         self.running = True
+        setUpToilet(self)
 
 
         if 0 <= percentages_of_vaccinated < 1:
@@ -571,8 +591,6 @@ class covid_Model(Model):
 
 
     def step(self):
-
-
         if self.minute_count in [1,119,299,419]:
             self.seats = make_classrooms_fit_to_grid(self.setUpType,self)
 
