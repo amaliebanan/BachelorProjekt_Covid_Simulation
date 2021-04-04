@@ -302,7 +302,6 @@ def infect(self):
         ir2_plus = infection_rate_2plus_meter
 
 
-    """"HVIS UNDER EN METER VÆK, GÅ IKKE VIDERE"""
     "Splits neighbors into lists"
     N_list = []
     NE_list = []
@@ -537,7 +536,7 @@ def infect(self):
             newly_infected.append(agent)
             self.model.infected_agents.append(agent)
 
-    for agent in N_list: #done
+    for agent in N_list:
         distance = getDistance(self.pos,agent.pos)
         if angle_between(self.coords, agent.coords) == math.pi: #10xir
             if 1 <= distance <= 2:
