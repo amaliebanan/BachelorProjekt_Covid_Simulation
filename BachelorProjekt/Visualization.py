@@ -8,7 +8,7 @@ from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 
 agentsN = 26
-width, height = 26,33
+width, height = 26,38
 
 
 class infected_Element(TextElement):
@@ -511,6 +511,10 @@ def covid_draw_arrow(agent):
         portrayal["Color"] = "Brown"
         portrayal["w"] = 0.2
         portrayal["h"] = 1
+    elif isinstance(agent,ac.toilet):
+        portrayal["Shape"] = "resources/toilet2.jpg"
+        portrayal["scale"] = 0.9
+
 
 
     return portrayal
@@ -521,7 +525,7 @@ infected_element = infected_Element()
 if with_dir == True:
     grid = CanvasGrid(covid_draw_arrow, width, height, 900, 1000)
 else:
-    grid = CanvasGrid(covid_draw, width, height, 1000, 1000)
+    grid = CanvasGrid(covid_draw, width, height, 900, 1000)
 
 infected_chart = ChartModule([{"Label":"infected","Color":"Black"}], data_collector_name="datacollector")
 
