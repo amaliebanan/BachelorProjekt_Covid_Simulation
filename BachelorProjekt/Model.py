@@ -281,11 +281,7 @@ def setUp(N,model,setUpType,i):
 
         #Place walls
         wall_placements_vertical = [(8,j+i*11) for j in range(0,11)]
-        wall_placements_canteen_v = [(22,j) for j in range(4,20)]+[(24,j) for j in range(4,17)]+[(24,18), (24,19)]
-        wall_placements_vertical.extend(wall_placements_canteen_v)
         wall_placements_horizontal = [(j,10+i*11) for j in range(0,8)]
-        wall_placements_canteen_h = [(25,4), (25,19)]
-        wall_placements_horizontal.extend(wall_placements_canteen_h)
         wall_placements_v_id = [k for k in range(7000+len(wall_placements_vertical)*i,7000+(i+1)*len(wall_placements_vertical))]
         wall_placements_h_id = [k for k in range(6000+len(wall_placements_horizontal)*i,6000+(i+1)*len(wall_placements_horizontal))]
         for j in range(len(wall_placements_vertical)):
@@ -550,9 +546,9 @@ class covid_Model(Model):
         self.enter_canteen_area12 = [(x,y) for y in range(0,4) for x in range(17,26)]
         self.enter_canteen_area10 = [(x,y) for y in range(0,4) for x in range(21,26)]
 
-        if go_home_in_breaks == False:
-                add_init_employee_to_grid(self)
-                set_up_canteen(self)
+        #if go_home_in_breaks == False:
+                #add_init_employee_to_grid(self)
+                #set_up_canteen(self)
 
         #Add agents to model and grid
         i = 0
@@ -574,7 +570,7 @@ class covid_Model(Model):
         self.copy_of_seats = self.seats
         self.datacollector.collect(self)
         self.running = True
-        setUpToilet(self)
+        #setUpToilet(self)
 
 
         if 0 <= percentages_of_vaccinated < 1:

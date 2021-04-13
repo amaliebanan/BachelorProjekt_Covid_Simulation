@@ -8,7 +8,7 @@ from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 
 agentsN = 26
-width, height = 26,38
+width, height = 11,11
 
 
 class infected_Element(TextElement):
@@ -141,6 +141,9 @@ def covid_draw(agent):
             portrayal["scale"] = 0.9
     if is_student(agent) and agent.day_off == True:
         portrayal["Shape"] = "resources/healthy.png"
+        portrayal["scale"] = 0.9
+    if isinstance(agent,ac.toilet):
+        portrayal["Shape"] = "resources/toilet2.jpg"
         portrayal["scale"] = 0.9
     return portrayal
 
@@ -533,7 +536,7 @@ infected_chart = ChartModule([{"Label":"infected","Color":"Black"}], data_collec
 server = ModularServer(covid_Model,
                        [grid,infected_element, days_chart, infected_chart],
                        "Covid Model",
-                       {"N":agentsN, "width":width, "height":height, "setUpType":[2,3,4]})
+                       {"N":agentsN, "width":width, "height":height, "setUpType":[4]})
 
 
 
