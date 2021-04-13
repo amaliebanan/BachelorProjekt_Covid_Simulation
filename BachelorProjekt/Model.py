@@ -6,6 +6,7 @@ from itertools import chain
 import copy
 from operator import itemgetter
 import math
+import numpy
 from mesa import Agent, Model
 
 import numpy as np
@@ -32,7 +33,6 @@ distribution = "p"
 go_home_in_breaks = False
 family_groups = False
 with_mask = False
-day_off = False
 with_dir = True
 percentages_of_vaccinated = 0 #Number 0<=x<1
 
@@ -84,7 +84,9 @@ def add_init_infected_to_grid(self,n):
     i = 0
     positives = []
     while i<n:
-        randomAgent = self.random.choice(self.schedule.agents)
+        students = [a for a in self.schedule.agents if isinstance(a,ac.class_Agent)]
+        TA = [a for a in self.schedule.agents if isinstance(a,ac.TA)]
+        randomAgent = self.random.choice(TA)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
         #elif isinstance(randomAgent, ac.class_Agent):
@@ -95,6 +97,7 @@ def add_init_infected_to_grid(self,n):
             positive_agent.infection_period = ac.truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)-2*day_length
             positive_agent.exposed = 0
             positive_agent.asymptomatic = 2*day_length
+            positive_agent.mask = True
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
             self.infected_agents.append(positive_agent)
@@ -281,11 +284,11 @@ def setUp(N,model,setUpType,i):
 
         #Place walls
         wall_placements_vertical = [(8,j+i*11) for j in range(0,11)]
-        wall_placements_canteen_v = [(22,j) for j in range(4,20)]+[(24,j) for j in range(4,17)]+[(24,18), (24,19)]
-        wall_placements_vertical.extend(wall_placements_canteen_v)
+     #   wall_placements_canteen_v = [(22,j) for j in range(4,20)]+[(24,j) for j in range(4,17)]+[(24,18), (24,19)]
+     #   wall_placements_vertical.extend(wall_placements_canteen_v)
         wall_placements_horizontal = [(j,10+i*11) for j in range(0,8)]
-        wall_placements_canteen_h = [(25,4), (25,19)]
-        wall_placements_horizontal.extend(wall_placements_canteen_h)
+      #  wall_placements_canteen_h = [(25,4), (25,19)]
+     #   wall_placements_horizontal.extend(wall_placements_canteen_h)
         wall_placements_v_id = [k for k in range(7000+len(wall_placements_vertical)*i,7000+(i+1)*len(wall_placements_vertical))]
         wall_placements_h_id = [k for k in range(6000+len(wall_placements_horizontal)*i,6000+(i+1)*len(wall_placements_horizontal))]
         for j in range(len(wall_placements_vertical)):
@@ -443,15 +446,26 @@ def setUpToilet(self):
      positions = [(8,i) for i in range(33,self.height)]
 
      for i in range(len(ids_)):
-        if i == 0:
+        pos =  positions.pop()
+        if pos == (8,37):
+            newToilet = ac.toilet(ids_[i], self)
+            self.schedule.add(newToilet)
+            newToilet.queue = [(i,37) for i in range(9,15)]
+            newToilet.exit = (9,34)
+            self.grid.place_agent(newToilet, pos)
+        else:
             newBrick = ac.wall(ids_[i], self)
             newBrick.orientation = 'v'
             self.schedule.add(newBrick)
-            self.grid.place_agent(newBrick, positions.pop())
-        else:
-            newToilet = ac.toilet(ids_[i], self)
-            self.schedule.add(newToilet)
-            self.grid.place_agent(newToilet, positions.pop())
+            self.grid.place_agent(newBrick, pos)
+     self.toilet = newToilet
+     for x in range(9,14):
+        id_max = max([w.id for w in self.schedule.agents if isinstance(w,ac.wall)])
+        newBrick = ac.wall(id_max+1, self)
+        newBrick.orientation = 'h'
+        pos = (x,36)
+        self.schedule.add(newBrick)
+        self.grid.place_agent(newBrick, pos)
 
 
 class covid_Model(Model):
@@ -466,7 +480,6 @@ class covid_Model(Model):
                                                             "Agent_count": lambda m: count_agents(self),
                                                             "recovered": lambda m: get_recovered(self),
                                                             "Home":lambda m: get_home_sick(self)})
-
         self.agents_at_home = []
         self.recovered_agents = []
         self.infected_agents = []
@@ -482,6 +495,7 @@ class covid_Model(Model):
         self.entre = [(15,0),(16,0),(17,0),(25,35),(25,36)]
 
         self.class_times = [105,120,225,300,405,420,525]
+        self.breaks = [i for i in range(105,120)]+[i for i in range(225,300)]+[i for i in range(405,420)]
 
         self.other_courses = []
         self.range46 = []
@@ -542,11 +556,12 @@ class covid_Model(Model):
                            ((4,9),dir['S']),((5,9),dir['S']),((6,9),dir['S'])]
         self.seats = []
         self.seat = ()
+        self.toilet = ()
 
 
-        self.canteen_table_1 = [((22,y), dir['E']) for y in range(25,33)]+[((18,y), dir['E']) for y in range(25,33)]
-        self.canteen_table_2 = [((23,y), dir['W']) for y in range(25,33)]+[((19,y), dir['W']) for y in range(25,33)]
-
+        self.canteen_table_1 = [((22,y), dir['E']) for y in range(25,33)]+[((18,y), dir['E']) for y in range(25,33)]+[((14,y), dir['E']) for y in range(25,33)]
+        self.canteen_table_2 = [((23,y), dir['W']) for y in range(25,33)]+[((19,y), dir['W']) for y in range(25,33)]+[((15,y), dir['W']) for y in range(25,33)]
+        self.canteen_tables = self.canteen_table_1+self.canteen_table_2
         self.enter_canteen_area12 = [(x,y) for y in range(0,4) for x in range(17,26)]
         self.enter_canteen_area10 = [(x,y) for y in range(0,4) for x in range(21,26)]
 
@@ -591,6 +606,22 @@ class covid_Model(Model):
 
 
     def step(self):
+
+        if self.minute_count in self.breaks:
+            poission_ = np.random.poisson(1)
+        else:
+            poission_ = np.random.poisson(1/2)
+        counter=0
+        while poission_ > counter:
+            agents = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.going_to_toilet == False and a.in_toilet_queue == False and a.sitting_on_toilet == 0 and is_off_campus(a)==False and a.is_home_sick == False and a.sitting_in_canteen < 45 and a.queue == False]
+            try:
+                randomStudent = self.random.choice(agents)
+                randomStudent.going_to_toilet = 1
+                counter+=1
+            except:
+             #   print("empty seq")
+                break
+
         if self.minute_count in [1,119,299,419]:
             self.seats = make_classrooms_fit_to_grid(self.setUpType,self)
 
@@ -615,8 +646,6 @@ class covid_Model(Model):
                     TAs_students = ta.students
                     randomStudent = self.random.choice(TAs_students)
                     randomStudent.hasQuestion = 1
-
-
 
 
         #Day off for the students + TAs, 2nd day of week and 4th day of week respetively
@@ -648,6 +677,7 @@ class covid_Model(Model):
             self.day_count += 1
             self.minute_count = 1
             self.hour_count = 1
+            self.toilet.has_been_infected = False #Gøres rent hver dag
 
             if self.day_count%5 == 0: ##WEEKEND
                weekend(self)

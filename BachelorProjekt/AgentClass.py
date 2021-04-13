@@ -76,7 +76,7 @@ def wander(self):
     possible_empty_steps = []
     for position in possible_steps:
         if isinstance(self, canteen_Agent) and self.sitting_in_canteen == 0:
-            if position not in [(23,18), (23,19)]:#cant walk wrong way through canteen
+            if position not in [(23,18), (23,19)] :#cant walk wrong way through canteen or toiletqueue
                 if self.model.grid.is_cell_empty(position) or is_off_campus(get_agent_at_cell(self, position)) or\
                         isinstance(get_agent_at_cell(self,position),table):
                     possible_empty_steps.append(position)
@@ -90,11 +90,12 @@ def wander(self):
             elif isinstance(get_agent_at_cell(self,position),table):
                 possible_empty_steps.append(position)
 
-    if len(possible_empty_steps) != 0:
-        next_move = self.random.choice(possible_empty_steps)
+    pos_to_go_to = [pos for pos in possible_empty_steps if pos not in self.model.toilet.queue]
+    if len(pos_to_go_to) != 0:
+        next_move = self.random.choice(pos_to_go_to)
         self.model.grid.move_agent(self, next_move)
 
-    if self.pos in [x for (x,y) in self.model.canteen_table_1]+[x for (x,y) in self.model.canteen_table_2]:
+    if self.pos in [x for (x,y) in self.model.canteen_tables]:
         if self.sitting_in_canteen == 0:
             if self.model.minute_count in range(225,301):
                 if self.pos in [x for (x,y) in self.model.canteen_table_1]:
@@ -267,7 +268,6 @@ def infect_p(self):
                 print("Iteration:", counter, "Weighted Random choice is", item[0],"and it got",get_a[0],poission_)
                 get_a[0].infected = True
 
-
 def infect(self):
     if self.exposed != 0:   #Agent smitter ikke endnu.
         return
@@ -293,9 +293,9 @@ def infect(self):
 
             "Define infection rates"
     if self.mask == True:
-        ir = calculate_percentage(infection_rate, 70)
-        ir1_2 = calculate_percentage(infection_rate_1_to_2_meter, 70)
-        ir2_plus = calculate_percentage(infection_rate_2plus_meter, 70)
+        ir = calculate_percentage(infection_rate, 40)
+        ir1_2 = calculate_percentage(infection_rate_1_to_2_meter, 40)
+        ir2_plus = calculate_percentage(infection_rate_2plus_meter, 40)
     else:
         ir = infection_rate
         ir1_2 = infection_rate_1_to_2_meter
@@ -783,7 +783,6 @@ def canteen_to_class(self):
     i = self.door.id-501
 
     #Get a seat
-
     seat = self.model.seats[i].pop()
 
     self.model.schedule.remove(self)
@@ -871,7 +870,7 @@ def move_in_queue(self, pos_):
     else:
         possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
         possible_empty_steps = [cell for cell in possible_steps if self.model.grid.is_cell_empty(cell)]
-        if possible_empty_steps == []: #if someone in front of you - dont move
+        if len(possible_empty_steps) == 0: #if someone in front of you - dont move
             return
         distances = [(pos,getDistance(pos_,pos)) for pos in possible_empty_steps]
         x_,y_ = min(distances,key=lambda x:x[1])[0]
@@ -1064,7 +1063,7 @@ class class_Agent(Agent):
             if self.pos in self.model.entre:
                 return
             else:
-                self.model.grid.move_agent(self,self.model.entre[random.randint(0,2)])
+                self.model.grid.move_agent(self,self.model.entre[random.randint(0,(self.model.entre)-1)])
 
         if is_off_campus(self) == False and self.is_home_sick == False:
             if self.infected == True:
@@ -1190,6 +1189,10 @@ class canteen_Agent(Agent):
         self.buying_lunch = 0
         self.sitting_in_canteen = 0
 
+        self.going_to_toilet = False
+        self.in_toilet_queue = False
+        self.sitting_on_toilet = 0
+
         self.off_school = 0
         self.coords = ()
 
@@ -1220,6 +1223,58 @@ class canteen_Agent(Agent):
         elif self.pos == (23,20):
             self.queue = 0 #done in line
 
+    def go_to_toilet_queue(self):
+        pos_ = self.model.toilet.queue[-1]
+        possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
+        possible_empty_steps = [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos) and pos not in self.model.toilet.queue[:-1]]
+        if len(possible_empty_steps) == 0: #nowhere to go, stay
+            return
+        distances = [(pos,getDistance(pos_,pos)) for pos in possible_empty_steps]
+        x_,y_ = min(distances,key=lambda x:x[1])[0]
+        if min(getDistance((x_,y_), pos_), getDistance(self.pos, pos_)) == getDistance(self.pos, pos_): #Hvis du kun kan rykke længere væk
+            return
+        else:
+            if (x_,y_) == pos_:
+                if self.model.grid.is_cell_empty(pos_):
+                    self.model.grid.move_agent(self,(x_,y_))
+                    self.going_to_toilet = False
+                    self.in_toilet_queue = True
+                else:
+                    return
+            else:
+                self.model.grid.move_agent(self,(x_,y_))
+
+
+    def move_in_toilet_queue(self):
+        if self.pos == self.model.toilet.queue[0]: #Forest i køen
+            if len(self.model.grid.get_cell_list_contents(self.model.toilet.pos))<4:
+                self.model.grid.move_agent(self,self.model.toilet.pos)
+                self.in_toilet_queue = False
+                self.sitting_on_toilet = 3
+                if self.model.toilet.has_been_infected == True and self.infected == False:
+                    p = bernoulli.rvs(1/100)
+                    if p == 1:
+                        print(self.model.day_count,self.model.minute_count,self.id,self.pos,"I got infected at the toilet")
+                        self.infected == True
+                if self.infected == True and self.exposed == 0 and self.model.toilet.has_been_infected == False:
+                    print(self.model.day_count,self.model.minute_count,self.id,self.pos,"I just infected the toilet")
+                    self.model.toilet.has_been_infected = True
+
+            else:
+                return
+        else:
+            possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
+            next_queue_steps = [pos for pos in possible_steps if (self.model.grid.is_cell_empty(pos) or is_off_campus(get_agent_at_cell(self, pos))) and pos in self.model.toilet.queue]
+            if len(next_queue_steps) == 0: #Nogle er foran dig og bag dig
+                return
+            else:
+                pos_ = self.model.toilet.pos
+                distances = [(pos,getDistance(pos_,pos)) for pos in next_queue_steps]
+                x_,y_ = min(distances,key=lambda x:x[1])[0]
+                if min(getDistance((x_,y_), pos_), getDistance(self.pos, pos_)) == getDistance(self.pos, pos_):
+                    return #Der er nogen foran dig, men ikke nogen bagved dig
+                self.model.grid.move_agent(self,(x_,y_))
+
     def move(self,timestep=False):
         if timestep is True: #Agents go to door
             if self.queue == 0 and self.sitting_in_canteen == 0:
@@ -1227,21 +1282,33 @@ class canteen_Agent(Agent):
             else:
                 self.queue = 0
                 self.sitting_in_canteen = 0
-                force_agent_to_specific_pos(self, (23,21))
+                self.in_toilet_queue = False
+                self.going_to_toilet = False
+                self.sitting_on_toilet = 0
+                if self.queue == 1:
+                    force_agent_to_specific_pos(self, (23,21))
                 move_to_specific_pos(self,self.door.pos)
+        else:
+            if self.going_to_toilet == True: #På vej til toiletkø
+                self.go_to_toilet_queue()
+            elif self.in_toilet_queue == True:  #I kø til toilettet
+                self.move_in_toilet_queue()
+            elif self.sitting_on_toilet>0: #Sidder på toa
+                self.sitting_on_toilet = max(0,self.sitting_on_toilet-1)
+                if self.sitting_on_toilet == 0:
+                    self.model.grid.move_agent(self,self.model.toilet.exit)
+            elif self.queue == 1:
+                if self.pos in [(23,j) for j in range(0,20)]:
+                    move_in_queue(self, (23,20)) # moves towards end of canteen
+                else:
+                    move_in_queue(self, (23,3))
+            elif self.sitting_in_canteen > 45:
+                self.sitting_in_canteen = max(0, self.sitting_in_canteen-1)
+            elif self.sitting_in_canteen in range(0,46):
+                self.sitting_in_canteen = max(0, self.sitting_in_canteen-1)
+                wander(self)
 
-        elif self.queue == 1:
-            if self.pos in [(23,j) for j in range(0,20)]:
-                move_in_queue(self, (23,20)) # moves towards end of canteen
-            else:
-                move_in_queue(self, (23,3))
-        elif self.sitting_in_canteen > 45:
-            self.sitting_in_canteen = max(0, self.sitting_in_canteen -1)
-        elif self.sitting_in_canteen in range(0,46):
-            self.sitting_in_canteen = max(0, self.sitting_in_canteen -1)
-            wander(self)
-        else: wander(self)
-
+            else: wander(self)
 
     def step(self):
         if self.infected == True:
@@ -1252,7 +1319,7 @@ class canteen_Agent(Agent):
             if self.pos in self.model.entre:
                 return
             else:
-                self.model.grid.move_agent(self,self.model.entre[random.randint(0,2)])
+                self.model.grid.move_agent(self,self.model.entre[random.randint(0,len(self.model.entre)-1)])
 
         start_pos = self.pos #for changing direction
 
@@ -1264,7 +1331,7 @@ class canteen_Agent(Agent):
                     infect_(self)
 
 
-            #When should canteen agent go to door?
+            #When should canteen agent go to class?
         if self.model.day_count == 1:
             if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 0 and self.next_to_attend_class is True:
                 self.moving_to_door = 1
@@ -1278,7 +1345,6 @@ class canteen_Agent(Agent):
         if with_dir == True and self.sitting_in_canteen <= 45:
             end_pos = self.pos
             self.coords = change_direction(self, start_pos, end_pos)
-
 
 class employee_Agent(Agent):
     def __init__(self,id,model):
@@ -1355,3 +1421,6 @@ class toilet(Agent):
         super().__init__(id,model)
         self.id = id
         self.model = model
+        self.queue = []
+        self.has_been_infected = False
+        self.exit = ()
