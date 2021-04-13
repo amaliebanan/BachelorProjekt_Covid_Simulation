@@ -8,7 +8,8 @@ from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 
 agentsN = 26
-width, height = 11,11
+width, height = 26,38
+
 
 
 class infected_Element(TextElement):
@@ -43,8 +44,6 @@ def covid_draw(agent):
     if agent is None:
         return
     portrayal = {"Shape": "circle", "r": 0.8, "Filled": "true", "Layer": 0}
-    #if is_invisible(agent):
-    #    portrayal["text"]=agent.id
 
     if isinstance(agent, ac.class_Agent) or isinstance(agent, ac.canteen_Agent):
         if agent.recovered == 1:
@@ -129,6 +128,9 @@ def covid_draw(agent):
         elif (agent.queue ==1 or agent.sitting_in_canteen in range(45,75)) and agent.infected ==1:
             portrayal["Shape"] = "resources/blueburger.png"
             portrayal["scale"] = 0.9
+    if isinstance(agent,ac.toilet):
+        portrayal["Shape"] = "resources/toilet2.jpg"
+        portrayal["scale"] = 0.9
     if ac.is_human(agent):
             if agent.is_home_sick == True:
                 portrayal["Shape"] = "resources/white.jpg"
@@ -142,9 +144,7 @@ def covid_draw(agent):
     if is_student(agent) and agent.day_off == True:
         portrayal["Shape"] = "resources/healthy.png"
         portrayal["scale"] = 0.9
-    if isinstance(agent,ac.toilet):
-        portrayal["Shape"] = "resources/toilet2.jpg"
-        portrayal["scale"] = 0.9
+
     return portrayal
 
 def covid_draw_arrow(agent):
@@ -304,6 +304,8 @@ def covid_draw_arrow(agent):
                 elif agent.coords == dir['SW']:
                     portrayal["Shape"] = "resources/greenarrowSW.png"
                     portrayal["scale"] = 0.9
+            if agent.going_to_toilet == True or agent.in_toilet_queue == True:
+                portrayal["Color"] = 'blue'
     elif isinstance(agent, ac.class_Agent):
         if agent.is_home_sick == True:
             portrayal["Shape"] = "resources/white.jpg"

@@ -7,11 +7,10 @@ import multiprocessing as mp
 from multiprocessing import Pool
 
 
-
-fixed_params = {"width":26, "height": 33, "setUpType": [4,4,4]}
+fixed_params = {"width":11, "height": 11, "setUpType": [4]}
 variable_params = {"N": range(26,27,1)} # 26 students
-iterationer = 1
-skridt = 525*40
+iterationer = 1000
+skridt = 105*1
 
 
 
@@ -79,12 +78,11 @@ def max_infected(fix_par, var_par, model, iter, steps):
         max_number_of_infected.append(max(temp_list)) #saves max of temp_list
     return max_number_of_infected #this is now a list of max number of infected for each iteration
 
-"uncomment below to get avg max number of infected. Change setup type by changing fixed_params at line 10"
 #print("Gennemsnitligt er antallet af max antal smittede: \t", np.mean(max_infected(fixed_params, variable_params, covid_Model, iterationer, skridt)))
 
 
 
-
+''''
 "Below is to compare setup type [2,2,2], [3,3,3], [4,4,4]"
 def list_of_infected(j):
     """
@@ -134,16 +132,16 @@ pool.close() #closes the pools
 "Uncomment below for plotting the three plots for comparing"
 time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
 colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
-Legends = ['Horseshoe', 'Rows', 'Groups']
+Legends = ['Hestesko', 'Rækker', 'Grupper']
 plt.figure(figsize=(10,6)) #size of the plot-figure
 for i in range(1,4,1):
     plt.plot(time, results[i-1][0], label= Legends[i-1], color=colors[i-1]) #makes the three different plots
-    plt.plot(time, results[i-1][1], color=colors[i-1], linestyle='dashed')
-    plt.plot(time, results[i-1][2], color=colors[i-1], linestyle='dotted')
+  #  plt.plot(time, results[i-1][1], color=colors[i-1], linestyle='dashed')
+   # plt.plot(time, results[i-1][2], color=colors[i-1], linestyle='dotted')
 plt.xlabel('Tidsskridt')
-plt.plot([], color='Black', label='Infected')
-plt.plot([], color='Black', label='Susceptible', linestyle='dashed')
-plt.plot([], color='Black', label='Recovered', linestyle='dotted')
+#plt.plot([], color='Black', label='Infected')
+#plt.plot([], color='Black', label='Susceptible', linestyle='dashed')
+#plt.plot([], color='Black', label='Recovered', linestyle='dotted')
 plt.ylabel('Gennemsnit antal smittede')
 plt.suptitle('%s simulation(er)' %iterationer, fontsize=20)
 plt.title('Masker=%s' %with_mask + ', Familiegrupper=%s' %family_groups +', Hjemme i pauser= %s' %go_home_in_breaks + ', Procent vaccinerede=%s' %percentages_of_vaccinated,fontsize=10)
@@ -151,24 +149,53 @@ plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
 plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
 plt.show()
 
-
-
 '''
+
+def list_of_infected_in_classroom(j):
+    batch_run = BatchRunner(covid_Model,
+        variable_parameters=variable_params,
+        fixed_parameters={"width": 11, "height": 11, "setUpType": [j]},
+        iterations=iterationer,
+        max_steps=skridt)
+    batch_run.run_all() #run batchrunner
+    data_list = list(batch_run.get_collector_model().values()) #saves batchrunner data in list
+
+    #next 7 lines is to determine max number of infected
+    max_number_of_infected = []
+    #rest of code is to get y-values for the plot
+    num_of_infected = [0]*(skridt+1) #makes list # for y-values for Infected
+    for i in range(len(data_list)):
+        temp_list = []
+        for j in range(len(data_list[i]["infected"])):
+            num_of_infected[j]+=data_list[i]["infected"][j]
+            temp_list.append(data_list[i]["infected"][j])
+        max_number_of_infected.append(max(temp_list))
+    num_of_infected = [number / iterationer for number in num_of_infected] #avg number of infected
+
+    print("Gennemsnitligt er antallet af max smittede for setup type %s " %j, "er: ", np.mean(max_number_of_infected))
+    print("Std er antallet af max smittede for setup type %s " %j, "er: ", np.std(max_number_of_infected))
+
+    print(max_number_of_infected)
+    return num_of_infected
+
+
+"uncomment below to run list_of_infected function with different set up types. Change line 12 and 13 to change number of iterations and timesteps"
+pool = mp.Pool(mp.cpu_count()) #opens pools for running parallel programs
+results=pool.map(list_of_infected_in_classroom, [2,3,4]) #runs the list_of_infected function for j={2,3,4}
+pool.close() #closes the pools
 "Uncomment below for plotting three plots without susceptible and recovered. Use this for One Classroom"
 time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
 colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
-Legends = ['Horseshoe', 'Rows', 'Groups']
-plt.figure(figsize=(10,6)) #size of the plot-figure
-for i in range(1,4,1):
-    plt.plot(time, results[i-1][0], label= Legends[i-1], color=colors[i-1]) #makes the three different plots
+Legends = ['Hestesko', 'Rækker', 'Grupper']
+for i in range(1,4):
+    plt.plot(time, results[i-1], label= Legends[i-1], color=colors[i-1]) #makes the three different plots
 plt.xlabel('Tidsskridt')
 plt.ylabel('Gennemsnit antal smittede')
-plt.suptitle('%s simulation(er)' %iterationer, fontsize=20)
-plt.title('Masker=%s' %with_mask + ', Familiegrupper=%s' %family_groups +', Hjemme i pauser= %s' %go_home_in_breaks + ', Procent vaccinerede=%s' %percentages_of_vaccinated,fontsize=10)
-plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
-plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
+plt.ylim(1,1.5)
+plt.suptitle('%s simulationer af 105 minutters undervisning' %iterationer,fontsize=15)
+plt.title("Initialiseret med TA smittet med maske på, 40% reduktion")
+plt.tight_layout() #placement of legend
+plt.legend() #placement of legend
+
 plt.show()
 
-
-
-'''
