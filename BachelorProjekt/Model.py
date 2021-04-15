@@ -86,7 +86,7 @@ def add_init_infected_to_grid(self,n):
     while i<n:
         students = [a for a in self.schedule.agents if isinstance(a,ac.class_Agent)]
         TA = [a for a in self.schedule.agents if isinstance(a,ac.TA)]
-        randomAgent = self.random.choice(TA)
+        randomAgent = self.random.choice(students)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
         #elif isinstance(randomAgent, ac.class_Agent):
@@ -566,8 +566,8 @@ class covid_Model(Model):
         self.enter_canteen_area10 = [(x,y) for y in range(0,4) for x in range(21,26)]
 
         if go_home_in_breaks == False:
-                add_init_employee_to_grid(self)
-                set_up_canteen(self)
+               add_init_employee_to_grid(self)
+               set_up_canteen(self)
 
         #Add agents to model and grid
         i = 0

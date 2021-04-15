@@ -8,7 +8,7 @@ from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 
 agentsN = 26
-width, height = 26,38
+width, height =26,38
 
 
 

@@ -193,7 +193,7 @@ plt.xlabel('Tidsskridt')
 plt.ylabel('Gennemsnit antal smittede')
 plt.ylim(1,1.5)
 plt.suptitle('%s simulationer af 105 minutters undervisning' %iterationer,fontsize=15)
-plt.title("Initialiseret med TA smittet med maske på, 40% reduktion")
+plt.title("Initialiseret med én studerende smittet, 23 studerende i alt")
 plt.tight_layout() #placement of legend
 plt.legend() #placement of legend
 

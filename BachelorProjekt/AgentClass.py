@@ -89,8 +89,10 @@ def wander(self):
                 possible_empty_steps.append(position)
             elif isinstance(get_agent_at_cell(self,position),table):
                 possible_empty_steps.append(position)
-
-    pos_to_go_to = [pos for pos in possible_empty_steps if pos not in self.model.toilet.queue]
+    try:
+        pos_to_go_to = [pos for pos in possible_empty_steps if pos not in self.model.toilet.queue]
+    except:
+        pos_to_go_to = possible_empty_steps
     if len(pos_to_go_to) != 0:
         next_move = self.random.choice(pos_to_go_to)
         self.model.grid.move_agent(self, next_move)
@@ -151,7 +153,7 @@ def infect_(self):
             #Dont infect neighbors that are home sick / not on campus
             if is_off_campus(agent) or (is_human(agent) and agent.is_home_sick == True):
                 continue
-            #Dont infect neighbors that are vaccinated, recovered or
+            #Dont infect neighbors that are vaccinated, recovered or already infected
             if agent.vaccinated == True or agent.recovered == True or agent.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
                 continue
 
@@ -293,9 +295,9 @@ def infect(self):
 
             "Define infection rates"
     if self.mask == True:
-        ir = calculate_percentage(infection_rate, 40)
-        ir1_2 = calculate_percentage(infection_rate_1_to_2_meter, 40)
-        ir2_plus = calculate_percentage(infection_rate_2plus_meter, 40)
+        ir = calculate_percentage(infection_rate, 70)
+        ir1_2 = calculate_percentage(infection_rate_1_to_2_meter, 70)
+        ir2_plus = calculate_percentage(infection_rate_2plus_meter, 70)
     else:
         ir = infection_rate
         ir1_2 = infection_rate_1_to_2_meter
