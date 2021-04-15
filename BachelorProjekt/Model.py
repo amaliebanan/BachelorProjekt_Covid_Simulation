@@ -31,7 +31,7 @@ infection_decrease_with_mask_pct = 70
 distribution = "p"
 
 go_home_in_breaks = False
-family_groups = False
+family_groups = True
 with_mask = False
 with_dir = True
 percentages_of_vaccinated = 0 #Number 0<=x<1
@@ -73,7 +73,6 @@ def is_off_campus(agent_to_check):
         return True
     else:
         return False
-
 
 def count_agents(self):
     agents = [a for a in self.schedule.agents if is_human(a)]
@@ -117,6 +116,7 @@ def add_init_cantine_agents_to_grid(self,N,n):
             next_door_id = 500+newAgent.courses[0]  #Which door should agent go to when class starts - depending on course
             next_door = [a for a in self.schedule.agents if isinstance(a,ac.door) and a.id == next_door_id]
             newAgent.door = next_door[0]
+            newAgent.off_school = True
             newAgent.next_to_attend_class = True
             x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
             while (x,y) in (self.classroom_area+self.canteen_queue_area+self.canteen_tables+self.toilet_queue_area):
@@ -133,6 +133,7 @@ def add_init_cantine_agents_to_grid(self,N,n):
     for i in range(0,3):
         newAgent = ac.canteen_Agent(1000+j+i,self)
         self.schedule.add(newAgent) #Add agent to scheduler
+        newAgent.off_school = True
         x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
         while (x,y) in (self.classroom_area+self.canteen_queue_area+self.canteen_tables+self.toilet_queue_area):
                  x, y = self.grid.find_empty()
@@ -367,75 +368,6 @@ def weekend(self):
             positive_.exposed = positive_.asymptomatic-2*day_length
             n-=1
 
-def off_school(self,breaks=False):
-    first_third_TAs = [a for a in self.schedule.agents if a.id in [1001,1002,1003]]
-    first_third_class = [a for a in self.schedule.agents if a.id in range(0,(self.n_agents)*len(self.setUpType))]
-    second_fourth_TAs = [a for a in self.schedule.agents if a.id in [1004,1005,1006]]
-    second_fourth_class = [a for a in self.schedule.agents if a.id in range((self.n_agents)*len(self.setUpType),2*(self.n_agents)*len(self.setUpType))]
-
-    sf_off_ft_in = [x for x in range(0,40)]
-    if self.minute_count in sf_off_ft_in:
-            for a in second_fourth_class+second_fourth_TAs:
-                a.off_school = True
-            for a in first_third_class+first_third_class:
-                a.off_school = False
-
-    elif breaks==False and len(self.setUpType)>1:
-        sf_in = [x for x in range(115,116)]
-        tf_in = [x for x in range(405,425)]
-        random_studentFT = random.choices(first_third_class, k=math.floor(self.n_agents*len(self.setUpType)/2))
-        random_studentSF = random.choices(second_fourth_class, k=math.floor(self.n_agents*len(self.setUpType)/2))
-
-        if self.minute_count in sf_in:
-             for a in second_fourth_class+second_fourth_TAs:
-                a.off_school = 0
-        elif self.minute_count in tf_in:
-            for a in first_third_class+first_third_TAs:
-                a.off_school = 1
-        elif self.minute_count == 238:
-            for a in random_studentFT+random_studentSF:
-                a.off_school = 1
-        elif self.minute_count == 300:
-            all_on_break = [a for a in self.schedule.agents if (isinstance(a,ac.canteen_Agent)) and a.off_school == 1]
-            for a in all_on_break:
-                a.off_school = 0
-
-    elif breaks==True:
-        print("YO")
-        breaks_ft = [x for x in range(110,145)]+[x for x in range(421,445)]
-        go_to_school_ft = [300]
-        breaks_sf = [x for x in range(235,245)]+[x for x in range(301,325)]
-        go_to_school_sf = [105,420]
-        if self.minute_count in breaks_ft:
-            print("send FT hjem")
-            for a in first_third_class+first_third_TAs:
-                a.off_school = 1
-        elif self.minute_count in breaks_sf:
-            print("send FT hjem")
-            for a in second_fourth_class+second_fourth_TAs:
-                a.off_school = 1
-        elif self.minute_count in go_to_school_sf:
-            print("hej")
-            for a in second_fourth_class+second_fourth_TAs:
-                a.off_school = 0
-        elif self.minute_count in go_to_school_ft:
-            for a in first_third_class+first_third_TAs:
-                a.off_school = 0
-
-def day_off(self,who,free):
-    TAs,class_ = [],[]
-    if who == "ft":
-        TAs = [a for a in self.schedule.agents if a.id in [1001,1002,1003]]
-        class_ = [a for a in self.schedule.agents if a.id in range(0,(self.n_agents)*len(self.setUpType))]
-    elif who == "sf":
-        TAs = [a for a in self.schedule.agents if a.id in [1004,1005,1006]]
-        class_ = [a for a in self.schedule.agents if a.id in range((self.n_agents)*len(self.setUpType),2*(self.n_agents)*len(self.setUpType))]
-    for a in class_:
-        a.day_off = free
-    for a in TAs:
-        a.day_off = free
-        a.off_school = free
-
 def setUpToilet(self):
      id_max = max([w.id for w in self.schedule.agents if isinstance(w,ac.wall)])
      ids_ = [i for i in range(id_max+1,id_max+1+self.height-33)]
@@ -644,6 +576,22 @@ class covid_Model(Model):
                     a.has_more_courses_today = True
                     a.off_school = False
 
+        if self.day_count%7==2: #Hold A har fri
+            off_school_students = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and (a.id < 3*self.n_agents or a.id in [1001,1002,1003]) and a.day_off == False]
+            for a in off_school_students:
+                    a.day_off = True
+        elif self.day_count%7==3:
+            off_school_students = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and (a.id < 3*self.n_agents or a.id in [1001,1002,1003]) and a.day_off == True]
+            for a in off_school_students:
+                    a.day_off = False
+        elif self.day_count%7 == 4:
+            off_school_students = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and (6*self.n_agents > a.id >= 3*self.n_agents or a.id in [1004,1005,1006]) and a.day_off == False]
+            for a in off_school_students:
+                a.day_off = True
+        elif self.day_count%7 == 5:
+            off_school_students = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and (6*self.n_agents > a.id >= 3*self.n_agents or a.id in [1004,1005,1006]) and a.day_off == True]
+            for a in off_school_students:
+                a.day_off = False
 
         if self.minute_count in [1,119,299,419]:
             self.seats = make_classrooms_fit_to_grid(self.setUpType,self)
@@ -657,8 +605,6 @@ class covid_Model(Model):
                         self.canteen_backups_to_go_home.remove(agent)
 
 
-      #  off_school(self,go_home_in_breaks)
-
         for ta in self.TAs:
             p = np.random.poisson(20/100) == 1
             if len(ta.students) == 0 or p == 0:
@@ -671,9 +617,6 @@ class covid_Model(Model):
                     randomStudent.hasQuestion = 1
 
 
-        #Day off for the students + TAs, 2nd day of week and 4th day of week respetively
-
-
         if self.day_count>1 and self.minute_count in [100,220,400,520]:
             set_canteen_agents_next_to_attend_class(self)
         elif self.minute_count in [220,400,520]:
@@ -682,18 +625,22 @@ class covid_Model(Model):
 
         self.schedule.step()
         self.datacollector.collect(self)
+
+
+
         #Time count
         self.minute_count += 1
         if self.minute_count % 60 == 0:
             self.hour_count += 1
 
 
-        if self.minute_count % 525 == 0:
+        if self.minute_count % 526 == 0:
             self.day_count += 1
             self.minute_count = 1
             self.hour_count = 1
             self.toilet.has_been_infected = False #Gøres rent hver dag
 
-            if self.day_count%5 == 0: ##WEEKEND
+            if self.day_count%6 == 0: ##WEEKEND
+               self.day_count+=2
                weekend(self)
 

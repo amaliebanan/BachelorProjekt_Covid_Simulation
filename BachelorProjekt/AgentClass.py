@@ -282,6 +282,13 @@ def infect(self):
     else:
         all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
 
+    #Smit kun dit eget hold (A eller B) hvis dagen skifter
+    if self.model.minute_count in list(range(0,60)):
+        if self.id in list(range(0,(len(self.model.setUpType)*self.model.n_agents)))+[1001,1002,1003]:
+            all_neighbors_within_radius = [n for n in all_neighbors_within_radius if n.id in list(range(0,(len(self.model.setUpType)*self.model.n_agents)))+[1001,1002,1003]]
+        elif self.id in list(range((len(self.model.setUpType)*self.model.n_agents)+1,2*(len(self.model.setUpType)*self.model.n_agents)))+[1004,1005,1006]:
+            all_neighbors_within_radius = [n for n in all_neighbors_within_radius if n.id in list(range((len(self.model.setUpType)*self.model.n_agents)+1,2*(len(self.model.setUpType)*self.model.n_agents)))+[1004,1005,1006]]
+
     all_humans_within_radius = []
     for neighbor in all_neighbors_within_radius:
         if is_human(neighbor):
