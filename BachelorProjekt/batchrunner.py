@@ -7,10 +7,10 @@ import multiprocessing as mp
 from multiprocessing import Pool
 
 
-fixed_params = {"width":11, "height": 11, "setUpType": [2,3,4]}
+fixed_params = {"width":26, "height": 38, "setUpType": [2,3,4]}
 variable_params = {"N": range(24,25,1)} # 24 students
-iterationer = 5
-skridt = 525*4
+iterationer = 3
+skridt = 525*30
 
 
 
@@ -193,7 +193,7 @@ plt.xlabel('Tidsskridt')
 plt.ylabel('Gennemsnit antal smittede')
 plt.ylim(1,1.5)
 plt.suptitle('%s simulationer af 105 minutters undervisning' %iterationer,fontsize=15)
-plt.title("Initialiseret med TA smittet med maske på, 40% reduktion")
+plt.title("Initialiseret med én studerende smittet, 23 studerende i alt")
 plt.tight_layout() #placement of legend
 plt.legend() #placement of legend
 
