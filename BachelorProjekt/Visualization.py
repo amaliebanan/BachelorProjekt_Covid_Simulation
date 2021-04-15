@@ -7,7 +7,7 @@ import numpy as np
 from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 
-agentsN = 26
+agentsN = 24
 width, height = 26,38
 
 
@@ -229,32 +229,54 @@ def covid_draw_arrow(agent):
 
 
         elif agent.infected == True and agent.exposed > 0:
-            portrayal["Shape"] = "resources/exposed.png"
-            portrayal["scale"] = 0.9
-        elif agent.infected == True:
             if agent.coords == dir['N']:
-                portrayal["Shape"] = "resources/coronaarrowN.png"
+                portrayal["Shape"] = "resources/greenexposedN.png"
                 portrayal["scale"] = 0.9
             elif agent.coords == dir['S']:
-                portrayal["Shape"] = "resources/coronaarrowS.png"
+                portrayal["Shape"] = "resources/greenexposedS.png"
                 portrayal["scale"] = 0.9
             elif agent.coords == dir['E']:
-                portrayal["Shape"] = "resources/coronaarrowE.png"
+                portrayal["Shape"] = "resources/greenexposedE.png"
                 portrayal["scale"] = 0.9
             elif agent.coords == dir['W']:
-                portrayal["Shape"] = "resources/coronaarrowW.png"
+                portrayal["Shape"] = "resources/greenexposedW.png"
                 portrayal["scale"] = 0.9
             elif agent.coords == dir['NE']:
-                portrayal["Shape"] = "resources/coronaarrowNE.png"
+                portrayal["Shape"] = "resources/greenexposedNE.png"
                 portrayal["scale"] = 0.9
             elif agent.coords == dir['SE']:
-                portrayal["Shape"] = "resources/coronaarrowSE.png"
+                portrayal["Shape"] = "resources/greenexposedSE.png"
                 portrayal["scale"] = 0.9
             elif agent.coords == dir['NW']:
-                portrayal["Shape"] = "resources/coronaarrowNW.png"
+                portrayal["Shape"] = "resources/greenexposedNW.png"
                 portrayal["scale"] = 0.9
             elif agent.coords == dir['SW']:
-                portrayal["Shape"] = "resources/coronaarrowSW.png"
+                portrayal["Shape"] = "resources/greenexposedSW.png"
+                portrayal["scale"] = 0.9
+        elif agent.infected == True:
+            if agent.coords == dir['N']:
+                portrayal["Shape"] = "resources/greeninfectedN.png"
+                portrayal["scale"] = 0.9
+            elif agent.coords == dir['S']:
+                portrayal["Shape"] = "resources/greeninfectedS.png"
+                portrayal["scale"] = 0.9
+            elif agent.coords == dir['E']:
+                portrayal["Shape"] = "resources/greeninfectedE.png"
+                portrayal["scale"] = 0.9
+            elif agent.coords == dir['W']:
+                portrayal["Shape"] = "resources/greeninfectedW.png"
+                portrayal["scale"] = 0.9
+            elif agent.coords == dir['NE']:
+                portrayal["Shape"] = "resources/greeninfectedNE.png"
+                portrayal["scale"] = 0.9
+            elif agent.coords == dir['SE']:
+                portrayal["Shape"] = "resources/greeninfectedSE.png"
+                portrayal["scale"] = 0.9
+            elif agent.coords == dir['NW']:
+                portrayal["Shape"] = "resources/greeninfectedNW.png"
+                portrayal["scale"] = 0.9
+            elif agent.coords == dir['SW']:
+                portrayal["Shape"] = "resources/greeninfectedSW.png"
                 portrayal["scale"] = 0.9
 
 
@@ -340,32 +362,54 @@ def covid_draw_arrow(agent):
             portrayal["Shape"] = "resources/white.jpg"
             portrayal["scale"] = 0.9
         elif agent.infected == True and agent.exposed > 0:
-            portrayal["Shape"] = "resources/exposed.png"
-            portrayal["scale"] = 0.9
-        elif agent.infected == True:
             if agent.coords == dir['N']:
-                portrayal["Shape"] = "resources/coronaarrowN.png"
+                portrayal["Shape"] = "resources/greenexposedN.png"
                 portrayal["scale"] = 0.9
             elif agent.coords == dir['S']:
-                portrayal["Shape"] = "resources/coronaarrowS.png"
+                portrayal["Shape"] = "resources/greenexposedS.png"
                 portrayal["scale"] = 0.9
             elif agent.coords == dir['E']:
-                portrayal["Shape"] = "resources/coronaarrowE.png"
+                portrayal["Shape"] = "resources/greenexposedE.png"
                 portrayal["scale"] = 0.9
             elif agent.coords == dir['W']:
-                portrayal["Shape"] = "resources/coronaarrowW.png"
+                portrayal["Shape"] = "resources/greenexposedW.png"
                 portrayal["scale"] = 0.9
             elif agent.coords == dir['NE']:
-                portrayal["Shape"] = "resources/coronaarrowNE.png"
+                portrayal["Shape"] = "resources/greenexposedNE.png"
                 portrayal["scale"] = 0.9
             elif agent.coords == dir['SE']:
-                portrayal["Shape"] = "resources/coronaarrowSE.png"
+                portrayal["Shape"] = "resources/greenexposedSE.png"
                 portrayal["scale"] = 0.9
             elif agent.coords == dir['NW']:
-                portrayal["Shape"] = "resources/coronaarrowNW.png"
+                portrayal["Shape"] = "resources/greenexposedNW.png"
                 portrayal["scale"] = 0.9
             elif agent.coords == dir['SW']:
-                portrayal["Shape"] = "resources/coronaarrowSW.png"
+                portrayal["Shape"] = "resources/greenexposedSW.png"
+                portrayal["scale"] = 0.9
+        elif agent.infected == True:
+            if agent.coords == dir['N']:
+                portrayal["Shape"] = "resources/greeninfectedN.png"
+                portrayal["scale"] = 0.9
+            elif agent.coords == dir['S']:
+                portrayal["Shape"] = "resources/greeninfectedS.png"
+                portrayal["scale"] = 0.9
+            elif agent.coords == dir['E']:
+                portrayal["Shape"] = "resources/greeninfectedE.png"
+                portrayal["scale"] = 0.9
+            elif agent.coords == dir['W']:
+                portrayal["Shape"] = "resources/greeninfectedW.png"
+                portrayal["scale"] = 0.9
+            elif agent.coords == dir['NE']:
+                portrayal["Shape"] = "resources/greeninfectedNE.png"
+                portrayal["scale"] = 0.9
+            elif agent.coords == dir['SE']:
+                portrayal["Shape"] = "resources/greeninfectedSE.png"
+                portrayal["scale"] = 0.9
+            elif agent.coords == dir['NW']:
+                portrayal["Shape"] = "resources/greeninfectedNW.png"
+                portrayal["scale"] = 0.9
+            elif agent.coords == dir['SW']:
+                portrayal["Shape"] = "resources/greeninfectedSW.png"
                 portrayal["scale"] = 0.9
         elif agent.recovered == 1:
             portrayal["Shape"] = "resources/healthy.png"
@@ -598,7 +642,7 @@ infected_chart = ChartModule([{"Label":"infected","Color":"Black"}], data_collec
 server = ModularServer(covid_Model,
                        [grid,infected_element, days_chart, infected_chart],
                        "Covid Model",
-                       {"N":agentsN, "width":width, "height":height, "setUpType":[4,4,4]})
+                       {"N":agentsN, "width":width, "height":height, "setUpType":[2,2,2]})
 
 
 

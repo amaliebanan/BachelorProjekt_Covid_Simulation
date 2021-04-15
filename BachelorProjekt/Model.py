@@ -121,10 +121,9 @@ def add_init_cantine_agents_to_grid(self,N,n):
             newAgent.next_to_attend_class = True
             newAgent.off_school = True
             x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
-            if (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]+[(23,j) for j in range(4,20)]:# if placed in canteen, find another placement
-                while (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]+[(23,j) for j in range(4,20)]:
+            while (x,y) in (self.classroom_area+self.canteen_queue_area+self.canteen_tables+self.toilet_queue_area):
                  x, y = self.grid.find_empty()
-            self.grid.place_agent(newAgent, (max(x,9),min(30,y)))
+            self.grid.place_agent(newAgent, (x,y))
 
             if with_mask == True:
                 newAgent.mask = True
@@ -137,8 +136,7 @@ def add_init_cantine_agents_to_grid(self,N,n):
         newAgent = ac.canteen_Agent(1000+j+i,self)
         self.schedule.add(newAgent) #Add agent to scheduler
         x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
-        if (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:
-                while (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:
+        while (x,y) in (self.classroom_area+self.canteen_queue_area+self.canteen_tables+self.toilet_queue_area):
                  x, y = self.grid.find_empty()
         newAgent.coords = random.choice(list(dir.values()))   #Give agent random direction to look at
         next_door_id = newAgent.id-503 #Which door should agent go to when class starts - depending on course
@@ -146,7 +144,7 @@ def add_init_cantine_agents_to_grid(self,N,n):
         newAgent.next_to_attend_class = True
         newAgent.door = next_door[0]
         newAgent.off_school = 1
-        self.grid.place_agent(newAgent, (max(x,9),min(y,30)))
+        self.grid.place_agent(newAgent, (x,y))
 
 
     m = n-limit-3
@@ -164,13 +162,10 @@ def add_init_cantine_agents_to_grid(self,N,n):
                 newAgent.mask = True
 
             x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
-            if (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:
-                while (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]:
+            while (x,y) in (self.classroom_area+self.canteen_queue_area+self.canteen_tables+self.toilet_queue_area):
                  x, y = self.grid.find_empty()
-            #while not self.grid.is_cell_empty((max(x,9),y)):
-                x, y = self.grid.find_empty()
 
-            self.grid.place_agent(newAgent, (max(x,9),min(y,30)))
+            self.grid.place_agent(newAgent, (x,y))
             id_+=1
 
 def add_init_employee_to_grid(self):
@@ -518,22 +513,21 @@ class covid_Model(Model):
 
 
         #Classrooms +  directions
-        self.classroom_2 = [((1,1),dir['E']),((2,1),dir['N']),((3,1),dir['N']),((4,1),dir['N']),((5,1),dir['N']),
-                           ((6,1),dir['N']),((1,2),dir['E']),((1,3),dir['E']),((2,3),dir['S']),((3,3),dir['S']),
-                           ((4,3),dir['S']),((5,3),dir['S']),((6,3),dir['S']),
-                           ((1,6),dir['E']),((2,6),dir['N']),((3,6),dir['N']),((4,6),dir['N']),((5,6),dir['N']),
-                           ((6,6),dir['N']),((1,7),dir['E']),((1,8),dir['E']),((2,8),dir['S']),((3,8),dir['S']),
-                           ((4,8),dir['S']),((5,8),dir['S']),((6,8),dir['S'])]
-        self.classroom_3 = [((1,5),dir['E']),((1,6),dir['E']),((1,7),dir['E']),((1,8),dir['E']),((1,9),dir['E']),
+        self.classroom_2 = [((0,0),dir['E']),((1,0),dir['N']),((2,0),dir['N']),((3,0),dir['N']),((4,0),dir['N']),
+                           ((5,0),dir['N']),((6,0),dir['N']),((7,0),dir['N']),((0,1),dir['E']),((0,2),dir['E']),
+                           ((0,3),dir['E']),((0,4),dir['E']),((0,5),dir['E']),((0,6),dir['E']),
+                           ((0,7),dir['E']),((0,8),dir['E']),((0,9),dir['S']),((1,9),dir['S']),((2,9),dir['S']),
+                           ((3,9),dir['S']),((4,9),dir['S']),((5,9),dir['S']),((6,9),dir['S']),((7,9),dir['S'])]
+        self.classroom_3 = [((1,6),dir['E']),((1,7),dir['E']),((1,8),dir['E']),((1,9),dir['E']),
                            ((2,0),dir['E']),((2,1),dir['E']),((2,2),dir['E']),((2,3),dir['E']),
-                           ((3,5),dir['E']),((3,6),dir['E']),((3,7),dir['E']),((3,8),dir['E']),((3,9),dir['E']),
+                           ((3,6),dir['E']),((3,7),dir['E']),((3,8),dir['E']),((3,9),dir['E']),
                            ((4,0),dir['E']),((4,1),dir['E']),((4,2),dir['E']),((4,3),dir['E']),
                            ((5,6),dir['E']),((5,7),dir['E']),((5,8),dir['E']),((5,9),dir['E']),((6,0),dir['E']),
                            ((6,1),dir['E']),((6,2),dir['E']),((6,3),dir['E'])]
         self.classroom_4 = [((1,1),dir['N']),((1,2),dir['S']),((2,1),dir['N']),((2,2),dir['S']),
                            ((1,4),dir['N']),((1,5),dir['S']),((2,4),dir['N']),((2,5),dir['S']),
                            ((1,7),dir['N']),((1,8),dir['S']),((2,7),dir['N']),((2,8),dir['S']),
-                           ((4,1),dir['E']),((4,2),dir['E']),((5,1),dir['N']),((5,2),dir['S']),((6,1),dir['N']),((6,2),dir['S']),
+                           ((4,1),dir['N']),((4,2),dir['S']),((5,1),dir['N']),((5,2),dir['S']),
                            ((4,4),dir['N']),((4,5),dir['S']),((5,4),dir['N']),((5,5),dir['S']),
                            ((4,7),dir['N']),((4,8),dir['S']),((5,7),dir['N']),((5,8),dir['S'])]
         self.classroom_5 = [((0,0),dir['N']),((0,1),dir['S']),((0,3),dir['N']),((0,4),dir['S']),
@@ -564,11 +558,15 @@ class covid_Model(Model):
         self.canteen_tables = self.canteen_table_1+self.canteen_table_2
         self.enter_canteen_area12 = [(x,y) for y in range(0,4) for x in range(17,26)]
         self.enter_canteen_area10 = [(x,y) for y in range(0,4) for x in range(21,26)]
+        self.canteen_queue_area = [(22,3), (24,3)]+[(23, y) for y in range(3,21)]+[(25, y) for y in range(5,19)]
+        self.classroom_area = [(x,y) for y in range(0,height+1) for x in range(0,9)]
+        self.toilet_queue_area = [(x,height-1) for x in range(8,15)]
+
 
         if go_home_in_breaks == False:
                 add_init_employee_to_grid(self)
                 set_up_canteen(self)
-
+        setUpToilet(self)
         #Add agents to model and grid
         i = 0
         for s in setUpType:
@@ -589,7 +587,6 @@ class covid_Model(Model):
         self.copy_of_seats = self.seats
         self.datacollector.collect(self)
         self.running = True
-        setUpToilet(self)
 
 
         if 0 <= percentages_of_vaccinated < 1:
