@@ -39,7 +39,6 @@ percentages_of_vaccinated = 0 #Number 0<=x<1
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
 
-
 def get_infected(self):
     agents = [a for a in self.schedule.agents if is_human(a) and a.infected == True]
     return len(agents)
@@ -119,7 +118,6 @@ def add_init_cantine_agents_to_grid(self,N,n):
             next_door = [a for a in self.schedule.agents if isinstance(a,ac.door) and a.id == next_door_id]
             newAgent.door = next_door[0]
             newAgent.next_to_attend_class = True
-            newAgent.off_school = True
             x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
             if (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]+[(23,j) for j in range(4,20)]:# if placed in canteen, find another placement
                 while (x, y) and (max(x,9),y) in [(25, j) for j in range(4,19)]+[(23,j) for j in range(4,20)]:
@@ -145,7 +143,6 @@ def add_init_cantine_agents_to_grid(self,N,n):
         next_door = [a for a in self.schedule.agents if isinstance(a,ac.door) and a.id == next_door_id]
         newAgent.next_to_attend_class = True
         newAgent.door = next_door[0]
-        newAgent.off_school = 1
         self.grid.place_agent(newAgent, (max(x,9),min(y,30)))
 
 
@@ -314,7 +311,6 @@ def make_classrooms_fit_to_grid(list_of_setuptypes,model):
 
 def set_up_canteen(self):
         #Place walls
-
         wall_placements_canteen_v = [(22,j) for j in range(4,20)]+[(24,j) for j in range(4,17)]+[(24,18), (24,19)]
         wall_placements_canteen_h = [(25,4), (25,19)]
         ids_h = [i for i in range(10000,10002)]
@@ -384,9 +380,9 @@ def off_school(self,breaks=False):
     sf_off_ft_in = [x for x in range(0,40)]
     if self.minute_count in sf_off_ft_in:
             for a in second_fourth_class+second_fourth_TAs:
-                a.off_school = 1
+                a.off_school = True
             for a in first_third_class+first_third_class:
-                a.off_school = 0
+                a.off_school = False
 
     elif breaks==False and len(self.setUpType)>1:
         sf_in = [x for x in range(115,116)]
@@ -409,17 +405,21 @@ def off_school(self,breaks=False):
                 a.off_school = 0
 
     elif breaks==True:
-        breaks_ft = [x for x in range(110,145)]+[x for x in range(420,445)]
+        print("YO")
+        breaks_ft = [x for x in range(110,145)]+[x for x in range(421,445)]
         go_to_school_ft = [300]
         breaks_sf = [x for x in range(235,245)]+[x for x in range(301,325)]
         go_to_school_sf = [105,420]
         if self.minute_count in breaks_ft:
+            print("send FT hjem")
             for a in first_third_class+first_third_TAs:
                 a.off_school = 1
         elif self.minute_count in breaks_sf:
+            print("send FT hjem")
             for a in second_fourth_class+second_fourth_TAs:
                 a.off_school = 1
         elif self.minute_count in go_to_school_sf:
+            print("hej")
             for a in second_fourth_class+second_fourth_TAs:
                 a.off_school = 0
         elif self.minute_count in go_to_school_ft:
@@ -467,6 +467,21 @@ def setUpToilet(self):
         self.schedule.add(newBrick)
         self.grid.place_agent(newBrick, pos)
 
+def choose_students_to_go_to_toilet(self):
+    if self.minute_count in self.breaks:
+        poission_ = np.random.poisson(1/4)
+    else:
+        poission_ = np.random.poisson(1/20)
+    counter=0
+    while poission_ > counter:
+        agents = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.going_to_toilet == False and a.in_toilet_queue == False and a.sitting_on_toilet == 0 and is_off_campus(a)==False and a.is_home_sick == False and a.sitting_in_canteen < 45 and a.queue == False]
+        try:
+            randomStudent = self.random.choice(agents)
+            randomStudent.going_to_toilet = 1
+            counter+=1
+        except:
+         #   print("empty seq")
+            break
 
 class covid_Model(Model):
     def __init__(self, N, height, width,setUpType):
@@ -569,6 +584,7 @@ class covid_Model(Model):
                add_init_employee_to_grid(self)
                set_up_canteen(self)
 
+
         #Add agents to model and grid
         i = 0
         for s in setUpType:
@@ -592,6 +608,7 @@ class covid_Model(Model):
         setUpToilet(self)
 
 
+
         if 0 <= percentages_of_vaccinated < 1:
             n_agents_has_been_vaccinated = math.floor(count_agents(self)*percentages_of_vaccinated)
             n = 0
@@ -604,23 +621,31 @@ class covid_Model(Model):
                     vaccinate_agent.vaccinated = True
                     n+=1
 
-
     def step(self):
+        choose_students_to_go_to_toilet(self)
 
-        if self.minute_count in self.breaks:
-            poission_ = np.random.poisson(1)
-        else:
-            poission_ = np.random.poisson(1/2)
-        counter=0
-        while poission_ > counter:
-            agents = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.going_to_toilet == False and a.in_toilet_queue == False and a.sitting_on_toilet == 0 and is_off_campus(a)==False and a.is_home_sick == False and a.sitting_in_canteen < 45 and a.queue == False]
-            try:
-                randomStudent = self.random.choice(agents)
-                randomStudent.going_to_toilet = 1
-                counter+=1
-            except:
-             #   print("empty seq")
-                break
+        if go_home_in_breaks == True:
+            if self.minute_count in [295,524]:
+                off_school_students = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and (a.id < len(self.setUpType)*self.n_agents or a.id in [1001,1002,1003]) and a.off_school == True and a.is_home_sick == False and a.day_off == False]
+                for a in off_school_students:
+                    a.off_school = False
+            if self.minute_count in [110,415]:
+                off_school_students = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and (len(self.setUpType)*2*self.n_agents > a.id >= len(self.setUpType)*self.n_agents or a.id in [1004,1005,1006]) and a.off_school == True and a.is_home_sick == False and a.day_off == False]
+                for a in off_school_students:
+                    a.off_school = False
+
+        elif go_home_in_breaks == False:
+            if self.minute_count in [1]:
+                off_school_students = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and (a.id < 3*self.n_agents or a.id in [1001,1002,1003]) and a.off_school == True and a.is_home_sick == False and a.day_off == False]
+                for a in off_school_students:
+                    a.has_more_courses_today = True
+                    a.off_school = False
+            if self.minute_count in [110]:
+                off_school_students = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and (6*self.n_agents > a.id >= 3*self.n_agents or a.id in [1004,1005,1006]) and a.off_school == True and a.is_home_sick == False and a.day_off == False]
+                for a in off_school_students:
+                    a.has_more_courses_today = True
+                    a.off_school = False
+
 
         if self.minute_count in [1,119,299,419]:
             self.seats = make_classrooms_fit_to_grid(self.setUpType,self)
@@ -634,7 +659,7 @@ class covid_Model(Model):
                         self.canteen_backups_to_go_home.remove(agent)
 
 
-        off_school(self,go_home_in_breaks)
+      #  off_school(self,go_home_in_breaks)
 
         for ta in self.TAs:
             p = np.random.poisson(20/100) == 1
@@ -649,14 +674,6 @@ class covid_Model(Model):
 
 
         #Day off for the students + TAs, 2nd day of week and 4th day of week respetively
-        if self.day_count%5 == 2 and self.minute_count == 1:
-            day_off(self,"ft",True)
-        elif self.day_count%5 == 4 and self.minute_count == 1:
-            day_off(self,"sf",True)
-        elif self.day_count%5 == 3 and self.minute_count == 1:
-             day_off(self,"ft",False)
-        elif self.day_count%5 == 0 and self.minute_count == 1:
-             day_off(self,"sf",False)
 
 
         if self.day_count>1 and self.minute_count in [100,220,400,520]:

@@ -7,10 +7,10 @@ import multiprocessing as mp
 from multiprocessing import Pool
 
 
-fixed_params = {"width":11, "height": 11, "setUpType": [4]}
+fixed_params = {"width":26, "height": 38, "setUpType": [2,3,4]}
 variable_params = {"N": range(26,27,1)} # 26 students
-iterationer = 1000
-skridt = 105*1
+iterationer = 10
+skridt = 525*1
 
 
 
@@ -154,7 +154,7 @@ plt.show()
 def list_of_infected_in_classroom(j):
     batch_run = BatchRunner(covid_Model,
         variable_parameters=variable_params,
-        fixed_parameters={"width": 11, "height": 11, "setUpType": [j]},
+        fixed_parameters={"width": 26, "height": 38, "setUpType": [j,j,j]},
         iterations=iterationer,
         max_steps=skridt)
     batch_run.run_all() #run batchrunner
