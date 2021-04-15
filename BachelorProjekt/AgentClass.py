@@ -539,6 +539,13 @@ def infect(self):
 
     for agent in E_list:
             distance = getDistance(self.pos,agent.pos)
+            if isinstance(self, class_Agent) and self.pos in self.model.classroom_2+self.model.classroom_3+self.model.classroom_4:# if nextdoor neighbor in class
+                if distance <2:
+                    if bernoulli.rvs(ir1_2*10) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                    continue
+
             if angle_between(self.coords, agent.coords) == math.pi/2: #4xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*4) == 1:
@@ -589,6 +596,12 @@ def infect(self):
 
     for agent in W_list:
             distance = getDistance(self.pos,agent.pos)
+            if isinstance(self, class_Agent) and self.pos in self.model.classroom_2+self.model.classroom_3+self.model.classroom_4:# if nextdoor neighbor in class
+                if distance <2:
+                    if bernoulli.rvs(ir1_2*10) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                    continue
             if angle_between(self.coords, agent.coords) == math.pi*3/2: #4xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*4) == 1:
