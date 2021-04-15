@@ -548,6 +548,13 @@ def infect(self):
 
     for agent in E_list:
             distance = getDistance(self.pos,agent.pos)
+            if (isinstance(self, class_Agent) and self.pos in self.model.classroom_2+self.model.classroom_3+self.model.classroom_4) or self.pos in self.model.canteen_tables:# if nextdoor neighbor in class
+                if distance <2:
+                    if bernoulli.rvs(ir1_2*10) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                    continue
+
             if angle_between(self.coords, agent.coords) == math.pi/2: #4xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*4) == 1:
@@ -598,6 +605,12 @@ def infect(self):
 
     for agent in W_list:
             distance = getDistance(self.pos,agent.pos)
+            if (isinstance(self, class_Agent) and self.pos in self.model.classroom_2+self.model.classroom_3+self.model.classroom_4) or self.pos in self.model.canteen_tables:
+                if distance <2:
+                    if bernoulli.rvs(ir1_2*10) == 1:
+                        newly_infected.append(agent)
+                        self.model.infected_agents.append(agent)
+                continue
             if angle_between(self.coords, agent.coords) == math.pi*3/2: #4xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*4) == 1:
@@ -1208,10 +1221,10 @@ class canteen_Agent(Agent):
                 if self.model.toilet.has_been_infected == True and self.infected == False:
                     p = bernoulli.rvs(1/100)
                     if p == 1:
-                        print(self.model.day_count,self.model.minute_count,self.id,self.pos,"I got infected at the toilet")
+                        #print(self.model.day_count,self.model.minute_count,self.id,self.pos,"I got infected at the toilet")
                         self.infected == True
                 if self.infected == True and self.exposed == 0 and self.model.toilet.has_been_infected == False:
-                    print(self.model.day_count,self.model.minute_count,self.id,self.pos,"I just infected the toilet")
+                    #print(self.model.day_count,self.model.minute_count,self.id,self.pos,"I just infected the toilet")
                     self.model.toilet.has_been_infected = True
 
             else:

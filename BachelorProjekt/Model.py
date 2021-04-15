@@ -30,8 +30,9 @@ infection_rate_2plus_meter = calculate_percentage(infection_rate_1_to_2_meter,2.
 infection_decrease_with_mask_pct = 70
 distribution = "p"
 
+
 go_home_in_breaks = False
-family_groups = True
+family_groups = False
 with_mask = False
 with_dir = True
 percentages_of_vaccinated = 0 #Number 0<=x<1
@@ -84,10 +85,10 @@ def add_init_infected_to_grid(self,n):
     while i<n:
         students = [a for a in self.schedule.agents if isinstance(a,ac.class_Agent)]
         TA = [a for a in self.schedule.agents if isinstance(a,ac.TA)]
-        randomAgent = self.random.choice(students)
+        randomAgent = self.random.choice(TA)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
-        #elif isinstance(randomAgent, ac.class_Agent):
+        #elif isinstance(randomAgent, ac.TA):
         elif is_human(randomAgent):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent
@@ -174,6 +175,9 @@ def add_init_employee_to_grid(self):
     self.schedule.add(cashier)
     lunchlady.coords = dir['W'] #looks west
     cashier.coords = dir['W']
+    if with_mask == True:
+        cashier.mask = True
+        lunchlady.mask = True
     x1, y1= (25,17)
     x2,y2 = random.choice([(25,j) for j in range(5,17)])
     self.grid.place_agent(cashier, (x1,y1))
@@ -330,6 +334,7 @@ def set_up_canteen(self):
         self.schedule.add(desk)
         self.grid.place_agent(desk,desk_location)
 
+        add_init_employee_to_grid(self)
 
         table_pos = [x for (x,y) in self.canteen_table_1]+[x for (x,y) in self.canteen_table_2]
         counter = 0
@@ -464,7 +469,7 @@ class covid_Model(Model):
         self.classroom_2 = [((0,0),dir['E']),((1,0),dir['N']),((2,0),dir['N']),((3,0),dir['N']),((4,0),dir['N']),
                            ((5,0),dir['N']),((6,0),dir['N']),((7,0),dir['N']),((0,1),dir['E']),((0,2),dir['E']),
                            ((0,3),dir['E']),((0,4),dir['E']),((0,5),dir['E']),((0,6),dir['E']),
-                           ((0,7),dir['E']),((0,8),dir['E']),((0,9),dir['S']),((1,9),dir['S']),((2,9),dir['S']),
+                           ((0,7),dir['E']),((0,8),dir['E']),((0,9),dir['E']),((1,9),dir['S']),((2,9),dir['S']),
                            ((3,9),dir['S']),((4,9),dir['S']),((5,9),dir['S']),((6,9),dir['S']),((7,9),dir['S'])]
         self.classroom_3 = [((1,6),dir['E']),((1,7),dir['E']),((1,8),dir['E']),((1,9),dir['E']),
                            ((2,0),dir['E']),((2,1),dir['E']),((2,2),dir['E']),((2,3),dir['E']),
@@ -478,24 +483,7 @@ class covid_Model(Model):
                            ((4,1),dir['N']),((4,2),dir['S']),((5,1),dir['N']),((5,2),dir['S']),
                            ((4,4),dir['N']),((4,5),dir['S']),((5,4),dir['N']),((5,5),dir['S']),
                            ((4,7),dir['N']),((4,8),dir['S']),((5,7),dir['N']),((5,8),dir['S'])]
-        self.classroom_5 = [((0,0),dir['N']),((0,1),dir['S']),((0,3),dir['N']),((0,4),dir['S']),
-                           ((0,6),dir['N']),((0,7),dir['S']),((0,9),dir['N']),((2,0),dir['S']),
-                           ((2,2),dir['N']),((2,3),dir['S']),((2,5),dir['N']),((2,6),dir['S']),
-                           ((2,8),dir['E']),((2,9),dir['E']),((4,0),dir['N']),((4,1),dir['S']),((4,3),dir['N']),((4,4),dir['S']),
-                           ((4,6),dir['N']),((4,7),dir['S']),((4,9),dir['N']),((6,0),dir['S']),
-                           ((6,2),dir['N']),((6,4),dir['S']),((6,6),dir['N']),((6,8),dir['S'])]
-        self.classroom_56 = [((1,0),dir['N']),((1,1),dir['S']),((1,3),dir['N']),((1,4),dir['S']),
-                           ((1,6),dir['N']),((1,7),dir['S']),((1,9),dir['N']),((3,0),dir['S']),
-                           ((3,2),dir['N']),((3,3),dir['S']),((3,5),dir['N']),((3,6),dir['S']),
-                           ((3,8),dir['E']),((3,9),dir['E']),((5,0),dir['N']),((5,1),dir['S']),((5,3),dir['N']),((5,4),dir['S']),
-                           ((5,6),dir['N']),((5,7),dir['S']),((5,9),dir['N']),((0,5),dir['S']),
-                           ((0,2),dir['N']),((6,8),dir['S']),((6,2),dir['N']),((0,8),dir['S'])]
-        self.classroom_6 = [((1,1),dir['E']),((2,0),dir['N']),((3,0),dir['N']),((4,0),dir['N']),((5,0),dir['N']),
-                           ((6,0),dir['N']),((1,2),dir['E']),((1,3),dir['E']),((2,3),dir['S']),((3,3),dir['S']),
-                           ((4,3),dir['S']),((5,3),dir['S']),((6,3),dir['S']),
-                           ((1,6),dir['E']),((2,6),dir['N']),((3,6),dir['N']),((4,6),dir['N']),((5,6),dir['N']),
-                           ((6,6),dir['N']),((1,7),dir['E']),((1,8),dir['E']),((2,9),dir['S']),((3,9),dir['S']),
-                           ((4,9),dir['S']),((5,9),dir['S']),((6,9),dir['S'])]
+
         self.seats = []
         self.seat = ()
         self.toilet = ()
@@ -508,19 +496,18 @@ class covid_Model(Model):
         self.enter_canteen_area10 = [(x,y) for y in range(0,4) for x in range(21,26)]
         self.canteen_queue_area = [(22,3), (24,3)]+[(23, y) for y in range(3,21)]+[(25, y) for y in range(5,19)]
         self.classroom_area = [(x,y) for y in range(0,height+1) for x in range(0,9)]
-        self.toilet_queue_area = [(x,height-1) for x in range(8,15)]
+        self.toilet_queue_area = [(x,y) for x in range(8,15) for y in [height-1, height-2]]
 
 
         if go_home_in_breaks == False:
-                add_init_employee_to_grid(self)
                 set_up_canteen(self)
-        setUpToilet(self)
+
         #Add agents to model and grid
         i = 0
         for s in setUpType:
             setUp(self.n_agents,self,s,i)
             i+=1
-
+        setUpToilet(self)
         if len(self.setUpType)>1:
             add_init_cantine_agents_to_grid(self,(self.n_agents)*i,init_canteen_agents)
 
