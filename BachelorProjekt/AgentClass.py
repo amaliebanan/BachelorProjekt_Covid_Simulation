@@ -5,7 +5,7 @@ import numpy as np
 import random
 from operator import itemgetter
 import sys
-from Model import covid_Model,with_mask,is_student, is_off_campus, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage, with_dir
+from Model import covid_Model,with_mask,is_student, is_off_campus, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage, with_dir, go_home_in_breaks
 from scipy.stats import truncnorm,bernoulli
 
 day_length = 525
@@ -95,21 +95,22 @@ def wander(self):
         next_move = self.random.choice(pos_to_go_to)
         self.model.grid.move_agent(self, next_move)
 
-    if self.pos in [x for (x,y) in self.model.canteen_tables]:
-        if self.sitting_in_canteen == 0:
-            if self.model.minute_count in range(225,301):
-                if self.pos in [x for (x,y) in self.model.canteen_table_1]:
-                    self.coords = dir['E']
-                else:
-                    self.coords = dir['W']
-                self.sitting_in_canteen = 70
+    if go_home_in_breaks is False:
+        if self.pos in [x for (x,y) in self.model.canteen_tables]:
+            if self.sitting_in_canteen == 0:
+                if self.model.minute_count in range(225,301):
+                    if self.pos in [x for (x,y) in self.model.canteen_table_1]:
+                        self.coords = dir['E']
+                    else:
+                        self.coords = dir['W']
+                    self.sitting_in_canteen = 70
 
-            else:
-                if self.pos in [x for (x,y) in self.model.canteen_table_1]:
-                    self.coords = dir['E']
                 else:
-                    self.coords = dir['W']
-                self.sitting_in_canteen = 60
+                    if self.pos in [x for (x,y) in self.model.canteen_table_1]:
+                        self.coords = dir['E']
+                    else:
+                        self.coords = dir['W']
+                    self.sitting_in_canteen = 60
 
 #check direction between two agents
 def checkDirection(agent,neighbor):
@@ -433,7 +434,7 @@ def infect(self):
                     Behind_list.append(agent)
                 else:
                     W_list.append(agent)
-        elif agent.pos[1] < self.pos[1] and agent.pos[0] < self.pos[0]:
+        else:
                 if self.coords == dir['N']:
                     Behind_list.append(agent)
                 elif self.coords == dir['E']:
@@ -450,85 +451,6 @@ def infect(self):
                     W_list.append(agent)
                 else:
                     N_list.append(agent)
-                    """
-        if self.coords in [dir['NE'], dir['SE'], dir['SW'], dir['NW']]:
-            if (agent.pos[1] == self.pos[1]+2 and agent.pos[0] in [self.pos[0]+i for i in range(-1,2)]) or\
-                    (agent.pos[1] == self.pos[1]+1 and agent.pos[0]==self.pos[0]):
-                if self.coords == dir['NE']:
-                    N_list.append(agent)
-                elif self.coords == dir['SE']:
-                    W_list.append(agent)
-                elif self.coords == dir['SW']:
-                    S_list.append(agent)
-                elif self.coords == dir['NW']:
-                    E_list.append(agent)
-            elif (agent.pos[1] == self.pos[1]-2 and agent.pos[0] in [self.pos[0]+i for i in range(-1,2)]) or\
-                    (agent.pos[1] == self.pos[1]-1 and agent.pos[0]==self.pos[0]):
-                if self.coords == dir['NE']:
-                    S_list.append(agent)
-                elif self.coords == dir['SE']:
-                    E_list.append(agent)
-                elif self.coords == dir['SW']:
-                    N_list.append(agent)
-                elif self.coords == dir['NW']:
-                    W_list.append(agent)
-            elif (agent.pos[0] == self.pos[0]+2 and agent.pos[1] in [self.pos[1]+i for i in range(-1,2)]) or\
-                    (agent.pos[0] == self.pos[0]+1 and agent.pos[1]==self.pos[1]):
-                if self.coords == dir['NE']:
-                    E_list.append(agent)
-                elif self.coords == dir['SE']:
-                    N_list.append(agent)
-                elif self.coords == dir['SW']:
-                    W_list.append(agent)
-                elif self.coords == dir['NW']:
-                    S_list.append(agent)
-            elif (agent.pos[0] == self.pos[0]-2 and agent.pos[1] in [self.pos[1]+i for i in range(-1,2)]) or\
-                    (agent.pos[0] == self.pos[0]-1 and agent.pos[1]==self.pos[1]):
-                if self.coords == dir['NE']:
-                    W_list.append(agent)
-                elif self.coords == dir['SE']:
-                    S_list.append(agent)
-                elif self.coords == dir['SW']:
-                    E_list.append(agent)
-                elif self.coords == dir['NW']:
-                    N_list.append(agent)
-            elif agent.pos in [(self.pos[0]+i,self.pos[1]+i) for i in range(1,3)]:
-                if self.coords == dir['NE']:
-                    NE_list.append(agent)
-                elif self.coords == dir['SE']:
-                    NW_list.append(agent)
-                elif self.coords == dir['SW']:
-                    SW_list.append(agent)
-                elif self.coords == dir['NW']:
-                    SE_list.append(agent)
-            elif agent.pos in [(self.pos[0]-i,self.pos[1]+i) for i in range(1,3)]:
-                if self.coords == dir['NE']:
-                    NW_list.append(agent)
-                elif self.coords == dir['SE']:
-                    SW_list.append(agent)
-                elif self.coords == dir['SW']:
-                    SE_list.append(agent)
-                elif self.coords == dir['NW']:
-                    NE_list.append(agent)
-            elif agent.pos in [(self.pos[0]+i,self.pos[1]-i) for i in range(1,3)]:
-                if self.coords == dir['NE']:
-                    SE_list.append(agent)
-                elif self.coords == dir['SE']:
-                    NE_list.append(agent)
-                elif self.coords == dir['SW']:
-                    NW_list.append(agent)
-                elif self.coords == dir['NW']:
-                    SW_list.append(agent)
-            elif agent.pos in [(self.pos[0]-i,self.pos[1]-i) for i in range(1,3)]:
-                if self.coords == dir['NE']:
-                    SW_list.append(agent)
-                elif self.coords == dir['SE']:
-                    SE_list.append(agent)
-                elif self.coords == dir['SW']:
-                    NE_list.append(agent)
-                elif self.coords == dir['NW']:
-                    NW_list.append(agent)
-                    """
 
         "Now we'll infect"
     for agent in Same_pos:
@@ -1062,7 +984,7 @@ class class_Agent(Agent):
             if self.pos in self.model.entre:
                 return
             else:
-                self.model.grid.move_agent(self,self.model.entre[random.randint(0,(self.model.entre)-1)])
+                self.model.grid.move_agent(self,self.model.entre[random.randint(0,len(self.model.entre)-1)])
 
         if is_off_campus(self) == False and self.is_home_sick == False:
             if self.infected == True:
@@ -1279,13 +1201,13 @@ class canteen_Agent(Agent):
             if self.queue == 0 and self.sitting_in_canteen == 0:
                 move_to_specific_pos(self,self.door.pos)
             else:
+                if self.in_toilet_queue is True:
+                    force_agent_to_specific_pos(self, self.model.toilet.exit)
                 self.queue = 0
                 self.sitting_in_canteen = 0
                 self.in_toilet_queue = False
                 self.going_to_toilet = False
                 self.sitting_on_toilet = 0
-                if self.queue == 1:
-                    force_agent_to_specific_pos(self, (23,21))
                 move_to_specific_pos(self,self.door.pos)
         else:
             if self.going_to_toilet == True: #På vej til toiletkø
@@ -1312,7 +1234,8 @@ class canteen_Agent(Agent):
     def step(self):
         if self.infected == True:
             update_infection_parameters(self)
-        self.update_queue_parameters()
+        if go_home_in_breaks is False:
+            self.update_queue_parameters()
 
         if is_off_campus(self):
             if self.pos in self.model.entre:

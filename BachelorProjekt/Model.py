@@ -608,9 +608,9 @@ class covid_Model(Model):
     def step(self):
 
         if self.minute_count in self.breaks:
-            poission_ = np.random.poisson(1)
+            poission_ = np.random.poisson(1/4)
         else:
-            poission_ = np.random.poisson(1/2)
+            poission_ = np.random.poisson(1/6)
         counter=0
         while poission_ > counter:
             agents = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.going_to_toilet == False and a.in_toilet_queue == False and a.sitting_on_toilet == 0 and is_off_campus(a)==False and a.is_home_sick == False and a.sitting_in_canteen < 45 and a.queue == False]
