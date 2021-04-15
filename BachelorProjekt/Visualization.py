@@ -144,6 +144,9 @@ def covid_draw(agent):
     if is_student(agent) and agent.day_off == True:
         portrayal["Shape"] = "resources/healthy.png"
         portrayal["scale"] = 0.9
+    if is_human(agent) and agent.mask == True:
+        portrayal["Shape"] = "resources/healthy.png"
+        portrayal["scale"] = 0.9
 
     return portrayal
 

@@ -23,7 +23,7 @@ def calculate_percentage(original_number, percent_to_subtract):
 day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
-init_canteen_agents = 90
+init_canteen_agents = 80
 infection_rate = (0.025/100)
 infection_rate_1_to_2_meter = calculate_percentage(infection_rate, 10.2)
 infection_rate_2plus_meter = calculate_percentage(infection_rate_1_to_2_meter,2.02)
@@ -33,7 +33,7 @@ distribution = "p"
 
 go_home_in_breaks = False
 family_groups = False
-with_mask = False
+with_mask = True
 with_dir = True
 percentages_of_vaccinated = 0 #Number 0<=x<1
 
@@ -83,12 +83,12 @@ def add_init_infected_to_grid(self,n):
     i = 0
     positives = []
     while i<n:
+        all_agents = [a for a in self.schedule.agents if is_human(a)]
         students = [a for a in self.schedule.agents if isinstance(a,ac.class_Agent)]
         TA = [a for a in self.schedule.agents if isinstance(a,ac.TA)]
         randomAgent = self.random.choice(TA)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
-        #elif isinstance(randomAgent, ac.TA):
         elif is_human(randomAgent):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent
@@ -96,7 +96,6 @@ def add_init_infected_to_grid(self,n):
             positive_agent.infection_period = ac.truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)-2*day_length
             positive_agent.exposed = 0
             positive_agent.asymptomatic = 2*day_length
-            positive_agent.mask = True
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
             self.infected_agents.append(positive_agent)
@@ -110,22 +109,20 @@ def add_init_cantine_agents_to_grid(self,N,n):
     while limit > counter:
             newAgent = ac.canteen_Agent(id_,self)
             self.schedule.add(newAgent) #Add agent to scheduler
-
             newAgent.coords = random.choice(list(dir.values()))   #Give agent random direction to look at
-
             newAgent.courses = [self.range13.pop(),self.range46.pop()]
             next_door_id = 500+newAgent.courses[0]  #Which door should agent go to when class starts - depending on course
             next_door = [a for a in self.schedule.agents if isinstance(a,ac.door) and a.id == next_door_id]
             newAgent.door = next_door[0]
             newAgent.off_school = True
             newAgent.next_to_attend_class = True
-            x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
-            while (x,y) in (self.classroom_area+self.canteen_queue_area+self.canteen_tables+self.toilet_queue_area):
-                 x, y = self.grid.find_empty()
-            self.grid.place_agent(newAgent, (x,y))
+            pos = self.entre[random.randint(0,len(self.entre)-1)]
+            self.grid.place_agent(newAgent, pos)
 
             if with_mask == True:
                 newAgent.mask = True
+
+
             id_+=1
             counter+=1
     #m >= 3 since we want to create 3 TAs that start in the canteen
@@ -135,15 +132,16 @@ def add_init_cantine_agents_to_grid(self,N,n):
         newAgent = ac.canteen_Agent(1000+j+i,self)
         self.schedule.add(newAgent) #Add agent to scheduler
         newAgent.off_school = True
-        x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
-        while (x,y) in (self.classroom_area+self.canteen_queue_area+self.canteen_tables+self.toilet_queue_area):
-                 x, y = self.grid.find_empty()
         newAgent.coords = random.choice(list(dir.values()))   #Give agent random direction to look at
         next_door_id = newAgent.id-503 #Which door should agent go to when class starts - depending on course
         next_door = [a for a in self.schedule.agents if isinstance(a,ac.door) and a.id == next_door_id]
         newAgent.next_to_attend_class = True
         newAgent.door = next_door[0]
-        self.grid.place_agent(newAgent, (max(x,9),min(y,30)))
+        pos = self.entre[random.randint(0,len(self.entre)-1)]
+        self.grid.place_agent(newAgent, pos)
+
+        if with_mask == True:
+            newAgent.mask = True
 
 
 
@@ -160,6 +158,7 @@ def add_init_cantine_agents_to_grid(self,N,n):
 
             if with_mask == True:
                 newAgent.mask = True
+
 
             x, y = self.grid.find_empty()#Place agent randomly in empty cell on grid
             while (x,y) in (self.classroom_area+self.canteen_queue_area+self.canteen_tables+self.toilet_queue_area):
@@ -259,6 +258,8 @@ def setUp(N,model,setUpType,i):
         TA = ac.TA(1001+i,model)
         TA.coords = dir['W']
         TA.door = door
+        if with_mask == True:
+            TA.mask = True
         model.schedule.add(TA)
         model.grid.place_agent(TA,(x,y))
         model.TAs.append(TA)

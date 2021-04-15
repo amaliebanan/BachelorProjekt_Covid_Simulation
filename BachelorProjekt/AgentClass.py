@@ -106,6 +106,7 @@ def wander(self):
                     else:
                         self.coords = dir['W']
                     self.sitting_in_canteen = 70
+                    self.mask = False
 
                 else:
                     if self.pos in [x for (x,y) in self.model.canteen_table_1]:
@@ -113,6 +114,7 @@ def wander(self):
                     else:
                         self.coords = dir['W']
                     self.sitting_in_canteen = 60
+                    self.mask = False
 
 #check direction between two agents
 def checkDirection(agent,neighbor):
@@ -900,6 +902,7 @@ def move_to_specific_pos(self,pos_):
         if isinstance(self, class_Agent) and pos_ == self.seat:
             self.model.grid.move_agent(self,pos_)
             self.coords = self.seat_coords
+            self.mask = False
             return
 
     #If you are already at your seat, stay there
@@ -1008,10 +1011,10 @@ class class_Agent(Agent):
         if timestep is True:
             if self.moving_to_door == 1: #Agents go to door
                 move_to_specific_pos(self,self.door.pos)
-         #       move_to_specific_pos(self,self.door.pos)
+                if with_mask == True:
+                    self.mask = True
             elif self.moving_to_door == 0: #Agents go to seat
                 move_to_specific_pos(self,self.seat)
-               # move_to_specific_pos(self,self.seat)
         else: wander(self)
         if with_dir == True:
             end_pos = self.pos
@@ -1245,10 +1248,16 @@ class canteen_Agent(Agent):
     def move(self,timestep=False):
         if timestep is True: #Agents go to door
             if self.queue == 0 and self.sitting_in_canteen == 0:
+                if with_mask == True:
+                    self.mask = True
                 move_to_specific_pos(self,self.door.pos)
+                if self.in_toilet_queue == True: #sitting_in_canteen>0 men er i kø til toa
+                    x,y = self.model.toilet.exit
+                    force_agent_to_specific_pos(self, (x+1,y))
             else:
                 if self.in_toilet_queue is True:
-                    force_agent_to_specific_pos(self, self.model.toilet.exit)
+                    x,y = self.model.toilet.exit
+                    force_agent_to_specific_pos(self, (x+1,y))
                 self.queue = 0
                 self.sitting_in_canteen = 0
                 self.in_toilet_queue = False
@@ -1266,7 +1275,8 @@ class canteen_Agent(Agent):
                 elif self.sitting_on_toilet>0: #Sidder på toa
                     self.sitting_on_toilet = max(0,self.sitting_on_toilet-1)
                     if self.sitting_on_toilet == 0:
-                        self.model.grid.move_agent(self,self.model.toilet.exit)
+                        x,y = self.model.toilet.exit
+                        self.model.grid.move_agent(self,(x+1,y))
                 elif self.queue == 1:
                     if self.pos in [(23,j) for j in range(0,20)]:
                         move_in_queue(self, (23,20)) # moves towards end of canteen
@@ -1276,6 +1286,8 @@ class canteen_Agent(Agent):
                     self.sitting_in_canteen = max(0, self.sitting_in_canteen-1)
                 elif self.sitting_in_canteen in range(0,46):
                     self.sitting_in_canteen = max(0, self.sitting_in_canteen-1)
+                    if with_mask == True:
+                        self.mask = True
                     wander(self)
 
 
@@ -1324,7 +1336,7 @@ class employee_Agent(Agent):
         self.id = id
         self.infected = False
         self.recovered = False
-        self.mask = True
+        self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
 
