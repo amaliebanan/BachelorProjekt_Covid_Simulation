@@ -24,11 +24,7 @@ def angle(v1, v2):
   angle_in_radians = math.acos(dotproduct(v1, v2) / (length(v1) * length(v2)))
   angle_in_degrees = (angle_in_radians*180)/math.pi
   return angle_in_degrees
-def intersect(list1,list2):
-    list3 = [v for v in list1 if v in list2]
-    if list3 == []:
-        return False        #Intersection is the empty set
-    else: return True       #Intersection is not the empty set
+
 def change_direction(self, start_pos, end_pos):
     if end_pos == None:
         return dir['E']
@@ -276,13 +272,22 @@ def infect_p(self):
 def infect(self):
     if self.exposed != 0:   #Agent smitter ikke endnu.
         return
-    if (self.is_home_sick == 1) or (isinstance(self,canteen_Agent) and self.off_school == 1): #Agenten er derhjemme og kan ikke smitte
+    if (self.is_home_sick == True) or (isinstance(self,canteen_Agent) and self.off_school == True): #Agenten er derhjemme og kan ikke smitte
         return
 
     if isinstance(self, TA):
         all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=True,radius=2)
+        all_neighbors_within_radius = [n for n in all_neighbors_within_radius if isinstance(n,class_Agent)]
     else:
         all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
+    #Ikke smit igennem vægge hvis du er til time
+    if isinstance(self,class_Agent):
+        all_neighbors_within_radius = [n for n in all_neighbors_within_radius if (isinstance(n,class_Agent) and n.courses[0] == self.courses[0]) or (isinstance(n,TA) and n.door.id == self.door.id)]
+
+    #Canteen-agents kan ikke smitte class eller TA-agents (fordi det er igennem væggen)
+    if isinstance(self,canteen_Agent):
+        all_neighbors_within_radius = [n for n in all_neighbors_within_radius if not isinstance(n,TA) and not isinstance(n,class_Agent)]
+
 
     #Smit kun dit eget hold (A eller B) hvis dagen skifter
     if self.model.minute_count in list(range(0,60)):
@@ -290,6 +295,7 @@ def infect(self):
             all_neighbors_within_radius = [n for n in all_neighbors_within_radius if n.id in list(range(0,(len(self.model.setUpType)*self.model.n_agents)))+[1001,1002,1003]]
         elif self.id in list(range((len(self.model.setUpType)*self.model.n_agents)+1,2*(len(self.model.setUpType)*self.model.n_agents)))+[1004,1005,1006]:
             all_neighbors_within_radius = [n for n in all_neighbors_within_radius if n.id in list(range((len(self.model.setUpType)*self.model.n_agents)+1,2*(len(self.model.setUpType)*self.model.n_agents)))+[1004,1005,1006]]
+
 
     all_humans_within_radius = []
     for neighbor in all_neighbors_within_radius:
@@ -783,9 +789,6 @@ def TA_to_class(self):
     change_obj_params(c_agent,self)
 
     c_agent.door, c_agent.moving_to_door = self.door, 1
-    if self.courses == (): #First time, we need to initialize TA's courses
-        c_agent.courses = [0,0]
-    else: c_agent.courses = self.courses
 
     self.model.grid.remove_agent(self)
     self.model.schedule.remove(self)
@@ -1072,7 +1075,6 @@ class TA(Agent):
 
         self.day_off = False
         self.timeToTeach = 5
-        self.courses = ()
         self.door = ()
         self.students = []
         self.coords = ()
@@ -1164,6 +1166,7 @@ class canteen_Agent(Agent):
         self.going_to_toilet = False
         self.in_toilet_queue = False
         self.sitting_on_toilet = 0
+        self.since_last_toilet = 0
 
         self.off_school = 0
         self.coords = ()
@@ -1226,8 +1229,12 @@ class canteen_Agent(Agent):
                 self.model.grid.move_agent(self,self.model.toilet.pos)
                 self.in_toilet_queue = False
                 self.sitting_on_toilet = 3
+                self.since_last_toilet = 120
                 if self.model.toilet.has_been_infected == True and self.infected == False:
-                    p = bernoulli.rvs(1/100)
+                    if self.mask == True:
+                        p = bernoulli.rvs(1/300)
+                    else:
+                        p = bernoulli.rvs(1/100)
                     if p == 1:
                         #print(self.model.day_count,self.model.minute_count,self.id,self.pos,"I got infected at the toilet")
                         self.infected == True
@@ -1258,9 +1265,8 @@ class canteen_Agent(Agent):
                 move_to_specific_pos(self,self.door.pos)
 
             else:
-                if self.in_toilet_queue is True:
-                    x,y = self.model.toilet.exit
-                    force_agent_to_specific_pos(self, (x+1,y))
+                if self.in_toilet_queue == True:
+                    force_agent_to_specific_pos(self,self.model.toilet.exit)
                 self.queue = 0
                 self.sitting_in_canteen = 0
                 self.in_toilet_queue = False
@@ -1278,8 +1284,7 @@ class canteen_Agent(Agent):
                 elif self.sitting_on_toilet>0: #Sidder på toa
                     self.sitting_on_toilet = max(0,self.sitting_on_toilet-1)
                     if self.sitting_on_toilet == 0:
-                        x,y = self.model.toilet.exit
-                        self.model.grid.move_agent(self,(x+1,y))
+                        self.model.grid.move_agent(self,self.model.toilet.exit)
                 elif self.queue == 1:
                     if self.pos in [(23,j) for j in range(0,20)]:
                         move_in_queue(self, (23,20)) # moves towards end of canteen
@@ -1297,6 +1302,7 @@ class canteen_Agent(Agent):
                 else: wander(self)
 
     def step(self):
+        self.since_last_toilet = max(0,self.since_last_toilet-1)
         if self.infected == True:
             update_infection_parameters(self)
         if go_home_in_breaks is False:
@@ -1329,6 +1335,11 @@ class canteen_Agent(Agent):
             self.move(True)
         else:
             self.move()
+        try:
+            if self.pos[0]<8 and self.pos[1]>32:
+                force_agent_to_specific_pos(self,self.model.toilet.exit)
+        except:
+            pass
         if with_dir == True and self.sitting_in_canteen <= 45:
             end_pos = self.pos
             self.coords = change_direction(self, start_pos, end_pos)

@@ -9,8 +9,8 @@ from multiprocessing import Pool
 
 fixed_params = {"width":26, "height": 38, "setUpType": [2, 2, 2]}
 variable_params = {"N": range(24,25,1)} # 24 students
-iterationer = 1
-skridt = 525*40
+iterationer = 5
+skridt = 525*2
 
 
 
@@ -100,8 +100,12 @@ def list_of_infected(j):
         model_reporters={"infected": lambda m: get_infected(m)})
     batch_run.run_all() #run batchrunner
     data_list = list(batch_run.get_collector_model().values()) #saves batchrunner data in list
-    #next 7 lines is to determine max number of infected
 
+    #next 7 lines is to determine max number of infected
+    number = 0
+    for i in range(0, iterationer):
+        number+=sum(data_list[i]["Reproduction"][skridt])/len(data_list[i]["Reproduction"][skridt])
+    print(number/iterationer)
     max_number_of_infected = []
     for i in range(len(data_list)):
         temp_list = []
@@ -151,7 +155,7 @@ plt.suptitle('%s simulation(er)' %iterationer, fontsize=20)
 plt.title('Masker=%s' %with_mask + ', Familiegrupper=%s' %family_groups +', Hjemme i pauser= %s' %go_home_in_breaks + ', Procent vaccinerede=%s' %percentages_of_vaccinated,fontsize=10)
 plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
 plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
-plt.show()
+#plt.show()
 
 '''
 

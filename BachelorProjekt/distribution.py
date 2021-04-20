@@ -13,7 +13,7 @@ import numpy as np
 
 #Sandsynligheden for at få succes (= blive smittet) er 0.0025:
 pTA = 0.025 #TA står meget tæt og snakker højt
-p = 0.0025 #Indenfor 1 meters afstand
+p = 0.04 #Indenfor 1 meters afstand
 p1 = 0.0022450 #Mellem 1 og 2 meters afstand
 p2 = 0.002199651 #Over 2 meters afstand
 
@@ -30,7 +30,7 @@ def cdf(n,p):
     return x,y
 
 #Calculate and plot Cumulative Distribution Function for geometrisk fordeling med vores p-værdi
-x,y = cdf(120,p)
+x,y = cdf(15,p)
 
 #x,y = cdf(120,p1)
 
@@ -39,7 +39,7 @@ x,y = cdf(120,p)
 #https://blogs.sas.com/content/iml/2020/04/08/reducing-spread-of-coronavirus.html
 #https://blogs.sas.com/content/iml/2020/04/06/geometric-distribution-sas.html
 
-print("ssh for at blive smittet i løbet af timen",1-(1-p)**120)
+print("ssh for at blive smittet i løbet af timen",1-(1-p)**15)
 
 #sns.distplot(x, hist=False)
 
@@ -54,7 +54,7 @@ mean, var, skew, kurt = geom.stats(p, moments='mvsk')
 x = np.arange(geom.ppf(0.01, p),geom.ppf(0.99, p))
 ax.plot(x, geom.pmf(x, p), 'bo', ms=8, label='geom pmf')
 ax.vlines(x, 0, geom.pmf(x, p), colors='b', lw=5, alpha=0.5)
-#plt.show()
+plt.show()
 
 
 
