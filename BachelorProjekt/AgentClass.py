@@ -1234,7 +1234,7 @@ class canteen_Agent(Agent):
                     if self.mask == True:
                         p = bernoulli.rvs(1/300)
                     else:
-                        p = bernoulli.rvs(1/100)
+                        p = bernoulli.rvs(2/100)
                     if p == 1:
                         #print(self.model.day_count,self.model.minute_count,self.id,self.pos,"I got infected at the toilet")
                         self.infected == True

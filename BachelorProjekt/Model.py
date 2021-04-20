@@ -26,7 +26,7 @@ day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
 init_canteen_agents = 80
-infection_rate = (0.055/100)
+infection_rate = (0.035/100)
 infection_rate_1_to_2_meter = calculate_percentage(infection_rate, 10.2)
 infection_rate_2plus_meter = calculate_percentage(infection_rate_1_to_2_meter,2.02)
 infection_decrease_with_mask_pct = 70
@@ -105,7 +105,7 @@ def add_init_infected_to_grid(self,n):
             positive_agent.infected = True
             positive_agent.infection_period = ac.truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)-2*day_length
             positive_agent.exposed = 0
-            positive_agent.asymptomatic = 3*day_length
+            positive_agent.asymptomatic = 2*day_length
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
             self.infected_agents.append(positive_agent)
@@ -554,15 +554,15 @@ class covid_Model(Model):
         self.toilet_queue_area = [(x,y) for x in range(8,15) for y in [height-1, height-2]]
 
 
-        if go_home_in_breaks == False:
-                set_up_canteen(self)
+        #if go_home_in_breaks == False:
+         #       set_up_canteen(self)
 
         #Add agents to model and grid
         i = 0
         for s in setUpType:
             setUp(self.n_agents,self,s,i)
             i+=1
-        setUpToilet(self)
+    #    setUpToilet(self)
         if len(self.setUpType)>1:
             add_init_cantine_agents_to_grid(self,(self.n_agents)*i,init_canteen_agents)
 
@@ -594,10 +594,10 @@ class covid_Model(Model):
                     n+=1
 
     def step(self):
-        choose_students_to_go_to_toilet(self)
+      #  choose_students_to_go_to_toilet(self)
 
         #Gå hjem når du ik har flere kurser
-        go_home(self)
+     #   go_home(self)
         #Hold fri når du har fridag
         if self.day_count%7==2 or self.day_count%7==3 or self.day_count%7==4 or self.day_count%7==5:
             day_off(self)

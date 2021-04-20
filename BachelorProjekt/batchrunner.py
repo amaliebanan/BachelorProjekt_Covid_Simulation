@@ -5,12 +5,13 @@ from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 from multiprocessing import Pool
+import csv
 
 
-fixed_params = {"width":26, "height": 38, "setUpType": [2, 2, 2]}
-variable_params = {"N": range(24,25,1)} # 24 students
-iterationer = 10
-skridt = 525*3
+fixed_params = {"width":26, "height": 38, "setUpType": [2,4,5]}
+variable_params = {"N": range(18,19,1)} # 24 students
+iterationer = 1000
+skridt = 105
 
 
 
@@ -100,12 +101,13 @@ def list_of_infected(j):
         model_reporters={"infected": lambda m: get_infected(m)})
     batch_run.run_all() #run batchrunner
     data_list = list(batch_run.get_collector_model().values()) #saves batchrunner data in list
-
     #next 7 lines is to determine max number of infected
-    number = 0
+    list_of_numbers = []
     for i in range(0, iterationer):
-        number+=sum(data_list[i]["Reproduction"][skridt])/len(data_list[i]["Reproduction"][skridt])
-    print(number/iterationer)
+        list_of_numbers.append(sum(data_list[i]["Reproduction"][skridt]))
+    numberss = sum(list_of_numbers)/iterationer
+    print(j,numberss)
+    print(j,list_of_numbers)
     max_number_of_infected = []
     for i in range(len(data_list)):
         temp_list = []
@@ -127,7 +129,7 @@ def list_of_infected(j):
     num_of_recovered = [number / iterationer for number in num_of_recovered]
 
     return num_of_infected, num_of_susceptible, num_of_recovered
-
+'''
 
 "uncomment below to run list_of_infected function with different set up types. Change line 12 and 13 to change number of iterations and timesteps"
 pool = mp.Pool(mp.cpu_count()) #opens pools for running parallel programs
@@ -162,7 +164,7 @@ plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
 def list_of_infected_in_classroom(j):
     batch_run = BatchRunner(covid_Model,
         variable_parameters=variable_params,
-        fixed_parameters={"width": 26, "height": 38, "setUpType": [j,j,j]},
+        fixed_parameters={"width": 11, "height": 11, "setUpType": [j]},
         iterations=iterationer,
         max_steps=skridt)
     batch_run.run_all() #run batchrunner
@@ -174,15 +176,16 @@ def list_of_infected_in_classroom(j):
     num_of_infected = [0]*(skridt+1) #makes list # for y-values for Infected
     for i in range(len(data_list)):
         temp_list = []
-        for j in range(len(data_list[i]["infected"])):
-            num_of_infected[j]+=data_list[i]["infected"][j]
-            temp_list.append(data_list[i]["infected"][j])
+        for k in range(len(data_list[i]["infected"])):
+            num_of_infected[k]+=data_list[i]["infected"][k]
+            temp_list.append(data_list[i]["infected"][k])
         max_number_of_infected.append(max(temp_list))
     num_of_infected = [number / iterationer for number in num_of_infected] #avg number of infected
 
-    print("Gennemsnitligt er antallet af max smittede for setup type %s " %j, "er: ", np.mean(max_number_of_infected))
-    print("Std er antallet af max smittede for setup type %s " %j, "er: ", np.std(max_number_of_infected))
+    print(j,"Gennemsnitligt er antallet af max smittede for setup type %s " %j, "er: ", np.mean(max_number_of_infected))
+    print(j,"Std er antallet af max smittede for setup type %s " %j, "er: ", np.std(max_number_of_infected))
 
+    #max_number_of_infected.append(j)
     print(max_number_of_infected)
     return num_of_infected
 
@@ -199,12 +202,11 @@ for i in range(1,4):
     plt.plot(time, results[i-1], label= Legends[i-1], color=colors[i-1]) #makes the three different plots
 plt.xlabel('Tidsskridt')
 plt.ylabel('Gennemsnit antal smittede')
-plt.ylim(1,1.5)
+plt.ylim(1,2)
 plt.suptitle('%s simulationer af 105 minutters undervisning' %iterationer,fontsize=15)
-plt.title("Initialiseret med én studerende smittet, 23 studerende i alt")
+plt.title("Initialiseret med én studerende smittet, 18 studerende i alt")
 plt.tight_layout() #placement of legend
 plt.legend() #placement of legend
 
 plt.show()
 
-'''
