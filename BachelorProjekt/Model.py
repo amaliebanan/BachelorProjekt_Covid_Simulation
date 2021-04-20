@@ -24,7 +24,7 @@ day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
 init_canteen_agents = 80
-infection_rate = (0.025/100)
+infection_rate = (0.07/100)
 infection_rate_1_to_2_meter = calculate_percentage(infection_rate, 10.2)
 infection_rate_2plus_meter = calculate_percentage(infection_rate_1_to_2_meter,2.02)
 infection_decrease_with_mask_pct = 70
@@ -33,7 +33,7 @@ distribution = "p"
 
 go_home_in_breaks = False
 family_groups = False
-with_mask = True
+with_mask = False
 with_dir = True
 percentages_of_vaccinated = 0 #Number 0<=x<1
 
@@ -51,6 +51,14 @@ def get_recovered(self):
 def get_home_sick(self):
     agents = [a for a in self.schedule.agents if is_human(a) and a.is_home_sick == True]
     return len(agents)
+
+def get_list_of_reproduction(self):
+    list_of_reproduction = []
+    agents = [a for a in self.schedule.agents if is_human(a)]
+    for a in agents:
+        if a.infected == True or a.recovered == True:
+            list_of_reproduction.append((a.id,a.infected,a.recovered,a.reproduction,self.day_count))
+    print(list_of_reproduction)
 
 def count_students_who_has_question(self,list_of_students):
     agents = [a for a in self.schedule.agents if a in list_of_students and a.hasQuestion == True]
@@ -541,6 +549,14 @@ class covid_Model(Model):
 
     def step(self):
         choose_students_to_go_to_toilet(self)
+
+        if self.day_count == 7*8 and self.minute_count == 525:
+            list_of_reproduction = []
+            agents = [a for a in self.schedule.agents if is_human(a)]
+            for a in agents:
+                if a.infected == True or a.recovered == True:
+                    list_of_reproduction.append((a.id,a.infected,a.recovered,a.reproduction,self.day_count))
+            print(list_of_reproduction)
 
         if go_home_in_breaks == True:
             if self.minute_count in [295,524]:

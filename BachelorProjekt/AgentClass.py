@@ -688,6 +688,7 @@ def infect(self):
                     if bernoulli.rvs(ir2_plus*2) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
+    self.reproduction += len(newly_infected)
     for a in newly_infected:
             #print(a.coords, a.pos, self.coords, self.pos)
             a.infected = True
@@ -709,6 +710,7 @@ def change_obj_params(new,old):
     new.infected, new.recovered,  new.mask = old.infected,\
                                              old.recovered,\
                                              old.mask
+    new.reproduction = old.reproduction
     new.day_off = old.day_off
     new.pos = old.pos
 
@@ -1004,6 +1006,7 @@ class class_Agent(Agent):
         #Relevant for classroom only
         self.hasQuestion = False
         self.hasEnteredDoor = []
+        self.reproduction = 0
 
     def move(self,timestep=False):
 
@@ -1073,6 +1076,7 @@ class TA(Agent):
         self.door = ()
         self.students = []
         self.coords = ()
+        self.reproduction = 0
 
     def move_to_student(self,student):
 
@@ -1163,6 +1167,7 @@ class canteen_Agent(Agent):
 
         self.off_school = 0
         self.coords = ()
+        self.reproduction = 0
 
         #Infection parameters
         self.infection_period = 0#How long are they sick?
@@ -1251,9 +1256,7 @@ class canteen_Agent(Agent):
                 if with_mask == True:
                     self.mask = True
                 move_to_specific_pos(self,self.door.pos)
-                if self.in_toilet_queue == True: #sitting_in_canteen>0 men er i kø til toa
-                    x,y = self.model.toilet.exit
-                    force_agent_to_specific_pos(self, (x+1,y))
+
             else:
                 if self.in_toilet_queue is True:
                     x,y = self.model.toilet.exit
@@ -1343,6 +1346,7 @@ class employee_Agent(Agent):
         self.infection_period = 0#How long are they sick?
         self.asymptomatic = 0 #Agents are asymptomatic for 5 days
         self.exposed = math.pi
+        self.reproduction = 0
 
         self.coords = ()
 

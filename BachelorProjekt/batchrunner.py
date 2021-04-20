@@ -1,5 +1,5 @@
 import AgentClass as ac
-from Model import covid_Model, get_home_sick,get_infected,get_recovered, with_mask, family_groups, go_home_in_breaks, percentages_of_vaccinated
+from Model import covid_Model,is_human, get_home_sick,get_infected,get_recovered, with_mask, family_groups, go_home_in_breaks, percentages_of_vaccinated
 import numpy as np
 from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
@@ -7,10 +7,10 @@ import multiprocessing as mp
 from multiprocessing import Pool
 
 
-fixed_params = {"width":26, "height": 38, "setUpType": [2,3,4]}
+fixed_params = {"width":26, "height": 38, "setUpType": [2, 2, 2]}
 variable_params = {"N": range(24,25,1)} # 24 students
-iterationer = 3
-skridt = 525*30
+iterationer = 1
+skridt = 525*40
 
 
 
@@ -34,10 +34,13 @@ def plot_infected(fix_par, var_par, model, iter, steps):
 
     sum_of_infected = [0]*(steps+1) #makes list for y-values
     num_of_susceptible = [0]*(steps+1)
+
+
+
     for i in range(len(data_list)):
         for j in range(len(data_list[i]["infected"])):
             sum_of_infected[j]+=data_list[i]["infected"][j] #at the right index add number of infected
-    #        num_of_susceptible[j] += data_list[i]["Agent_count"][j]-data_list[i]["infected"][j] #number of susceptible at each time step
+            num_of_susceptible[j] += data_list[i]["Agent_count"][j]-data_list[i]["infected"][j] #number of susceptible at each time step
     sum_of_infected =[number / iter for number in sum_of_infected] #divide list with number of iterations to get avg
    # num_of_susceptible = [number / iter for number in num_of_susceptible]
     time = [i for i in range(0,steps+1)] #makes list of x-values for plotting
@@ -98,6 +101,7 @@ def list_of_infected(j):
     batch_run.run_all() #run batchrunner
     data_list = list(batch_run.get_collector_model().values()) #saves batchrunner data in list
     #next 7 lines is to determine max number of infected
+
     max_number_of_infected = []
     for i in range(len(data_list)):
         temp_list = []
@@ -123,7 +127,7 @@ def list_of_infected(j):
 
 "uncomment below to run list_of_infected function with different set up types. Change line 12 and 13 to change number of iterations and timesteps"
 pool = mp.Pool(mp.cpu_count()) #opens pools for running parallel programs
-results=pool.map(list_of_infected, [2,3,4]) #runs the list_of_infected function for j={2,3,4}
+results=pool.map(list_of_infected, [2]) #runs the list_of_infected function for j={2,3,4}
 pool.close() #closes the pools
 
 
@@ -134,14 +138,14 @@ time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
 colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
 Legends = ['Hestesko', 'Rækker', 'Grupper']
 plt.figure(figsize=(10,6)) #size of the plot-figure
-for i in range(1,4,1):
+for i in range(1,2,1):
     plt.plot(time, results[i-1][0], label= Legends[i-1], color=colors[i-1]) #makes the three different plots
-  #  plt.plot(time, results[i-1][1], color=colors[i-1], linestyle='dashed')
-   # plt.plot(time, results[i-1][2], color=colors[i-1], linestyle='dotted')
+    plt.plot(time, results[i-1][1], color=colors[i-1], linestyle='dashed')
+    plt.plot(time, results[i-1][2], color=colors[i-1], linestyle='dotted')
 plt.xlabel('Tidsskridt')
-#plt.plot([], color='Black', label='Infected')
-#plt.plot([], color='Black', label='Susceptible', linestyle='dashed')
-#plt.plot([], color='Black', label='Recovered', linestyle='dotted')
+plt.plot([], color='Black', label='Infected')
+plt.plot([], color='Black', label='Susceptible', linestyle='dashed')
+plt.plot([], color='Black', label='Recovered', linestyle='dotted')
 plt.ylabel('Gennemsnit antal smittede')
 plt.suptitle('%s simulation(er)' %iterationer, fontsize=20)
 plt.title('Masker=%s' %with_mask + ', Familiegrupper=%s' %family_groups +', Hjemme i pauser= %s' %go_home_in_breaks + ', Procent vaccinerede=%s' %percentages_of_vaccinated,fontsize=10)
