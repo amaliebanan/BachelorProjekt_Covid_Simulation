@@ -26,7 +26,7 @@ day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
 init_canteen_agents = 80
-infection_rate = (0.055/100)
+infection_rate = (0.035/100)
 infection_rate_1_to_2_meter = calculate_percentage(infection_rate, 10.2)
 infection_rate_2plus_meter = calculate_percentage(infection_rate_1_to_2_meter,2.02)
 infection_decrease_with_mask_pct = 70
@@ -96,7 +96,7 @@ def add_init_infected_to_grid(self,n):
         all_agents = [a for a in self.schedule.agents if is_human(a)]
         students = [a for a in self.schedule.agents if isinstance(a,ac.class_Agent)]
         TA = [a for a in self.schedule.agents if isinstance(a,ac.TA)]
-        randomAgent = self.random.choice(students)
+        randomAgent = self.random.choice(all_agents)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
         elif is_human(randomAgent):
@@ -105,11 +105,12 @@ def add_init_infected_to_grid(self,n):
             positive_agent.infected = True
             positive_agent.infection_period = ac.truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)-2*day_length
             positive_agent.exposed = 0
-            positive_agent.asymptomatic = 3*day_length
+            positive_agent.asymptomatic = 2*day_length
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
             self.infected_agents.append(positive_agent)
             i+=1
+            print(positive_agent.id)
         else: pass
 
 def add_init_cantine_agents_to_grid(self,N,n):
@@ -479,8 +480,9 @@ class covid_Model(Model):
         self.datacollector = DataCollector(model_reporters={"infected": lambda m: get_infected(self),
                                                             "Agent_count": lambda m: count_agents(self),
                                                             "recovered": lambda m: get_recovered(self),
-                                                            "Home":lambda m: get_home_sick(self),
-                                                            "Reproduction": lambda m: get_list_of_reproduction(self)})
+                                                            "Home":lambda m: get_home_sick(self)
+                                                            #,"Reproduction": lambda m: get_list_of_reproduction(self)
+                                                             })
         self.agents_at_home = []
         self.recovered_agents = []
         self.infected_agents = []

@@ -5,12 +5,13 @@ from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 from multiprocessing import Pool
+import pandas as pd
 
 
 fixed_params = {"width":26, "height": 38, "setUpType": [2, 2, 2]}
 variable_params = {"N": range(24,25,1)} # 24 students
-iterationer = 10
-skridt = 525*3
+iterationer = 2
+skridt = 10#525*1
 
 
 
@@ -99,20 +100,28 @@ def list_of_infected(j):
         max_steps=skridt,
         model_reporters={"infected": lambda m: get_infected(m)})
     batch_run.run_all() #run batchrunner
-    data_list = list(batch_run.get_collector_model().values()) #saves batchrunner data in list
+    ordered_df = batch_run.get_collector_model()
+    data_list = list(ordered_df.values()) #saves batchrunner data in list
+    for i in range(len(data_list)):
+        data_list[i]['Iteration'] = i+1
+    pd.concat(data_list).to_csv('csvdata/test.csv')
+
+    #next 5 lines is to determine reproduction number
+    #list_reproduction = []
+    #for i in range(0, iterationer):
+    #    list_reproduction.append(sum(data_list[i]["Reproduction"][skridt]))
+    #print(list_reproduction)
+    #print(sum(list_reproduction)/iterationer)
+
 
     #next 7 lines is to determine max number of infected
-    number = 0
-    for i in range(0, iterationer):
-        number+=sum(data_list[i]["Reproduction"][skridt])/len(data_list[i]["Reproduction"][skridt])
-    print(number/iterationer)
     max_number_of_infected = []
     for i in range(len(data_list)):
         temp_list = []
         for k in range(len(data_list[i]["infected"])):
             temp_list.append(data_list[i]["infected"][k]) #appends number of infected
         max_number_of_infected.append(max(temp_list)) #saves max of temp_list
-    print("Gennemsnitligt er antallet af max smittede for setup type %s " %[j,j,j], "er: ", np.mean(max_number_of_infected))
+    #print("Gennemsnitligt er antallet af max smittede for setup type %s " %[j,j,j], "er: ", np.mean(max_number_of_infected))
     #rest of code is to get y-values for the plot
     num_of_infected = [0]*(skridt+1) #makes list for y-values for Infected
     num_of_susceptible = [0]*(skridt+1) #makes list for y-values for Susceptible
@@ -157,12 +166,12 @@ plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
 plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
 #plt.show()
 
-'''
 
+'''
 def list_of_infected_in_classroom(j):
     batch_run = BatchRunner(covid_Model,
         variable_parameters=variable_params,
-        fixed_parameters={"width": 26, "height": 38, "setUpType": [j,j,j]},
+        fixed_parameters={"width": 11, "height": 11, "setUpType": [j]},
         iterations=iterationer,
         max_steps=skridt)
     batch_run.run_all() #run batchrunner
