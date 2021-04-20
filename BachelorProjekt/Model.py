@@ -105,7 +105,7 @@ def add_init_infected_to_grid(self,n):
             positive_agent.infected = True
             positive_agent.infection_period = ac.truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)-2*day_length
             positive_agent.exposed = 0
-            positive_agent.asymptomatic = 2*day_length
+            positive_agent.asymptomatic = 3*day_length
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
             self.infected_agents.append(positive_agent)

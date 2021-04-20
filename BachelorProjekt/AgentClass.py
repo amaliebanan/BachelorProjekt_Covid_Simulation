@@ -700,7 +700,7 @@ def infect(self):
             a.infected = True
             a.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)#How long are they sick?
             a.asymptomatic = truncnorm_(3*day_length,a.infection_period,5*day_length,1*day_length) #Agents are asymptomatic for 5 days
-            a.exposed = a.asymptomatic-2*day_length
+            a.exposed = 4*day_length#a.asymptomatic-2*day_length
 
 ###CHANGING OBJECT-TYPE###
 #Get all essential parameters transfered
