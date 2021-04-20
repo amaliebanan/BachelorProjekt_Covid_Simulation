@@ -9,8 +9,8 @@ from multiprocessing import Pool
 
 fixed_params = {"width":26, "height": 38, "setUpType": [2,3,4]}
 variable_params = {"N": range(24,25,1)} # 24 students
-iterationer = 3
-skridt = 525*30
+iterationer = 10
+skridt = 525*40
 
 
 
@@ -136,12 +136,12 @@ Legends = ['Hestesko', 'Rækker', 'Grupper']
 plt.figure(figsize=(10,6)) #size of the plot-figure
 for i in range(1,4,1):
     plt.plot(time, results[i-1][0], label= Legends[i-1], color=colors[i-1]) #makes the three different plots
-  #  plt.plot(time, results[i-1][1], color=colors[i-1], linestyle='dashed')
-   # plt.plot(time, results[i-1][2], color=colors[i-1], linestyle='dotted')
+    plt.plot(time, results[i-1][1], color=colors[i-1], linestyle='dashed')
+    plt.plot(time, results[i-1][2], color=colors[i-1], linestyle='dotted')
 plt.xlabel('Tidsskridt')
-#plt.plot([], color='Black', label='Infected')
-#plt.plot([], color='Black', label='Susceptible', linestyle='dashed')
-#plt.plot([], color='Black', label='Recovered', linestyle='dotted')
+plt.plot([], color='Black', label='Infected')
+plt.plot([], color='Black', label='Susceptible', linestyle='dashed')
+plt.plot([], color='Black', label='Recovered', linestyle='dotted')
 plt.ylabel('Gennemsnit antal smittede')
 plt.suptitle('%s simulation(er)' %iterationer, fontsize=20)
 plt.title('Masker=%s' %with_mask + ', Familiegrupper=%s' %family_groups +', Hjemme i pauser= %s' %go_home_in_breaks + ', Procent vaccinerede=%s' %percentages_of_vaccinated,fontsize=10)
