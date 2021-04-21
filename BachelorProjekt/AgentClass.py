@@ -95,15 +95,15 @@ def wander(self):
 
     if go_home_in_breaks is False:
         if self.pos in [x for (x,y) in self.model.canteen_tables]:
-            if self.sitting_in_canteen == 0:
-                if self.model.minute_count in range(225,301):
-                    if self.pos in [x for (x,y) in self.model.canteen_table_1]:
-                        self.coords = dir['E']
-                    else:
-                        self.coords = dir['W']
-                    self.sitting_in_canteen = 70
-                    self.mask = False
-
+            try:
+                if self.sitting_in_canteen == 0:
+                    if self.model.minute_count in range(225,301):
+                        if self.pos in [x for (x,y) in self.model.canteen_table_1]:
+                            self.coords = dir['E']
+                        else:
+                            self.coords = dir['W']
+                        self.sitting_in_canteen = 70
+                        self.mask = False
                 else:
                     if self.pos in [x for (x,y) in self.model.canteen_table_1]:
                         self.coords = dir['E']
@@ -111,6 +111,10 @@ def wander(self):
                         self.coords = dir['W']
                     self.sitting_in_canteen = 60
                     self.mask = False
+            except:
+                print("fuck det skete igen",self,self.id,self.pos,self.model.day_count,self.model.minute_count)
+
+
 
 #check direction between two agents
 def checkDirection(agent,neighbor):
@@ -700,7 +704,7 @@ def infect(self):
             a.infected = True
             a.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)#How long are they sick?
             a.asymptomatic = truncnorm_(3*day_length,a.infection_period,5*day_length,1*day_length) #Agents are asymptomatic for 5 days
-            a.exposed = 4*day_length#a.asymptomatic-2*day_length
+            a.exposed = a.asymptomatic-2*day_length
 
 ###CHANGING OBJECT-TYPE###
 #Get all essential parameters transfered
@@ -1234,7 +1238,7 @@ class canteen_Agent(Agent):
                     if self.mask == True:
                         p = bernoulli.rvs(1/300)
                     else:
-                        p = bernoulli.rvs(2/100)
+                        p = bernoulli.rvs(5/100)
                     if p == 1:
                         #print(self.model.day_count,self.model.minute_count,self.id,self.pos,"I got infected at the toilet")
                         self.infected == True

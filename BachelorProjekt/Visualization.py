@@ -8,8 +8,8 @@ from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 
 
-agentsN = 18
-width, height = 11,11#26,38
+agentsN = 24
+width, height = 26,38
 
 
 class infected_Element(TextElement):
@@ -696,7 +696,7 @@ infected_chart = ChartModule([{"Label":"infected","Color":"Black"}], data_collec
 server = ModularServer(covid_Model,
                        [grid,infected_element, days_chart, infected_chart],
                        "Covid Model",
-                       {"N":agentsN, "width":width, "height":height, "setUpType":[2]})
+                       {"N":agentsN, "width":width, "height":height, "setUpType":[2,3,4]})
 
 
 server.port = 8521 # The default

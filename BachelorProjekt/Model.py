@@ -96,7 +96,7 @@ def add_init_infected_to_grid(self,n):
         all_agents = [a for a in self.schedule.agents if is_human(a)]
         students = [a for a in self.schedule.agents if isinstance(a,ac.class_Agent)]
         TA = [a for a in self.schedule.agents if isinstance(a,ac.TA)]
-        randomAgent = self.random.choice(students)
+        randomAgent = self.random.choice(all_agents)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
         elif is_human(randomAgent):
@@ -110,6 +110,7 @@ def add_init_infected_to_grid(self,n):
             positives.append(randomAgent.pos) # To keep track of initial positives
             self.infected_agents.append(positive_agent)
             i+=1
+            print(positive_agent.id)
         else: pass
 
 def add_init_cantine_agents_to_grid(self,N,n):
@@ -479,8 +480,9 @@ class covid_Model(Model):
         self.datacollector = DataCollector(model_reporters={"infected": lambda m: get_infected(self),
                                                             "Agent_count": lambda m: count_agents(self),
                                                             "recovered": lambda m: get_recovered(self),
-                                                            "Home":lambda m: get_home_sick(self),
-                                                            "Reproduction": lambda m: get_list_of_reproduction(self)})
+                                                            "Home":lambda m: get_home_sick(self)
+                                                            #,"Reproduction": lambda m: get_list_of_reproduction(self)
+                                                             })
         self.agents_at_home = []
         self.recovered_agents = []
         self.infected_agents = []
@@ -554,15 +556,15 @@ class covid_Model(Model):
         self.toilet_queue_area = [(x,y) for x in range(8,15) for y in [height-1, height-2]]
 
 
-        #if go_home_in_breaks == False:
-         #       set_up_canteen(self)
+        if go_home_in_breaks == False:
+                set_up_canteen(self)
 
         #Add agents to model and grid
         i = 0
         for s in setUpType:
             setUp(self.n_agents,self,s,i)
             i+=1
-    #    setUpToilet(self)
+        setUpToilet(self)
         if len(self.setUpType)>1:
             add_init_cantine_agents_to_grid(self,(self.n_agents)*i,init_canteen_agents)
 
@@ -594,16 +596,14 @@ class covid_Model(Model):
                     n+=1
 
     def step(self):
-      #  choose_students_to_go_to_toilet(self)
+        choose_students_to_go_to_toilet(self)
 
         #Gå hjem når du ik har flere kurser
-     #   go_home(self)
+        go_home(self)
         #Hold fri når du har fridag
         if self.day_count%7==2 or self.day_count%7==3 or self.day_count%7==4 or self.day_count%7==5:
             day_off(self)
 
-      #  if self.day_count == 7*8 and self.minute_count == 525:
-       #
         if self.minute_count in [1,119,299,419]:
             self.seats = make_classrooms_fit_to_grid(self.setUpType,self)
 
