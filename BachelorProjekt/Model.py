@@ -25,7 +25,7 @@ def intersect(list1,list2):
 day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
-init_canteen_agents = 80
+init_canteen_agents = 90#80
 infection_rate = (0.035/100)
 infection_rate_1_to_2_meter = calculate_percentage(infection_rate, 10.2)
 infection_rate_2plus_meter = calculate_percentage(infection_rate_1_to_2_meter,2.02)

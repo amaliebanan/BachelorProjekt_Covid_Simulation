@@ -10,8 +10,8 @@ import pandas as pd
 
 fixed_params = {"width":26, "height": 38, "setUpType": [2, 2, 2]}
 variable_params = {"N": range(24,25,1)} # 24 students
-iterationer = 1
-skridt = 10#525*1
+iterationer = 50
+skridt = 525*40
 
 
 
@@ -104,7 +104,7 @@ def list_of_infected(j):
     data_list = list(ordered_df.values()) #saves batchrunner data in list
     for i in range(len(data_list)):
         data_list[i]['Iteration'] = i+1
-    pd.concat(data_list).to_csv('csvdata/test'+str(j)+'.csv')
+    pd.concat(data_list).to_csv('csvdata/gohomeinbreaks'+str(j)+'.csv')
 
     #next 5 lines is to determine reproduction number
     #list_reproduction = []
@@ -150,7 +150,23 @@ pool.close() #closes the pools
 time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
 colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
 Legends = ['Hestesko', 'Rækker', 'Grupper']
-plt.figure(figsize=(10,6)) #size of the plot-figure
+plt.figure(0,figsize=(10,6)) #size of the plot-figure
+for i in range(1,3,1):
+    plt.plot(time, results[i-1][0], label= Legends[i-1], color=colors[i-1]) #makes the three different plots
+    plt.plot(time, results[i-1][1], color=colors[i-1], linestyle='dashed')
+    plt.plot(time, results[i-1][2], color=colors[i-1], linestyle='dotted')
+plt.xlabel('Tidsskridt')
+plt.plot([], color='Black', label='Infected')
+plt.plot([], color='Black', label='Susceptible', linestyle='dashed')
+plt.plot([], color='Black', label='Recovered', linestyle='dotted')
+plt.ylabel('Gennemsnit antal smittede')
+plt.suptitle('%s simulation(er)' %iterationer, fontsize=20)
+plt.title('Masker=%s' %with_mask + ', Familiegrupper=%s' %family_groups +', Hjemme i pauser= %s' %go_home_in_breaks + ', Procent vaccinerede=%s' %percentages_of_vaccinated,fontsize=10)
+plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
+plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
+
+
+plt.figure(1,figsize=(10,6)) #size of the plot-figure
 for i in range(1,4,1):
     plt.plot(time, results[i-1][0], label= Legends[i-1], color=colors[i-1]) #makes the three different plots
     plt.plot(time, results[i-1][1], color=colors[i-1], linestyle='dashed')
