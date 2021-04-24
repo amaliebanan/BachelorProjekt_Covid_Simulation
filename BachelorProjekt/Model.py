@@ -96,6 +96,7 @@ def add_init_infected_to_grid(self,n):
         all_agents = [a for a in self.schedule.agents if is_human(a)]
         students = [a for a in self.schedule.agents if isinstance(a,ac.class_Agent)]
         TA = [a for a in self.schedule.agents if isinstance(a,ac.TA)]
+        canteen = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.off_school == False]
         randomAgent = self.random.choice(all_agents)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass

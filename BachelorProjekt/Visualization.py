@@ -532,7 +532,7 @@ def covid_draw_arrow(agent):
         if agent.is_home_sick == True:
             portrayal["Shape"] = "resources/white.jpg"
             portrayal["scale"] = 0.9
-        elif agent.exposed == 1:
+        elif agent.infected == True and agent.exposed > 0:
             if agent.coords == dir['N']:
                     portrayal["Shape"] = "resources/skyexposedN.png"
                     portrayal["scale"] = 0.9
