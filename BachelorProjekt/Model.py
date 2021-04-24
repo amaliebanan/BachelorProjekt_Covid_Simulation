@@ -368,7 +368,7 @@ def weekend(self):
                 ac.send_agent_back_to_school(a) #Agenten er rask og skal tilbage i skole
                 ids_to_remove.append(a.id)
                 continue
-        elif a.asymptomatic == 0: #Agenten har symptomer nu og skal blive hjemme
+        elif a.asymptomatic == 0 and a.infection_period>0: #Agenten har symptomer nu og skal blive hjemme
             ac.send_agent_home(a)
             ids_to_remove.append(a.id)
             continue
@@ -599,12 +599,7 @@ class covid_Model(Model):
                     n+=1
 
     def step(self):
-        agents = [a for a in self.schedule.agents if is_human(a)]
-        for a in agents:
-            if a.infection_period>0:
-                print(a.infection_period)
-
-
+        print(self.day_count,self.minute_count)
         if go_home_in_breaks == False:
             choose_students_to_go_to_toilet(self)
 

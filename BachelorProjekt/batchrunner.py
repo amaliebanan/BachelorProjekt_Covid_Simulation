@@ -11,7 +11,7 @@ import csv
 
 fixed_params = {"width":26, "height": 38, "setUpType": [2, 2, 2]}
 variable_params = {"N": range(24,25,1)} # 24 students
-iterationer = 1
+iterationer = 5
 skridt = 525*40
 
 
@@ -84,9 +84,6 @@ def max_infected(fix_par, var_par, model, iter, steps):
     return max_number_of_infected #this is now a list of max number of infected for each iteration
 
 #print("Gennemsnitligt er antallet af max antal smittede: \t", np.mean(max_infected(fixed_params, variable_params, covid_Model, iterationer, skridt)))
-
-
-
 
 "Below is to compare setup type [2,2,2], [3,3,3], [4,4,4]"
 def list_of_infected(j):
