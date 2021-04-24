@@ -134,7 +134,7 @@ def checkDirection(agent,neighbor):
     else: return angle_
 
 def infect_(self):
-        if self.exposed != 0:   #Agent smitter ikke endnu.
+        if self.non_contageous_period != 0:   #Agent smitter ikke endnu.
             return
 
         if isinstance(self, TA):
@@ -209,11 +209,13 @@ def infect_(self):
         for a in newly_infected:
             a.infected = True
             a.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)#How long are they sick?
-            a.asymptomatic = truncnorm_(3*day_length,a.infection_period,5*day_length,1*day_length) #Agents are asymptomatic for 5 days
-            a.exposed = a.asymptomatic-2*day_length
+            a.incubation_period = truncnorm_(3 * day_length, a.infection_period, 5 * day_length, 1 * day_length) #Agents are asymptomatic for 5 days
+            a.non_contageous_period = a.incubation_period - 2 * day_length
+            if bernoulli.rvs(0.3)==1:
+                a.asymptomatic = True
 
 def infect_p(self):
-        if self.exposed != 0:   #Agent smitter ikke endnu.
+        if self.non_contageous_period != 0:   #Agent smitter ikke endnu.
             return
 
         if isinstance(self, TA):
@@ -271,7 +273,7 @@ def infect_p(self):
                 get_a[0].infected = True
 
 def infect(self):
-    if self.exposed != 0:   #Agent smitter ikke endnu.
+    if self.non_contageous_period != 0:   #Agent smitter ikke endnu.
         return
     if (self.is_home_sick == True) or (isinstance(self,canteen_Agent) and self.off_school == True): #Agenten er derhjemme og kan ikke smitte
         return
@@ -697,18 +699,13 @@ def infect(self):
                         self.model.infected_agents.append(agent)
     self.reproduction += len(newly_infected)
     for a in newly_infected:
-        if bernoulli.rvs(0.3) == 1: #hvis agenten ikke udvikler symptomer
-            print('agent med id ',a.id, 'udvikler ikke symptomer')
             a.infected = True
-            a.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)#How long are they sick?
-            a.asymptomatic = a.infection_period
-            a.exposed = 2*day_length
-        else:
-            a.infected = True
-            a.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)#How long are they sick?
-            a.asymptomatic = truncnorm_(3*day_length,a.infection_period,5*day_length,1*day_length) #Agents are asymptomatic for 5 days
-            a.exposed = a.asymptomatic-2*day_length
-            print('agent med id ',a.id, 'får symptomer om', a.asymptomatic, 'tidsskridt')
+            a.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
+            a.infection_period = a.incubation_period+10*day_length#How long are they sick?
+            a.non_contageous_period = a.incubation_period - 2 * day_length
+            if bernoulli.rvs(0.3)==1:
+                a.asymptomatic = True
+
 
 ###CHANGING OBJECT-TYPE###
 #Get all essential parameters transfered
@@ -717,9 +714,9 @@ def change_obj_params(new,old):
     new.is_home_sick, new.vaccinated = old.is_home_sick,\
                                        old.vaccinated
 
-    new.infection_period,new.exposed, new.asymptomatic = old.infection_period,\
-                                                         old.exposed,\
-                                                         old.asymptomatic
+    new.infection_period,new.non_contageous_period, new.incubation_period = old.infection_period, \
+                                                              old.non_contageous_period, \
+                                                              old.incubation_period
 
     new.infected, new.recovered,  new.mask = old.infected,\
                                              old.recovered,\
@@ -727,6 +724,7 @@ def change_obj_params(new,old):
     new.reproduction = old.reproduction
     new.day_off = old.day_off
     new.pos = old.pos
+    new.asymptomatic = old.asymptomatic
 
 ###CHANGING OBJECT-TYPE###
 
@@ -975,10 +973,10 @@ def update_infection_parameters(self):
     if self.recovered == True:
         return              #Agent is recovered
 
-    self.asymptomatic = max(0,self.asymptomatic-1)
-    if self.asymptomatic == 0:
+    self.incubation_period = max(0, self.incubation_period - 1)
+    if self.incubation_period == 0 and self.asymptomatic == False:
         send_agent_home(self)
-    self.exposed = max(0,self.exposed-1)    #If already 0 stay there, if larger than 0 subtract one
+    self.non_contageous_period = max(0, self.non_contageous_period - 1)    #If already 0 stay there, if larger than 0 subtract one
     self.infection_period = max(0,self.infection_period-1)
 
 def call_backup_employee(self):
@@ -999,12 +997,13 @@ class class_Agent(Agent):
         self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
+        self.asymptomatic = False
 
         #Infection parameters
 
         self.infection_period = 0#How long are they sick?
-        self.asymptomatic = 0 #Agents are asymptomatic for 5 days
-        self.exposed = math.pi
+        self.incubation_period = 0 #Agents are asymptomatic for 5 days
+        self.non_contageous_period = math.pi
 
         self.day_off = False
         self.moving_to_door = 0
@@ -1075,13 +1074,14 @@ class TA(Agent):
         self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
+        self.asymptomatic = False
 
         self.time_remaining = 105
 
           #Infection parameters
         self.infection_period = 0#How long are they sick?
-        self.asymptomatic = 0 #Agents are asymptomatic for 5 days
-        self.exposed = math.pi #Dummy
+        self.incubation_period = 0 #Agents are asymptomatic for 5 days
+        self.non_contageous_period = math.pi #Dummy
 
         self.day_off = False
         self.timeToTeach = 5
@@ -1156,7 +1156,6 @@ class TA(Agent):
         if self.time_remaining <= 0 and len(self.students)<5:
             TA_to_class(self)
             return
-
         self.move()
 
 class canteen_Agent(Agent):
@@ -1169,6 +1168,7 @@ class canteen_Agent(Agent):
         self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
+        self.asymptomatic = False
         self.queue = 0
         self.buying_lunch = 0
         self.sitting_in_canteen = 0
@@ -1184,8 +1184,8 @@ class canteen_Agent(Agent):
 
         #Infection parameters
         self.infection_period = 0#How long are they sick?
-        self.asymptomatic = 0 #Agents are asymptomatic for 5 days
-        self.exposed = math.pi
+        self.incubation_period = 0 #Agents are asymptomatic for 5 days
+        self.non_contageous_period = math.pi
 
         #Class-schedule parameters
         self.next_to_attend_class = False
@@ -1248,7 +1248,7 @@ class canteen_Agent(Agent):
                     if p == 1:
                         #print(self.model.day_count,self.model.minute_count,self.id,self.pos,"I got infected at the toilet")
                         self.infected == True
-                if self.infected == True and self.exposed == 0 and self.model.toilet.has_been_infected == False:
+                if self.infected == True and self.non_contageous_period == 0 and self.model.toilet.has_been_infected == False:
                     #print(self.model.day_count,self.model.minute_count,self.id,self.pos,"I just infected the toilet")
                     self.model.toilet.has_been_infected = True
 
@@ -1363,10 +1363,11 @@ class employee_Agent(Agent):
         self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
+        self.asymptomatic = False
 
         self.infection_period = 0#How long are they sick?
-        self.asymptomatic = 0 #Agents are asymptomatic for 5 days
-        self.exposed = math.pi
+        self.incubation_period = 0 #Agents are asymptomatic for 5 days
+        self.non_contageous_period = math.pi
         self.reproduction = 0
 
         self.coords = ()

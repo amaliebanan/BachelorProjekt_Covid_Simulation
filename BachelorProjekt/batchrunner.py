@@ -11,7 +11,7 @@ import csv
 
 fixed_params = {"width":26, "height": 38, "setUpType": [2, 2, 2]}
 variable_params = {"N": range(24,25,1)} # 24 students
-iterationer = 1
+iterationer = 3
 skridt = 525*40
 
 

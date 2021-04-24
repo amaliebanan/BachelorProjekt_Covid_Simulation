@@ -50,10 +50,10 @@ def covid_draw(agent):
             portrayal["Color"] = "purple"
         if agent.infected == 0:
             portrayal["Color"] = "green"
-        if agent.infected == True and agent.exposed == 0:
+        if agent.infected == True and agent.non_contageous_period == 0:
                 portrayal["Shape"] = "resources/corona.png"
                 portrayal["scale"] = 0.9
-        if agent.infected == True and agent.exposed > 0:
+        if agent.infected == True and agent.non_contageous_period > 0:
                 portrayal["Shape"] = "resources/exposed.png"
                 portrayal["scale"] = 0.9
 
@@ -231,7 +231,7 @@ def covid_draw_arrow(agent):
                     portrayal["scale"] = 1
 
 
-        elif agent.infected == True and agent.exposed > 0:
+        elif agent.infected == True and agent.non_contageous_period > 0:
             if agent.coords == dir['N']:
                 portrayal["Shape"] = "resources/greenexposedN.png"
                 portrayal["scale"] = 0.9
@@ -313,7 +313,7 @@ def covid_draw_arrow(agent):
                 portrayal["scale"] = 0.9
 
         elif agent.going_to_toilet == True or agent.in_toilet_queue == True:
-            if agent.infected == True and agent.exposed > 0:
+            if agent.infected == True and agent.non_contageous_period > 0:
                 if agent.coords == dir['N']:
                     portrayal["Shape"] = "resources/cyanexposedN.png"
                     portrayal["scale"] = 0.9
@@ -415,7 +415,7 @@ def covid_draw_arrow(agent):
         if agent.is_home_sick == True:
             portrayal["Shape"] = "resources/white.jpg"
             portrayal["scale"] = 0.9
-        elif agent.infected == True and agent.exposed > 0:
+        elif agent.infected == True and agent.non_contageous_period > 0:
             if agent.coords == dir['N']:
                 portrayal["Shape"] = "resources/greenexposedN.png"
                 portrayal["scale"] = 0.9
@@ -521,7 +521,7 @@ def covid_draw_arrow(agent):
         if agent.is_home_sick == True:
             portrayal["Shape"] = "resources/white.jpg"
             portrayal["scale"] = 0.9
-        elif agent.infected == True and agent.exposed > 0:
+        elif agent.infected == True and agent.non_contageous_period > 0:
             if agent.coords == dir['N']:
                     portrayal["Shape"] = "resources/skyexposedN.png"
                     portrayal["scale"] = 0.9
