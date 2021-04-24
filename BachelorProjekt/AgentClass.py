@@ -95,22 +95,23 @@ def wander(self):
 
     if go_home_in_breaks is False:
         if self.pos in [x for (x,y) in self.model.canteen_tables]:
-            if self.sitting_in_canteen == 0:
-                if self.model.minute_count in range(225,301):
-                    if self.pos in [x for (x,y) in self.model.canteen_table_1]:
-                        self.coords = dir['E']
+                if self.sitting_in_canteen == 0:
+                    if self.model.minute_count in range(225,301):
+                        if self.pos in [x for (x,y) in self.model.canteen_table_1]:
+                            self.coords = dir['E']
+                        else:
+                            self.coords = dir['W']
+                        self.sitting_in_canteen = 70
+                        self.mask = False
                     else:
-                        self.coords = dir['W']
-                    self.sitting_in_canteen = 70
-                    self.mask = False
+                        if self.pos in [x for (x,y) in self.model.canteen_table_1]:
+                            self.coords = dir['E']
+                        else:
+                            self.coords = dir['W']
+                        self.sitting_in_canteen = 60
+                        self.mask = False
 
-                else:
-                    if self.pos in [x for (x,y) in self.model.canteen_table_1]:
-                        self.coords = dir['E']
-                    else:
-                        self.coords = dir['W']
-                    self.sitting_in_canteen = 60
-                    self.mask = False
+
 
 #check direction between two agents
 def checkDirection(agent,neighbor):
@@ -469,7 +470,7 @@ def infect(self):
                 else:
                     N_list.append(agent)
 
-        "Now we'll infect"
+    "Now we'll infect"
     for agent in Same_pos:
         if bernoulli.rvs(ir*10) == 1:
             newly_infected.append(agent)
@@ -696,11 +697,18 @@ def infect(self):
                         self.model.infected_agents.append(agent)
     self.reproduction += len(newly_infected)
     for a in newly_infected:
-            #print(a.coords, a.pos, self.coords, self.pos)
+        if bernoulli.rvs(0.3) == 1: #hvis agenten ikke udvikler symptomer
+            print('agent med id ',a.id, 'udvikler ikke symptomer')
+            a.infected = True
+            a.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)#How long are they sick?
+            a.asymptomatic = a.infection_period
+            a.exposed = 2*day_length
+        else:
             a.infected = True
             a.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)#How long are they sick?
             a.asymptomatic = truncnorm_(3*day_length,a.infection_period,5*day_length,1*day_length) #Agents are asymptomatic for 5 days
             a.exposed = a.asymptomatic-2*day_length
+            print('agent med id ',a.id, 'får symptomer om', a.asymptomatic, 'tidsskridt')
 
 ###CHANGING OBJECT-TYPE###
 #Get all essential parameters transfered
@@ -889,7 +897,9 @@ def move_to_specific_pos(self,pos_):
                 newAgent.pos = x+1,y+newY
                 newAgent.coords = dir['E']
                 self.model.grid.place_agent(newAgent, newAgent.pos)
-                if go_home_in_breaks == True or newAgent.has_more_courses_today == False:
+                if go_home_in_breaks == True:
+                    go_to_entre(newAgent)
+                if newAgent.has_more_courses_today == False:
                     go_to_entre(newAgent)
                 return
             elif isinstance(self,canteen_Agent):

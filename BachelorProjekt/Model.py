@@ -25,7 +25,7 @@ def intersect(list1,list2):
 day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
-init_canteen_agents = 90#80
+init_canteen_agents = 80
 infection_rate = (0.035/100)
 infection_rate_1_to_2_meter = calculate_percentage(infection_rate, 10.2)
 infection_rate_2plus_meter = calculate_percentage(infection_rate_1_to_2_meter,2.02)
@@ -96,6 +96,7 @@ def add_init_infected_to_grid(self,n):
         all_agents = [a for a in self.schedule.agents if is_human(a)]
         students = [a for a in self.schedule.agents if isinstance(a,ac.class_Agent)]
         TA = [a for a in self.schedule.agents if isinstance(a,ac.TA)]
+        canteen = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.off_school == False]
         randomAgent = self.random.choice(all_agents)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
@@ -604,8 +605,6 @@ class covid_Model(Model):
         if self.day_count%7==2 or self.day_count%7==3 or self.day_count%7==4 or self.day_count%7==5:
             day_off(self)
 
-      #  if self.day_count == 7*8 and self.minute_count == 525:
-       #
         if self.minute_count in [1,119,299,419]:
             self.seats = make_classrooms_fit_to_grid(self.setUpType,self)
 

@@ -6,11 +6,12 @@ import matplotlib.pyplot as plt
 import multiprocessing as mp
 from multiprocessing import Pool
 import pandas as pd
+import csv
 
 
 fixed_params = {"width":26, "height": 38, "setUpType": [2, 2, 2]}
 variable_params = {"N": range(24,25,1)} # 24 students
-iterationer = 50
+iterationer = 1
 skridt = 525*40
 
 
@@ -100,11 +101,12 @@ def list_of_infected(j):
         max_steps=skridt,
         model_reporters={"infected": lambda m: get_infected(m)})
     batch_run.run_all() #run batchrunner
+
     ordered_df = batch_run.get_collector_model()
     data_list = list(ordered_df.values()) #saves batchrunner data in list
     for i in range(len(data_list)):
         data_list[i]['Iteration'] = i+1
-    pd.concat(data_list).to_csv('csvdata/gohomeinbreaks'+str(j)+'.csv')
+    #pd.concat(data_list).to_csv('csvdata/vaccine60pct'+str(j)+'.csv')
 
     #next 5 lines is to determine reproduction number
     #list_reproduction = []
@@ -137,14 +139,30 @@ def list_of_infected(j):
 
     return num_of_infected, num_of_susceptible, num_of_recovered
 
-
 "uncomment below to run list_of_infected function with different set up types. Change line 12 and 13 to change number of iterations and timesteps"
 pool = mp.Pool(mp.cpu_count()) #opens pools for running parallel programs
 results=pool.map(list_of_infected, [2,3,4]) #runs the list_of_infected function for j={2,3,4}
 pool.close() #closes the pools
+resultsinfected2 = results[0][0]
+resultsinfected3 = results[1][0]
+resultsinfected4 = results[2][0]
+resultssusceptible2 = results[0][1]
+resultssusceptible3 = results[1][1]
+resultssusceptible4 = results[2][1]
+resultsrecovered2 = results[0][2]
+resultsrecovered3 = results[1][2]
+resultsrecovered4 = results[2][2]
+#print(results[0])
 
-
-
+for i in range(len(results)):
+    samlet = []
+    for j in range(len(results[i])):
+        samlet.append(results[i][j])
+        if j == 0:
+            print("MAX SMITTEDE VED:" ,i+2,max(results[i][j]))
+    df = pd.DataFrame(samlet)
+    dff = df.T
+    #dff.to_csv('csvdata/plotted_data_vaccine60pct_'+str(i+2)+'.csv')
 
 "Uncomment below for plotting the three plots for comparing"
 time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
@@ -164,7 +182,6 @@ plt.suptitle('%s simulation(er)' %iterationer, fontsize=20)
 plt.title('Masker=%s' %with_mask + ', Familiegrupper=%s' %family_groups +', Hjemme i pauser= %s' %go_home_in_breaks + ', Procent vaccinerede=%s' %percentages_of_vaccinated,fontsize=10)
 plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
 plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend
-
 
 plt.figure(1,figsize=(10,6)) #size of the plot-figure
 for i in range(1,4,1):
@@ -199,15 +216,16 @@ def list_of_infected_in_classroom(j):
     num_of_infected = [0]*(skridt+1) #makes list # for y-values for Infected
     for i in range(len(data_list)):
         temp_list = []
-        for j in range(len(data_list[i]["infected"])):
-            num_of_infected[j]+=data_list[i]["infected"][j]
-            temp_list.append(data_list[i]["infected"][j])
+        for k in range(len(data_list[i]["infected"])):
+            num_of_infected[k]+=data_list[i]["infected"][k]
+            temp_list.append(data_list[i]["infected"][k])
         max_number_of_infected.append(max(temp_list))
     num_of_infected = [number / iterationer for number in num_of_infected] #avg number of infected
 
-    print("Gennemsnitligt er antallet af max smittede for setup type %s " %j, "er: ", np.mean(max_number_of_infected))
-    print("Std er antallet af max smittede for setup type %s " %j, "er: ", np.std(max_number_of_infected))
+    print(j,"Gennemsnitligt er antallet af max smittede for setup type %s " %j, "er: ", np.mean(max_number_of_infected))
+    print(j,"Std er antallet af max smittede for setup type %s " %j, "er: ", np.std(max_number_of_infected))
 
+    #max_number_of_infected.append(j)
     print(max_number_of_infected)
     return num_of_infected
 
@@ -224,12 +242,11 @@ for i in range(1,4):
     plt.plot(time, results[i-1], label= Legends[i-1], color=colors[i-1]) #makes the three different plots
 plt.xlabel('Tidsskridt')
 plt.ylabel('Gennemsnit antal smittede')
-plt.ylim(1,1.5)
+plt.ylim(1,2)
 plt.suptitle('%s simulationer af 105 minutters undervisning' %iterationer,fontsize=15)
-plt.title("Initialiseret med én studerende smittet, 23 studerende i alt")
+plt.title("Initialiseret med én studerende smittet, 18 studerende i alt")
 plt.tight_layout() #placement of legend
 plt.legend() #placement of legend
 
 plt.show()
-
 '''
