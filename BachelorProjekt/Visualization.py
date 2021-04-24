@@ -32,6 +32,17 @@ class count_Days(TextElement):
     def render(self, model):
         return "Day #: " + str(model.day_count)
 
+
+class count_Minutes(TextElement):
+    '''
+    Display a text count of how many happy agents there are.   FROM MESA-EXAMPLES
+    '''
+    def __init__(self):
+        pass
+
+    def render(self, model):
+        return "Minute #: " + str(model.minute_count)
+
 def agent_portrayal(agent):
     portrayal = {"Shape": "circle",
                  "Color": "red",
@@ -683,10 +694,11 @@ def covid_draw_arrow(agent):
     return portrayal
 
 days_chart = count_Days()
+minute_chart = count_Minutes()
 infected_element = infected_Element()
 
 if with_dir == True:
-    grid = CanvasGrid(covid_draw_arrow, width, height, 900, 1000)
+    grid = CanvasGrid(covid_draw, width, height, 900, 1000)
 else:
     grid = CanvasGrid(covid_draw, width, height, 900, 1000)
 
@@ -694,7 +706,7 @@ infected_chart = ChartModule([{"Label":"infected","Color":"Black"}], data_collec
 
 
 server = ModularServer(covid_Model,
-                       [grid,infected_element, days_chart, infected_chart],
+                       [grid,infected_element, days_chart, minute_chart,infected_chart],
                        "Covid Model",
                        {"N":agentsN, "width":width, "height":height, "setUpType":[2,3,4]})
 

@@ -133,7 +133,6 @@ def add_init_cantine_agents_to_grid(self,N,n):
             if with_mask == True:
                 newAgent.mask = True
 
-
             id_+=1
             counter+=1
     #m >= 3 since we want to create 3 TAs that start in the canteen
@@ -564,7 +563,10 @@ class covid_Model(Model):
         for s in setUpType:
             setUp(self.n_agents,self,s,i)
             i+=1
-        setUpToilet(self)
+
+        if go_home_in_breaks == False:
+            setUpToilet(self)
+
         if len(self.setUpType)>1:
             add_init_cantine_agents_to_grid(self,(self.n_agents)*i,init_canteen_agents)
 
@@ -596,9 +598,16 @@ class covid_Model(Model):
                     n+=1
 
     def step(self):
-        choose_students_to_go_to_toilet(self)
+        agents = [a for a in self.schedule.agents if is_human(a)]
+        for a in agents:
+            if a.infection_period>0:
+                print(a.infection_period)
 
-        #Gå hjem når du ik har flere kurser
+
+        if go_home_in_breaks == False:
+            choose_students_to_go_to_toilet(self)
+
+        #Gå hjem når du ik har flere kurser eller hvis du
         go_home(self)
         #Hold fri når du har fridag
         if self.day_count%7==2 or self.day_count%7==3 or self.day_count%7==4 or self.day_count%7==5:
@@ -617,13 +626,13 @@ class covid_Model(Model):
 
 
         for ta in self.TAs:
-            p = np.random.poisson(20/100) == 1
+            p = bernoulli.rvs(20/100)
             if len(ta.students) == 0 or p == 0:
                 continue
             if len(ta.students)>10 and p == 1:
                 questions_ = [a for a in ta.students if a.hasQuestion == 1]
-                if questions_ == []: #Only answer question if no one is recieving help at the moment
-                    TAs_students = ta.students
+                if len(questions_) == 0: #Only answer question if no one is recieving help at the moment
+                    TAs_students = [a for a in ta.students if a.is_home_sick == False]
                     randomStudent = self.random.choice(TAs_students)
                     randomStudent.hasQuestion = 1
 
@@ -647,10 +656,14 @@ class covid_Model(Model):
 
         if self.minute_count % 526 == 0:
             self.day_count += 1
-            self.minute_count = 1
-            self.hour_count = 1
-            self.toilet.has_been_infected = False #Gøres rent hver dag
-
-            if self.day_count%6 == 0: ##WEEKEND
+            if self.day_count in [6,13,20,27,34,41,48,55,62]: ##WEEKEND
                self.day_count+=2
                weekend(self)
+            self.minute_count = 1
+            self.hour_count = 1
+            try:
+                self.toilet.has_been_infected = False #Gøres rent hver dag
+            except:
+                return
+
+

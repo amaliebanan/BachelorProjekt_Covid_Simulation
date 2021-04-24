@@ -104,13 +104,13 @@ def wander(self):
                             self.coords = dir['W']
                         self.sitting_in_canteen = 70
                         self.mask = False
-                else:
-                    if self.pos in [x for (x,y) in self.model.canteen_table_1]:
-                        self.coords = dir['E']
                     else:
-                        self.coords = dir['W']
-                    self.sitting_in_canteen = 60
-                    self.mask = False
+                        if self.pos in [x for (x,y) in self.model.canteen_table_1]:
+                            self.coords = dir['E']
+                        else:
+                            self.coords = dir['W']
+                        self.sitting_in_canteen = 60
+                        self.mask = False
             except:
                 print("fuck det skete igen",self,self.id,self.pos,self.model.day_count,self.model.minute_count)
 
@@ -847,7 +847,8 @@ def go_to_entre(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
     possible_empty_steps = [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos) or pos == pos_]
     if len(possible_empty_steps) == 0:
-        return
+          pos_other_agents = [cell for cell in self.model.grid.get_neighbors(self.pos,moore=True,include_center=False) if is_human(cell)]
+          possible_empty_steps = [cell.pos for cell in pos_other_agents]
     distances = [(pos,getDistance(pos_,pos)) for pos in possible_empty_steps]
     x_,y_ = min(distances,key=lambda x:x[1])[0]
     if min(getDistance((x_,y_), pos_), getDistance(self.pos, pos_)) == getDistance(self.pos, pos_):
@@ -922,7 +923,7 @@ def move_to_specific_pos(self,pos_):
    #### Agent is moving one step closer to goal-position ####
 
     #Which list to use? If possible_empty_steps is empty, use back-up list (allowing agent to go through agents)
-    if possible_empty_steps == []:
+    if len(possible_empty_steps) == 0:
         cells_to_check = back_up_empty_cells
     else: cells_to_check = possible_empty_steps
 

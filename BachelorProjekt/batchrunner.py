@@ -143,15 +143,15 @@ def list_of_infected(j):
 pool = mp.Pool(mp.cpu_count()) #opens pools for running parallel programs
 results=pool.map(list_of_infected, [2,3,4]) #runs the list_of_infected function for j={2,3,4}
 pool.close() #closes the pools
-resultsinfected2 = results[0][0]
-resultsinfected3 = results[1][0]
-resultsinfected4 = results[2][0]
-resultssusceptible2 = results[0][1]
-resultssusceptible3 = results[1][1]
-resultssusceptible4 = results[2][1]
-resultsrecovered2 = results[0][2]
-resultsrecovered3 = results[1][2]
-resultsrecovered4 = results[2][2]
+#resultsinfected2 = results[0][0]
+#resultsinfected3 = results[1][0]
+#resultsinfected4 = results[2][0]
+#resultssusceptible2 = results[0][1]
+#resultssusceptible3 = results[1][1]
+#resultssusceptible4 = results[2][1]
+#resultsrecovered2 = results[0][2]
+#resultsrecovered3 = results[1][2]
+#resultsrecovered4 = results[2][2]
 #print(results[0])
 
 for i in range(len(results)):
