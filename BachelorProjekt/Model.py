@@ -47,9 +47,12 @@ def get_infected(self):
     return len(agents)
 
 def get_asymptom(self):
-    agents = [a for a in self.schedule.agents if is_human(a) and a.asymptomatic == True]
+    agents = [a for a in self.schedule.agents if is_human(a) and a.symptomatic == False]
     return len(agents)
 
+def get_symptom(self):
+    agents = [a for a in self.schedule.agents if is_human(a) and a.symptomatic == True]
+    return len(agents)
 
 def get_recovered(self):
     agents = [a for a in self.schedule.agents if is_human(a) and a.recovered == True]
@@ -383,14 +386,15 @@ def weekend(self):
     while n>0:
         newly_infected = [a for a in self.schedule.agents if is_human(a) and a.infected == False and a.recovered == False and a.vaccinated == False]
         if len(newly_infected)>0:
-            positive_ = self.random.choice(newly_infected)
-            positive_.infected = True
+            positive_agent = self.random.choice(newly_infected)
+            positive_agent.infected = True
 
-            positive_.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
-            positive_.infection_period = a.incubation_period+10*day_length#How long are they sick?
-            positive_.non_contageous_period = a.incubation_period - 2 * day_length
-
+            positive_agent.infection_period = ac.truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)-2*day_length
+            positive_agent.incubation_period = ac.truncnorm_(3*day_length,positive_agent.infection_period, 5 *day_length, 1*day_length)
+            positive_agent.non_contageous_period =  positive_agent.incubation_period-2*day_length
+            print("hej")
             n-=1
+
 
 def setUpToilet(self):
      id_max = max([w.id for w in self.schedule.agents if isinstance(w,ac.wall)])
@@ -604,9 +608,10 @@ class covid_Model(Model):
                     n+=1
 
     def step(self):
+
+
         if go_home_in_breaks == False:
             choose_students_to_go_to_toilet(self)
-
 
         #Gå hjem når du ik har flere kurser eller hvis du
         go_home(self)
@@ -657,9 +662,6 @@ class covid_Model(Model):
 
         if self.minute_count % 526 == 0:
             self.day_count += 1
-            print(self.day_count)
-            agents = [a for a in self.schedule.agents if is_human(a) and a.is_home_sick == True]
-            print("SÅ MANGE ER HJEMSENDT",len(agents))
             if self.day_count in [6,13,20,27,34,41,48,55,62]: ##WEEKEND
                self.day_count+=2
                weekend(self)

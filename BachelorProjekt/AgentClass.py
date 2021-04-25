@@ -557,22 +557,14 @@ def infect(self):
                     if bernoulli.rvs(ir2_plus*2) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
+
     self.reproduction += len(newly_infected)
+
     for a in newly_infected:
-            a.infected = True
-            if bernoulli.rvs(0.3)==1:
-                a.asymptomatic = True
-                a.infection_period = truncnorm_(5 * day_length, 21 * day_length, 10 * day_length, 2 * day_length)
-                a.incubation_period = a.infection_period
-                a.non_contageous_period = 2 * day_length
-                print(a.id," jeg får ikke symptomer og jeg er syg i alt i ",a.incubation_period,a.infection_period, "smitter om", a.non_contageous_period)
-
-            else:
-                a.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
-                a.infection_period = a.incubation_period+10*day_length#How long are they sick?
-                a.non_contageous_period = a.incubation_period - 2 * day_length
-                print(a.id," jeg får symptomer om",a.incubation_period,"og jeg er syg i alt i ",a.infection_period, "smitter om", a.non_contageous_period)
-
+        a.infected = True
+        a.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)-2*day_length
+        a.incubation_period = truncnorm_(3*day_length,a.infection_period, 5 *day_length, 1*day_length)
+        a.non_contageous_period = a.incubation_period-2*day_length
 
 
 ###CHANGING OBJECT-TYPE###
@@ -592,7 +584,7 @@ def change_obj_params(new,old):
     new.reproduction = old.reproduction
     new.day_off = old.day_off
     new.pos = old.pos
-    new.asymptomatic = old.asymptomatic
+    new.symptomatic = old.symptomatic
 
 ###CHANGING OBJECT-TYPE###
 
@@ -843,7 +835,7 @@ def update_infection_parameters(self):
         return              #Agent is recovered
 
     self.incubation_period = max(0, self.incubation_period - 1)
-    if self.incubation_period == 0 and self.asymptomatic == False:
+    if self.incubation_period == 0:
         send_agent_home(self)
     self.non_contageous_period = max(0, self.non_contageous_period - 1)    #If already 0 stay there, if larger than 0 subtract one
     self.infection_period = max(0,self.infection_period-1)
@@ -866,7 +858,7 @@ class class_Agent(Agent):
         self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
-        self.asymptomatic = False
+        self.symptomatic = True #Does the agent show symptoms during infection period?
 
         #Infection parameters
 
@@ -940,7 +932,7 @@ class TA(Agent):
         self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
-        self.asymptomatic = False
+        self.symptomatic = True #Does the agent show symptoms during infection period?
 
         self.time_remaining = 105
 
@@ -1032,7 +1024,7 @@ class canteen_Agent(Agent):
         self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
-        self.asymptomatic = False
+        self.symptomatic = True #Does the agent show symptoms during infection period?
         self.queue = 0
         self.buying_lunch = 0
         self.sitting_in_canteen = 0
@@ -1222,13 +1214,16 @@ class employee_Agent(Agent):
         self.id = id
         self.infected = False
         self.recovered = False
-        self.mask = False
+        if with_mask ==  True:
+            self.mask = True
+        else:
+            self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
-        self.asymptomatic = False
 
+        self.symptomatic = True #Does the agent show symptoms during infection period?
         self.infection_period = 0#How long are they sick?
-        self.incubation_period = math.pi #Agents are asymptomatic for 5 days
+        self.incubation_period = math.pi #Dummy
         self.non_contageous_period = math.pi
         self.reproduction = 0
 

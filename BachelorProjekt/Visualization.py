@@ -698,7 +698,7 @@ minute_chart = count_Minutes()
 infected_element = infected_Element()
 
 if with_dir == True:
-    grid = CanvasGrid(covid_draw, width, height, 900, 1000)
+    grid = CanvasGrid(covid_draw_arrow, width, height, 900, 1000)
 else:
     grid = CanvasGrid(covid_draw, width, height, 900, 1000)
 
