@@ -47,7 +47,7 @@ def get_infected(self):
     return len(agents)
 
 def get_asymptom(self):
-    agents = [a for a in self.schedule.agents if is_human(a) and a.symptomatic == False]
+    agents = [a for a in self.schedule.agents if is_human(a) and a.asymptomatic == False]
     return len(agents)
 
 def get_susceptible(self):

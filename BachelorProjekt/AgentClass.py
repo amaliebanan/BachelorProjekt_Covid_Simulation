@@ -590,7 +590,7 @@ def change_obj_params(new,old):
     new.reproduction = old.reproduction
     new.day_off = old.day_off
     new.pos = old.pos
-    new.symptomatic = old.symptomatic
+    new.asymptomatic = old.asymptomatic
 
 ###CHANGING OBJECT-TYPE###
 
@@ -876,7 +876,7 @@ class class_Agent(Agent):
         self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
-        self.symptomatic = True #Does the agent show symptoms during infection period?
+        self.asymptomatic = False #Does the agent show symptoms during infection period?
 
         #Infection parameters
 
@@ -950,7 +950,7 @@ class TA(Agent):
         self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
-        self.symptomatic = True #Does the agent show symptoms during infection period?
+        self.asymptomatic = False #Does the agent show symptoms during infection period?
 
         self.time_remaining = 105
 
@@ -1042,7 +1042,7 @@ class canteen_Agent(Agent):
         self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
-        self.symptomatic = True #Does the agent show symptoms during infection period?
+        self.asymptomatic = False #Does the agent show symptoms during infection period?
         self.queue = 0
         self.buying_lunch = 0
         self.sitting_in_canteen = 0
@@ -1232,6 +1232,7 @@ class employee_Agent(Agent):
         self.id = id
         self.infected = False
         self.recovered = False
+
         if with_mask ==  True:
             self.mask = True
         else:
@@ -1239,7 +1240,7 @@ class employee_Agent(Agent):
         self.is_home_sick = False
         self.vaccinated = False
 
-        self.symptomatic = True #Does the agent show symptoms during infection period?
+        self.asymptomatic = False #Does the agent show symptoms during infection period?
         self.infection_period = 0#How long are they sick?
         self.incubation_period = math.pi #Dummy
         self.non_contageous_period = math.pi
