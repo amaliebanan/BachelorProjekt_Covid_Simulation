@@ -111,27 +111,6 @@ def wander(self):
                         self.sitting_in_canteen = 60
                         self.mask = False
 
-
-#check direction between two agents
-def checkDirection(agent,neighbor):
-    dirA,dirN = agent.coords, neighbor.coords
-    angle_ = angle(dirA,dirN)
-    if -1 <= angle_ <= 1: #The look in the same direction
-        return 0
-    elif 179 <= angle_ <= 181: #They look in opposite direction
-        return 180
-    elif 89 <= angle_ <= 91: #De kigger vinkelret på hianden
-        return 90
-    elif 44 <= angle_ <= 46: #De kigger næsten i samme retning
-        return 45
-    elif 134 <= angle_ <= 136: #Næsten i modsat retning
-        return 135
-    elif 224 <= angle_ <= 226: #næsten i modsat retning
-        return 225
-    elif 314 <= angle_ <= 316: #næsten i samme retning
-        return 315
-    else: return angle_
-
 def infect(self):
     if self.non_contageous_period != 0:   #Agent smitter ikke endnu.
         return
@@ -175,13 +154,13 @@ def infect(self):
             "Define infection rates"
     if self.mask == True:
         if self.asymptomatic:
-            ir = calculate_percentage(calculate_percentage(infection_rate, 70),25)
-            ir1_2 = calculate_percentage(calculate_percentage(infection_rate_1_to_2_meter, 70),25)
-            ir2_plus = calculate_percentage(calculate_percentage(infection_rate_2plus_meter, 70),25)
+            ir = calculate_percentage(calculate_percentage(infection_rate, infection_decrease_with_mask_pct),25)
+            ir1_2 = calculate_percentage(calculate_percentage(infection_rate_1_to_2_meter, infection_decrease_with_mask_pct),25)
+            ir2_plus = calculate_percentage(calculate_percentage(infection_rate_2plus_meter, infection_decrease_with_mask_pct),25)
         else:
-            ir = calculate_percentage(infection_rate, 70)
-            ir1_2 = calculate_percentage(infection_rate_1_to_2_meter, 70)
-            ir2_plus = calculate_percentage(infection_rate_2plus_meter, 70)
+            ir = calculate_percentage(infection_rate, infection_decrease_with_mask_pct)
+            ir1_2 = calculate_percentage(infection_rate_1_to_2_meter, infection_decrease_with_mask_pct)
+            ir2_plus = calculate_percentage(infection_rate_2plus_meter, infection_decrease_with_mask_pct)
     else:
         if self.asymptomatic:
             ir = calculate_percentage(infection_rate, 25)
@@ -572,16 +551,15 @@ def infect(self):
 
     for a in newly_infected:
         a.infected = True
-        if bernoulli.rvs(0.3)==1:
+        if bernoulli.rvs(0.3) == 1:
             a.asymptomatic = True
-            a.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length)#How long are they sick?
-            a.incubation_period = a.infection_period #Agents are asymptomatic for 5 days
-            a.non_contageous_period =  2 * day_length
+            a.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length) #How long are they sick?
+            a.incubation_period = a.infection_period
+            a.non_contageous_period = 2 * day_length
         else:
             a.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
-            a.infection_period = a.incubation_period+10*day_length#How long are they sick?
+            a.infection_period = a.incubation_period+10*day_length
             a.non_contageous_period = a.incubation_period - 2 * day_length
-
 
 ###CHANGING OBJECT-TYPE###
 #Get all essential parameters transfered

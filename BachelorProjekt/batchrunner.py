@@ -12,7 +12,7 @@ import csv
 fixed_params = {"width":26, "height": 38, "setUpType": [2, 2, 2]}
 variable_params = {"N": range(24,25,1)} # 24 students
 
-iterationer = 3
+iterationer = 10
 skridt = 525*40
 
 
@@ -104,15 +104,7 @@ def list_of_infected(j):
     data_list = list(ordered_df.values()) #saves batchrunner data in list
     for i in range(len(data_list)):
         data_list[i]['Iteration'] = i+1
-    #pd.concat(data_list).to_csv('csvdata/vaccine60pct'+str(j)+'.csv')
-
-    #next 5 lines is to determine reproduction number
-    #list_reproduction = []
-    #for i in range(0, iterationer):
-    #    list_reproduction.append(sum(data_list[i]["Reproduction"][skridt]))
-    #print(list_reproduction)
-    #print(sum(list_reproduction)/iterationer)
-
+    pd.concat(data_list).to_csv('csvdata/mundbind_70_'+str(j)+'.csv')
 
     #next 7 lines is to determine max number of infected
     max_number_of_infected = []
@@ -141,16 +133,6 @@ def list_of_infected(j):
 pool = mp.Pool(mp.cpu_count()) #opens pools for running parallel programs
 results=pool.map(list_of_infected, [2,3,4]) #runs the list_of_infected function for j={2,3,4}
 pool.close() #closes the pools
-#resultsinfected2 = results[0][0]
-#resultsinfected3 = results[1][0]
-#resultsinfected4 = results[2][0]
-#resultssusceptible2 = results[0][1]
-#resultssusceptible3 = results[1][1]
-#resultssusceptible4 = results[2][1]
-#resultsrecovered2 = results[0][2]
-#resultsrecovered3 = results[1][2]
-#resultsrecovered4 = results[2][2]
-#print(results[0])
 
 for i in range(len(results)):
     samlet = []
@@ -160,7 +142,7 @@ for i in range(len(results)):
             print("MAX SMITTEDE VED:" ,i+2,max(results[i][j]))
     df = pd.DataFrame(samlet)
     dff = df.T
-    #dff.to_csv('csvdata/plotted_data_vaccine60pct_'+str(i+2)+'.csv')
+    dff.to_csv('csvdata/plotted_data_mundbing70_'+str(i+2)+'.csv')
 
 "Uncomment below for plotting the three plots for comparing"
 time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
@@ -191,7 +173,7 @@ plt.plot([], color='Black', label='Infected')
 plt.plot([], color='Black', label='Susceptible', linestyle='dashed')
 plt.plot([], color='Black', label='Recovered', linestyle='dotted')
 plt.ylabel('Gennemsnit antal smittede')
-plt.suptitle('%s simulation(er)' %iterationer, fontsize=20)
+plt.suptitle('%s simulationer' %iterationer, fontsize=20)
 plt.title('Masker=%s' %with_mask + ', Familiegrupper=%s' %family_groups +', Hjemme i pauser= %s' %go_home_in_breaks + ', Procent vaccinerede=%s' %percentages_of_vaccinated,fontsize=10)
 plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
 plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend

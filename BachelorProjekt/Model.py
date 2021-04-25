@@ -79,6 +79,7 @@ def is_human(agent_to_check):
         return True
     else:
         return False
+
 def is_student(agent_to_check):
      if isinstance(agent_to_check, ac.class_Agent) or isinstance(agent_to_check, ac.TA) or isinstance(agent_to_check, ac.canteen_Agent):
         return True
@@ -105,16 +106,18 @@ def add_init_infected_to_grid(self,n):
         students = [a for a in self.schedule.agents if isinstance(a,ac.class_Agent)]
         TA = [a for a in self.schedule.agents if isinstance(a,ac.TA)]
         canteen = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.off_school == False]
-        randomAgent = self.random.choice(all_agents)
+        randomAgent = self.random.choice(canteen)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
         elif is_human(randomAgent):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent
             positive_agent.infected = True
-            positive_agent.infection_period = ac.truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)-2*day_length
+
             positive_agent.non_contageous_period = 0
             positive_agent.incubation_period = 2*day_length
+            positive_agent.infection_period = a.incubation_period+10*day_length
+
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
             self.infected_agents.append(positive_agent)

@@ -506,15 +506,15 @@ def covid_draw_arrow(agent):
                 portrayal["scale"] = 0.9
         else:
             if agent.coords in [dir['N'], dir['S'], dir['E'], dir['W']]:
-                portrayal = {
-                "Shape": "arrowHead",
-                "Filled": "true",
-                "Layer": 0,
-                "Color": 'green',
-                "heading_x": agent.coords[0],
-                "heading_y": agent.coords[1],
-                "scale": 0.8,
-                }
+                    portrayal = {
+                    "Shape": "arrowHead",
+                    "Filled": "true",
+                    "Layer": 0,
+                    "Color": 'green',
+                    "heading_x": agent.coords[0],
+                    "heading_y": agent.coords[1],
+                    "scale": 0.8,
+                    }
             else:
                 if agent.coords == dir['NE']:
                     portrayal["Shape"] = "resources/greenarrowNE.png"
