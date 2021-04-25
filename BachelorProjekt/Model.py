@@ -46,6 +46,11 @@ def get_infected(self):
     agents = [a for a in self.schedule.agents if is_human(a) and a.infected == True]
     return len(agents)
 
+def get_asymptom(self):
+    agents = [a for a in self.schedule.agents if is_human(a) and a.asymptomatic == True]
+    return len(agents)
+
+
 def get_recovered(self):
     agents = [a for a in self.schedule.agents if is_human(a) and a.recovered == True]
     return len(agents)
@@ -58,7 +63,7 @@ def get_list_of_reproduction(self):
     list_of_reproduction = []
     agents = [a for a in self.schedule.agents if is_human(a)]
     for a in agents:
-        if (a.infected == True or a.recovered == True) and a.exposed == 0:
+        if (a.infected == True or a.recovered == True) and a.non_contageous_period == 0:
             list_of_reproduction.append(a.reproduction)
     return list_of_reproduction
 
@@ -105,8 +110,8 @@ def add_init_infected_to_grid(self,n):
             positive_agent = randomAgent
             positive_agent.infected = True
             positive_agent.infection_period = ac.truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)-2*day_length
-            positive_agent.exposed = 0
-            positive_agent.asymptomatic = 2*day_length
+            positive_agent.non_contageous_period = 0
+            positive_agent.incubation_period = 2*day_length
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
             self.infected_agents.append(positive_agent)
@@ -357,18 +362,18 @@ def set_up_canteen(self):
             counter += 1
 
 def weekend(self):
-    infected_agents = [a for a in self.schedule.agents if is_human(a) and a.infected == True]
+    newly_infected = [a for a in self.schedule.agents if is_human(a) and a.infected == True]
     ids_to_remove = []
-    for a in infected_agents:
-        a.asymptomatic = max(0,a.asymptomatic-2*day_length)  #Træk 2 dage fra asymtom
+    for a in newly_infected:
+        a.incubation_period = max(0, a.incubation_period - 2 * day_length)  #Træk 2 dage fra asymtom
         a.infection_period = max(0,a.infection_period-2*day_length) #Træk 2 dage fra infektionsperiode
-        a.exposed = max(0,a.exposed-2*day_length) #Træk 2 dage fra exposed
+        a.non_contageous_period = max(0, a.non_contageous_period - 2 * day_length) #Træk 2 dage fra non_contageous_period
         if a.is_home_sick == True: #Agenten er hjemme, skal den tilbage nu?
             if a.infection_period == 0:
                 ac.send_agent_back_to_school(a) #Agenten er rask og skal tilbage i skole
                 ids_to_remove.append(a.id)
                 continue
-        elif a.asymptomatic == 0 and a.infection_period>0: #Agenten har symptomer nu og skal blive hjemme
+        elif a.incubation_period == 0: #Agenten har symptomer nu og skal blive hjemme
             ac.send_agent_home(a)
             ids_to_remove.append(a.id)
             continue
@@ -376,13 +381,15 @@ def weekend(self):
     n = new_positives_after_weekends
 
     while n>0:
-        infected_agents = [a for a in self.schedule.agents if is_human(a) and a.infected == False and a.recovered == False and a.vaccinated == False]
-        if len(infected_agents)>0:
-            positive_ = self.random.choice(infected_agents)
+        newly_infected = [a for a in self.schedule.agents if is_human(a) and a.infected == False and a.recovered == False and a.vaccinated == False]
+        if len(newly_infected)>0:
+            positive_ = self.random.choice(newly_infected)
             positive_.infected = True
-            positive_.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)#How long are they sick?
-            positive_.asymptomatic = truncnorm_(3*day_length,positive_.infection_period,5*day_length,1*day_length) #Agents are asymptomatic for 5 days
-            positive_.exposed = positive_.asymptomatic-2*day_length
+
+            positive_.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
+            positive_.infection_period = a.incubation_period+10*day_length#How long are they sick?
+            positive_.non_contageous_period = a.incubation_period - 2 * day_length
+
             n-=1
 
 def setUpToilet(self):
@@ -584,8 +591,6 @@ class covid_Model(Model):
         self.running = True
 
 
-
-
         if 0 <= percentages_of_vaccinated < 1:
             n_agents_has_been_vaccinated = math.floor(count_agents(self)*percentages_of_vaccinated)
             n = 0
@@ -599,9 +604,9 @@ class covid_Model(Model):
                     n+=1
 
     def step(self):
-        print(self.day_count,self.minute_count)
         if go_home_in_breaks == False:
             choose_students_to_go_to_toilet(self)
+
 
         #Gå hjem når du ik har flere kurser eller hvis du
         go_home(self)
@@ -652,6 +657,9 @@ class covid_Model(Model):
 
         if self.minute_count % 526 == 0:
             self.day_count += 1
+            print(self.day_count)
+            agents = [a for a in self.schedule.agents if is_human(a) and a.is_home_sick == True]
+            print("SÅ MANGE ER HJEMSENDT",len(agents))
             if self.day_count in [6,13,20,27,34,41,48,55,62]: ##WEEKEND
                self.day_count+=2
                weekend(self)

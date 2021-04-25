@@ -69,34 +69,102 @@ std = math.sqrt((1-p)/p**2)
 
 
 def truncnorm_(a,b,mu,sigma):
-        alpha, beta = (a-mu)/sigma, (b-mu)/sigma
-        return truncnorm.rvs(alpha,beta,loc=mu,scale=sigma)
+    myclip_a = 6
+    myclip_b = 21
+    my_mean = 10
+    my_std = 2
+
+    a, b = (myclip_a - my_mean) / my_std, (myclip_b - my_mean) / my_std
+    x_range = np.linspace(5,25,1000)
+    plt.axvline(6, 0, 1, color="red")
+    plt.axvline(21, 0, 1, color="red")
+    plt.title("Trunkeret normalfordeling med mu = 10 og sigma = 2")
+    plt.ylabel("Sandsynlighed")
+    y = truncnorm.pdf(x_range, a, b, loc = my_mean, scale = my_std)
+    plt.plot(x_range,y)
+    plt.show()
+    y2 = norm.pdf(x_range, loc = my_mean, scale = my_std)
+    plt.plot(x_range,y2)
+    plt.title("Normalfordeling med mu = 10 og sigma = 2")
+    plt.ylabel("Sandsynlighed")
+    plt.axvline(6, 0, 1, color="red")
+    plt.axvline(21, 0, 1, color="red")
+
+    mu = 1/2
+    xx = np.linspace(0,3,1000)
+    y3 = poisson.pmf(xx, mu = mu, loc=0)
+    plt.plot(xx,y3)
 
 
-myclip_a = 6
-myclip_b = 21
-my_mean = 10
-my_std = 2
 
-a, b = (myclip_a - my_mean) / my_std, (myclip_b - my_mean) / my_std
-x_range = np.linspace(5,25,1000)
-plt.axvline(6, 0, 1, color="red")
-plt.axvline(21, 0, 1, color="red")
-plt.title("Trunkeret normalfordeling med mu = 10 og sigma = 2")
-plt.ylabel("Sandsynlighed")
-y = truncnorm.pdf(x_range, a, b, loc = my_mean, scale = my_std)
-plt.plot(x_range,y)
-plt.show()
-y2 = norm.pdf(x_range, loc = my_mean, scale = my_std)
-plt.plot(x_range,y2)
-plt.title("Normalfordeling med mu = 10 og sigma = 2")
-plt.ylabel("Sandsynlighed")
-plt.axvline(6, 0, 1, color="red")
-plt.axvline(21, 0, 1, color="red")
-plt.show()
+def plot_sir():
+    # Time unit: 1 minute
+    beta = 0.001
+    gamma = 0.015
+    dt = 1/60            # 6 min
+    D = 40             # Simulate for D days
+    N_t = int((D*7)/dt)   # Corresponding no of minutes
+    print(N_t)
+    t = np.linspace(0, N_t, N_t+1)
+    print(len(t))
+    S = np.zeros(N_t+1)
+    I = np.zeros(N_t+1)
+    R = np.zeros(N_t+1)
 
-mu = 1/2
-xx = np.linspace(0,3,1000)
-y3 = poisson.pmf(xx, mu = mu, loc=0)
-plt.plot(xx,y3)
-plt.show()
+    # Initial condition
+    S[0] = 157
+    I[0] = 1
+    R[0] = 0
+
+    # Step equations forward in time
+    for n in range(N_t):
+        S[n+1] = S[n] - dt*beta*S[n]*I[n]
+        I[n+1] = I[n] + dt*beta*S[n]*I[n] - dt*gamma*I[n]
+        R[n+1] = R[n] + dt*gamma*I[n]
+
+    fig = plt.figure()
+    l1, l2, l3 = plt.plot(t, S, t, I, t, R)
+    fig.legend((l1, l2, l3), ('S', 'I', 'R'), 'upper left')
+    plt.xlabel('minutes')
+    plt.show()
+
+
+def plot_seiir():
+    # Time unit: 1 minute
+    beta = 0.001
+    gamma = 0.015
+    eta = 0.7
+    psi = 0.1
+    dt = 1/60            # 1 minut
+    D = 56             # 8 uger (med weekend)
+    N_t = D*7*60  #Antallet af minutter på 8 uger - 56 dage
+
+    print(N_t)
+    t = np.linspace(0, N_t, N_t+1)
+    S = np.zeros(N_t+1)
+    E = np.zeros(N_t+1)
+    Ia = np.zeros(N_t+1)
+    Is = np.zeros(N_t+1)
+    R = np.zeros(N_t+1)
+
+    S[0] = 156
+    E[0] = 0
+    Ia[0] = 0
+    Is[0] = 1
+    R[0] = 0
+
+    #Euler
+    for n in range(N_t):
+        S[n+1] = S[n] - dt*beta*S[n]*(Ia[n]+Is[n])
+        E[n+1] = E[n] + dt*beta*S[n]*(Ia[n]+Is[n]) - dt*psi*E[n]
+        Ia[n+1] = Ia[n] + (1-eta)*psi*E[n]*dt - dt*gamma*Ia[n]
+        Is[n+1] = Is[n] + eta*psi*E[n]*dt - dt*gamma*Is[n]
+        R[n+1] = R[n] + dt*gamma*(Ia[n]+Is[n])
+
+    fig = plt.figure()
+    l1, l2, l3, l4, l5 = plt.plot(t, S, t, E, t, Ia, t, Is, t, R)
+    fig.legend((l1, l2, l3, l4, l5), ('S','E', 'Ia', 'Is', 'R'))
+    plt.title("SEIR med asymptomatiske og symptomatiske")
+    plt.xlabel('minutes')
+    plt.show()
+plot_seiir()
