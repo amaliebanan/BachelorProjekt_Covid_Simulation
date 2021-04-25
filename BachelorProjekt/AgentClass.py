@@ -562,9 +562,15 @@ def infect(self):
 
     for a in newly_infected:
         a.infected = True
-        a.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)-2*day_length
-        a.incubation_period = truncnorm_(3*day_length,a.infection_period, 5 *day_length, 1*day_length)
-        a.non_contageous_period = a.incubation_period-2*day_length
+        if bernoulli.rvs(0.3)==1:
+            a.asymptomatic = True
+            a.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length)#How long are they sick?
+            a.incubation_period = a.infection_period #Agents are asymptomatic for 5 days
+            a.non_contageous_period =  2 * day_length
+        else:
+            a.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
+            a.infection_period = a.incubation_period+10*day_length#How long are they sick?
+            a.non_contageous_period = a.incubation_period - 2 * day_length
 
 
 ###CHANGING OBJECT-TYPE###
@@ -807,6 +813,8 @@ def force_agent_to_specific_pos(self,pos):
     self.model.grid.move_agent(self,pos)
 
 def send_agent_home(self):
+    if self.asymptomatic == True:
+        return
     self.is_home_sick = True
     self.model.agents_at_home.append(self)
     if isinstance(self, employee_Agent) and self.id not in [1252,1253]:
@@ -826,13 +834,23 @@ def send_agent_back_to_school(self):
         self.model.canteen_agents_at_work.append(self)
 
 def update_infection_parameters(self):
+    if self.recovered == True:
+        return              #Agent is recovered
+
     if self.is_home_sick == True: #Agent is already home. Just update infection period
         self.infection_period = max(0,self.infection_period-1)
         if self.infection_period == 0:
             send_agent_back_to_school(self)
         return
-    if self.recovered == True:
-        return              #Agent is recovered
+
+    if self.asymptomatic == True:       #Agent is asymptomatic
+        self.infection_period = max(0,self.infection_period-1)
+        if self.infection_period == 0: #Agent is not sick any more
+            self.infected = False
+            self.recovered = True
+            self.model.recovered_agents.append(self)
+            self.is_home_sick = False #should always be false
+        return
 
     self.incubation_period = max(0, self.incubation_period - 1)
     if self.incubation_period == 0:
