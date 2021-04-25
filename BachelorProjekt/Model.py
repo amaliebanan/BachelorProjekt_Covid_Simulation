@@ -50,6 +50,9 @@ def get_asymptom(self):
     agents = [a for a in self.schedule.agents if is_human(a) and a.asymptomatic == True]
     return len(agents)
 
+def get_susceptible(self):
+    susceptibles = [a for a in self.schedule.agents if is_human(a) and a.infected == False and a.recovered == False and a.vaccinated == False]
+    return susceptibles
 
 def get_recovered(self):
     agents = [a for a in self.schedule.agents if is_human(a) and a.recovered == True]
@@ -382,13 +385,21 @@ def weekend(self):
     n = new_positives_after_weekends
 
     while n>0:
-        infected_agents = [a for a in self.schedule.agents if is_human(a) and a.infected == False and a.recovered == False and a.vaccinated == False]
-        if len(infected_agents)>0:
-            positive_ = self.random.choice(infected_agents)
-            positive_.infected = True
-            positive_.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)#How long are they sick?
-            positive_.incubation_period = truncnorm_(3 * day_length, positive_.infection_period, 5 * day_length, 1 * day_length) #Agents are asymptomatic for 5 days
-            positive_.non_contageous_period = positive_.incubation_period - 2 * day_length
+         susceptibles = get_susceptible(self)
+         if len(susceptibles)>0:
+            a = self.random.choice(susceptibles)
+            a.infected = True
+            n-=1
+            if bernoulli.rvs(0.3)==1:
+                a.asymptomatic = True
+                a.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length)#How long are they sick?
+                a.incubation_period = a.infection_period #Agents are asymptomatic for 5 days
+                a.non_contageous_period =  2 * day_length
+            else:
+                a.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
+                a.infection_period = a.incubation_period+10*day_length#How long are they sick?
+                a.non_contageous_period = a.incubation_period - 2 * day_length
+         else:
             n-=1
 
 def setUpToilet(self):
