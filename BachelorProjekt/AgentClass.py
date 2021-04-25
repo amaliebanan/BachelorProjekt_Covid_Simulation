@@ -174,13 +174,23 @@ def infect(self):
 
             "Define infection rates"
     if self.mask == True:
-        ir = calculate_percentage(infection_rate, 70)
-        ir1_2 = calculate_percentage(infection_rate_1_to_2_meter, 70)
-        ir2_plus = calculate_percentage(infection_rate_2plus_meter, 70)
+        if self.asymptomatic:
+            ir = calculate_percentage(calculate_percentage(infection_rate, 70),25)
+            ir1_2 = calculate_percentage(calculate_percentage(infection_rate_1_to_2_meter, 70),25)
+            ir2_plus = calculate_percentage(calculate_percentage(infection_rate_2plus_meter, 70),25)
+        else:
+            ir = calculate_percentage(infection_rate, 70)
+            ir1_2 = calculate_percentage(infection_rate_1_to_2_meter, 70)
+            ir2_plus = calculate_percentage(infection_rate_2plus_meter, 70)
     else:
-        ir = infection_rate
-        ir1_2 = infection_rate_1_to_2_meter
-        ir2_plus = infection_rate_2plus_meter
+        if self.asymptomatic:
+            ir = calculate_percentage(infection_rate, 25)
+            ir1_2 = calculate_percentage(infection_rate_1_to_2_meter, 25)
+            ir2_plus = calculate_percentage(infection_rate_2plus_meter, 25)
+        else:
+            ir = infection_rate
+            ir1_2 = infection_rate_1_to_2_meter
+            ir2_plus = infection_rate_2plus_meter
 
 
     "Splits neighbors into lists"
