@@ -602,8 +602,8 @@ class covid_Model(Model):
                     n+=1
 
     def step(self):
-        #if self.minute_count == 525:
-         #   print(self.day_count, self.setUpType, get_infected(self), get_asymptom(self), get_home_sick(self), get_recovered(self))
+        if self.minute_count == 525:
+            print(self.day_count, self.setUpType, get_infected(self), get_asymptom(self), get_home_sick(self), get_recovered(self))
         choose_students_to_go_to_toilet(self)
 
         #Gå hjem når du ik har flere kurser
