@@ -37,7 +37,8 @@ go_home_in_breaks = False
 family_groups = False
 with_mask = False
 with_dir = True
-percentages_of_vaccinated = 0 #Number 0<=x<1
+percentages_of_vaccinated = 0.60 #Number 0<=x<1
+number_of_vaccinated = math.floor(percentages_of_vaccinated*(init_canteen_agents+3*25+2))
 
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
@@ -48,6 +49,10 @@ def get_infected(self):
 
 def get_asymptom(self):
     agents = [a for a in self.schedule.agents if is_human(a) and a.asymptomatic == True]
+    return len(agents)
+
+def get_vaccinated(self):
+    agents = [a for a in self.schedule.agents if is_human(a) and a.vaccinated == True]
     return len(agents)
 
 def get_susceptible(self):
@@ -79,6 +84,7 @@ def is_human(agent_to_check):
         return True
     else:
         return False
+
 def is_student(agent_to_check):
      if isinstance(agent_to_check, ac.class_Agent) or isinstance(agent_to_check, ac.TA) or isinstance(agent_to_check, ac.canteen_Agent):
         return True
@@ -112,9 +118,12 @@ def add_init_infected_to_grid(self,n):
             self.schedule.remove(randomAgent)
             positive_agent = randomAgent
             positive_agent.infected = True
-            positive_agent.infection_period = ac.truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)-2*day_length
+            print(positive_agent.id)
+
             positive_agent.non_contageous_period = 0
             positive_agent.incubation_period = 2*day_length
+            positive_agent.infection_period = positive_agent.incubation_period+10*day_length
+
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
             self.infected_agents.append(positive_agent)
@@ -140,7 +149,6 @@ def add_init_cantine_agents_to_grid(self,N,n):
 
             if with_mask == True:
                 newAgent.mask = True
-
 
             id_+=1
             counter+=1
@@ -365,9 +373,9 @@ def set_up_canteen(self):
             counter += 1
 
 def weekend(self):
-    infected_agents = [a for a in self.schedule.agents if is_human(a) and a.infected == True]
+    newly_infected = [a for a in self.schedule.agents if is_human(a) and a.infected == True]
     ids_to_remove = []
-    for a in infected_agents:
+    for a in newly_infected:
         a.incubation_period = max(0, a.incubation_period - 2 * day_length)  #Træk 2 dage fra asymtom
         a.infection_period = max(0,a.infection_period-2*day_length) #Træk 2 dage fra infektionsperiode
         a.non_contageous_period = max(0, a.non_contageous_period - 2 * day_length) #Træk 2 dage fra non_contageous_period
@@ -384,22 +392,29 @@ def weekend(self):
     n = new_positives_after_weekends
 
     while n>0:
-         susceptibles = get_susceptible(self)
-         if len(susceptibles)>0:
-            a = self.random.choice(susceptibles)
-            a.infected = True
-            n-=1
-            if bernoulli.rvs(0.3)==1:
-                a.asymptomatic = True
-                a.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length)#How long are they sick?
-                a.incubation_period = a.infection_period #Agents are asymptomatic for 5 days
-                a.non_contageous_period =  2 * day_length
+         if percentages_of_vaccinated == 0:
+             agents_to_infect = get_susceptible(self)
+         else:
+             agents_to_infect = [a for a in self.schedule.agents if is_human(a) and a.infected == False and a.recovered == False]
+         if len(agents_to_infect)>0:
+            a = self.random.choice(agents_to_infect)
+            if a.vaccinated:
+                n-=1
             else:
-                a.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
-                a.infection_period = a.incubation_period+10*day_length#How long are they sick?
-                a.non_contageous_period = a.incubation_period - 2 * day_length
+                a.infected = True
+                n-=1
+                if bernoulli.rvs(0.3)==1:
+                    a.asymptomatic = True
+                    a.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length)#How long are they sick?
+                    a.incubation_period = a.infection_period #Agents are asymptomatic for 5 days
+                    a.non_contageous_period =  2 * day_length
+                else:
+                    a.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
+                    a.infection_period = a.incubation_period+10*day_length#How long are they sick?
+                    a.non_contageous_period = a.incubation_period - 2 * day_length
          else:
             n-=1
+
 
 def setUpToilet(self):
      id_max = max([w.id for w in self.schedule.agents if isinstance(w,ac.wall)])
@@ -580,7 +595,10 @@ class covid_Model(Model):
         for s in setUpType:
             setUp(self.n_agents,self,s,i)
             i+=1
-        setUpToilet(self)
+
+        if go_home_in_breaks == False:
+            setUpToilet(self)
+
         if len(self.setUpType)>1:
             add_init_cantine_agents_to_grid(self,(self.n_agents)*i,init_canteen_agents)
 
@@ -597,8 +615,6 @@ class covid_Model(Model):
         self.running = True
 
 
-
-
         if 0 <= percentages_of_vaccinated < 1:
             n_agents_has_been_vaccinated = math.floor(count_agents(self)*percentages_of_vaccinated)
             n = 0
@@ -612,11 +628,12 @@ class covid_Model(Model):
                     n+=1
 
     def step(self):
-        if self.minute_count == 525:
-            print(self.day_count)
-        choose_students_to_go_to_toilet(self)
+        #print(get_vaccinated(self), len(get_susceptible(self)), number_of_vaccinated)
 
-        #Gå hjem når du ik har flere kurser
+        if go_home_in_breaks == False:
+            choose_students_to_go_to_toilet(self)
+
+        #Gå hjem når du ik har flere kurser eller hvis du
         go_home(self)
         #Hold fri når du har fridag
         if self.day_count%7==2 or self.day_count%7==3 or self.day_count%7==4 or self.day_count%7==5:
@@ -635,13 +652,13 @@ class covid_Model(Model):
 
 
         for ta in self.TAs:
-            p = np.random.poisson(20/100) == 1
+            p = bernoulli.rvs(20/100)
             if len(ta.students) == 0 or p == 0:
                 continue
             if len(ta.students)>10 and p == 1:
                 questions_ = [a for a in ta.students if a.hasQuestion == 1]
-                if questions_ == []: #Only answer question if no one is recieving help at the moment
-                    TAs_students = ta.students
+                if len(questions_) == 0: #Only answer question if no one is recieving help at the moment
+                    TAs_students = [a for a in ta.students if a.is_home_sick == False]
                     randomStudent = self.random.choice(TAs_students)
                     randomStudent.hasQuestion = 1
 
@@ -665,10 +682,14 @@ class covid_Model(Model):
 
         if self.minute_count % 526 == 0:
             self.day_count += 1
-            self.minute_count = 1
-            self.hour_count = 1
-            self.toilet.has_been_infected = False #Gøres rent hver dag
-
-            if self.day_count%6 == 0: ##WEEKEND
+            if self.day_count in [6,13,20,27,34,41,48,55,62]: ##WEEKEND
                self.day_count+=2
                weekend(self)
+            self.minute_count = 1
+            self.hour_count = 1
+            try:
+                self.toilet.has_been_infected = False #Gøres rent hver dag
+            except:
+                return
+
+

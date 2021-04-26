@@ -32,6 +32,17 @@ class count_Days(TextElement):
     def render(self, model):
         return "Day #: " + str(model.day_count)
 
+
+class count_Minutes(TextElement):
+    '''
+    Display a text count of how many happy agents there are.   FROM MESA-EXAMPLES
+    '''
+    def __init__(self):
+        pass
+
+    def render(self, model):
+        return "Minute #: " + str(model.minute_count)
+
 def agent_portrayal(agent):
     portrayal = {"Shape": "circle",
                  "Color": "red",
@@ -495,15 +506,15 @@ def covid_draw_arrow(agent):
                 portrayal["scale"] = 0.9
         else:
             if agent.coords in [dir['N'], dir['S'], dir['E'], dir['W']]:
-                portrayal = {
-                "Shape": "arrowHead",
-                "Filled": "true",
-                "Layer": 0,
-                "Color": 'green',
-                "heading_x": agent.coords[0],
-                "heading_y": agent.coords[1],
-                "scale": 0.8,
-                }
+                    portrayal = {
+                    "Shape": "arrowHead",
+                    "Filled": "true",
+                    "Layer": 0,
+                    "Color": 'green',
+                    "heading_x": agent.coords[0],
+                    "heading_y": agent.coords[1],
+                    "scale": 0.8,
+                    }
             else:
                 if agent.coords == dir['NE']:
                     portrayal["Shape"] = "resources/greenarrowNE.png"
@@ -683,6 +694,7 @@ def covid_draw_arrow(agent):
     return portrayal
 
 days_chart = count_Days()
+minute_chart = count_Minutes()
 infected_element = infected_Element()
 
 if with_dir == True:
@@ -694,7 +706,7 @@ infected_chart = ChartModule([{"Label":"infected","Color":"Black"}], data_collec
 
 
 server = ModularServer(covid_Model,
-                       [grid,infected_element, days_chart, infected_chart],
+                       [grid,infected_element, days_chart, minute_chart,infected_chart],
                        "Covid Model",
                        {"N":agentsN, "width":width, "height":height, "setUpType":[2,3,4]})
 

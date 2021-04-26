@@ -111,167 +111,6 @@ def wander(self):
                         self.sitting_in_canteen = 60
                         self.mask = False
 
-
-
-#check direction between two agents
-def checkDirection(agent,neighbor):
-    dirA,dirN = agent.coords, neighbor.coords
-    angle_ = angle(dirA,dirN)
-    if -1 <= angle_ <= 1: #The look in the same direction
-        return 0
-    elif 179 <= angle_ <= 181: #They look in opposite direction
-        return 180
-    elif 89 <= angle_ <= 91: #De kigger vinkelret på hianden
-        return 90
-    elif 44 <= angle_ <= 46: #De kigger næsten i samme retning
-        return 45
-    elif 134 <= angle_ <= 136: #Næsten i modsat retning
-        return 135
-    elif 224 <= angle_ <= 226: #næsten i modsat retning
-        return 225
-    elif 314 <= angle_ <= 316: #næsten i samme retning
-        return 315
-    else: return angle_
-
-def infect_(self):
-        if self.non_contageous_period != 0:   #Agent smitter ikke endnu.
-            return
-
-        if isinstance(self, TA):
-            all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=True,radius=2)
-        else:
-            all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
-        closest_neighbors = []
-
-        for neighbor in all_neighbors_within_radius:
-            if not self.model.grid.is_cell_empty(neighbor.pos):
-                if is_human(neighbor):
-                    closest_neighbors.append(neighbor)
-
-        newly_infected = []
-        for agent in closest_neighbors:
-            #Dont infect neighbors that are home sick / not on campus
-            if is_off_campus(agent) or (is_human(agent) and agent.is_home_sick == True):
-                continue
-            #Dont infect neighbors that are vaccinated, recovered or already infected
-            if agent.vaccinated == True or agent.recovered == True or agent.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
-                continue
-
-            distance = getDistance(self.pos,agent.pos)
-            if distance <= 0.1:
-                if isinstance(self,TA) or isinstance(agent,TA): #Vi er i en TA-situation
-                 ##De er i indgangen, smit mindre
-                    if self.mask == True:
-                        pTA = bernoulli.rvs(calculate_percentage(100*infection_rate,infection_decrease_with_mask_pct))
-                    elif self.mask == False:
-                        pTA = bernoulli.rvs(100*infection_rate)
-                    if pTA == 1:
-                        newly_infected.append(agent)
-                        self.model.infected_agents.append(agent)
-                else:
-                    if self.mask == True:
-                        pTA = bernoulli.rvs(calculate_percentage(10*infection_rate,infection_decrease_with_mask_pct))
-                    elif self.mask == False:
-                        pTA = bernoulli.rvs(10*infection_rate)
-                    if pTA == 1:
-                        newly_infected.append(agent)
-                        self.model.infected_agents.append(agent)
-                 #Indenfor 1 meters afstand
-            elif distance > 0.5 and distance <= 1.0:
-                 if self.mask == True:
-                    p_1 = bernoulli.rvs(calculate_percentage(infection_rate, infection_decrease_with_mask_pct)) #70 percent decrease if masks
-                 elif self.mask == False:
-                     p_1 = bernoulli.rvs(infection_rate)
-                 if p_1 == 1:
-                    newly_infected.append(agent)
-                    self.model.infected_agents.append(agent)
-
-                 #Mellem 1 og 2 meters afstand
-            elif distance > 1.0 and distance <= 2.0:
-                if self.mask == True:
-                    p_1_til_2 = bernoulli.rvs(calculate_percentage(infection_rate_1_to_2_meter,infection_decrease_with_mask_pct))
-                elif self.mask == False:
-                     p_1_til_2 = bernoulli.rvs(infection_rate_1_to_2_meter)
-                if p_1_til_2 == 1:
-                    newly_infected.append(agent)
-                    self.model.infected_agents.append(agent)
-
-                #Over 2 meters afstand
-            elif distance>2.0:
-                if self.mask == True:
-                    p_over_2 = bernoulli.rvs(calculate_percentage(infection_rate_2plus_meter,infection_decrease_with_mask_pct))
-                elif self.mask == False:
-                     p_over_2 = bernoulli.rvs(infection_rate_2plus_meter)
-                if p_over_2 == 1:
-                    newly_infected.append(agent)
-                    self.model.infected_agents.append(agent)
-
-        for a in newly_infected:
-            a.infected = True
-            a.infection_period = truncnorm_(5*day_length,67*day_length,9*day_length,1*day_length)#How long are they sick?
-            a.incubation_period = truncnorm_(3 * day_length, a.infection_period, 5 * day_length, 1 * day_length) #Agents are asymptomatic for 5 days
-            a.non_contageous_period = a.incubation_period - 2 * day_length
-            if bernoulli.rvs(0.3)==1:
-                a.asymptomatic = True
-
-def infect_p(self):
-        if self.non_contageous_period != 0:   #Agent smitter ikke endnu.
-            return
-
-        if isinstance(self, TA):
-            all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=True,radius=2)
-        else:
-            all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
-        closest_neighbors = []
-
-        for n in all_neighbors_within_radius:
-            if not self.model.grid.is_cell_empty(n.pos):
-                if is_human(n):
-                    if (not is_off_campus(n) or not n.is_home_sick)\
-                            and not n.vaccinated and not n.recovered and not n.infected:
-                        closest_neighbors.append(n)
-
-        for agent in closest_neighbors:
-             if is_off_campus(agent) or (is_human(agent) and agent.is_home_sick == True):
-                closest_neighbors.remove(agent)
-             if agent.vaccinated == True or agent.recovered == True or agent.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
-                closest_neighbors.remove(agent)
-
-        poission_ = np.random.poisson(1/525)
-        if poission_ > 0:
-            distances = [(a,getDistance(self.pos,a.pos)) for a in closest_neighbors]
-            sorted_distances = sorted(distances,key=itemgetter(1))
-
-            l,l1,l2,l3,l4=[],[],[],[],[]
-            for t in sorted_distances:
-                if t[1]<=0.1:
-                    l1.append(t)
-                elif 0.5<t[1]<=1.0:
-                    l2.append(t)
-                elif 1.0<t[1]<=2.0:
-                    l3.append(t)
-                elif 2.0<t[1]:
-                    l4.append(t)
-            l.append(l1)
-            l.append(l2)
-            l.append(l3)
-            l.append(l4)
-
-            temp = l
-            counter=0
-            #print(poission_)
-            while counter<poission_:
-                if not any(temp): #If all the lists are empty
-                    return
-                item =random.choices(temp, weights=(60,25,10,5), k=3)
-                if item[0] == []:
-                    continue
-                get_a = random.choices(item[0])[0]
-                temp = [[ele for ele in sub if ele != get_a] for sub in temp]
-                counter+=1
-                print("Iteration:", counter, "Weighted Random a is", item[0],"and it got",get_a[0],poission_)
-                get_a[0].infected = True
-
 def infect(self):
     if self.non_contageous_period != 0:   #Agent smitter ikke endnu.
         return
@@ -707,19 +546,20 @@ def infect(self):
                     if bernoulli.rvs(ir2_plus*2) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
-    self.reproduction += len(newly_infected)
-    for a in newly_infected:
-            a.infected = True
-            if bernoulli.rvs(0.3)==1:
-                a.asymptomatic = True
-                a.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length)#How long are they sick?
-                a.incubation_period = a.infection_period #Agents are asymptomatic for 5 days
-                a.non_contageous_period =  2 * day_length
-            else:
-                a.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
-                a.infection_period = a.incubation_period+10*day_length#How long are they sick?
-                a.non_contageous_period = a.incubation_period - 2 * day_length
 
+    self.reproduction += len(newly_infected)
+
+    for a in newly_infected:
+        a.infected = True
+        if bernoulli.rvs(0.3) == 1:
+            a.asymptomatic = True
+            a.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length) #How long are they sick?
+            a.incubation_period = a.infection_period
+            a.non_contageous_period = 2 * day_length
+        else:
+            a.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
+            a.infection_period = a.incubation_period+10*day_length
+            a.non_contageous_period = a.incubation_period - 2 * day_length
 
 ###CHANGING OBJECT-TYPE###
 #Get all essential parameters transfered
@@ -863,7 +703,8 @@ def go_to_entre(self):
     possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
     possible_empty_steps = [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos) or pos == pos_]
     if len(possible_empty_steps) == 0:
-        return
+          pos_other_agents = [cell for cell in self.model.grid.get_neighbors(self.pos,moore=True,include_center=False) if is_human(cell)]
+          possible_empty_steps = [cell.pos for cell in pos_other_agents]
     distances = [(pos,getDistance(pos_,pos)) for pos in possible_empty_steps]
     x_,y_ = min(distances,key=lambda x:x[1])[0]
     if min(getDistance((x_,y_), pos_), getDistance(self.pos, pos_)) == getDistance(self.pos, pos_):
@@ -940,7 +781,7 @@ def move_to_specific_pos(self,pos_):
    #### Agent is moving one step closer to goal-position ####
 
     #Which list to use? If possible_empty_steps is empty, use back-up list (allowing agent to go through agents)
-    if possible_empty_steps == []:
+    if len(possible_empty_steps) == 0:
         cells_to_check = back_up_empty_cells
     else: cells_to_check = possible_empty_steps
 
@@ -1000,7 +841,7 @@ def update_infection_parameters(self):
         return
 
     self.incubation_period = max(0, self.incubation_period - 1)
-    if self.incubation_period == 0 and self.asymptomatic == False:
+    if self.incubation_period == 0:
         send_agent_home(self)
     self.non_contageous_period = max(0, self.non_contageous_period - 1)    #If already 0 stay there, if larger than 0 subtract one
     self.infection_period = max(0,self.infection_period-1)
@@ -1023,12 +864,12 @@ class class_Agent(Agent):
         self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
-        self.asymptomatic = False
+        self.asymptomatic = False #Does the agent show symptoms during infection period?
 
         #Infection parameters
 
         self.infection_period = 0#How long are they sick?
-        self.incubation_period = 0 #Agents are asymptomatic for 5 days
+        self.incubation_period = math.pi #Agents are asymptomatic for 5 days
         self.non_contageous_period = math.pi
 
         self.day_off = False
@@ -1076,10 +917,7 @@ class class_Agent(Agent):
 
         if is_off_campus(self) == False and self.is_home_sick == False:
             if self.infected == True:
-                if with_dir == True:
-                    infect(self)
-                else:
-                    infect_(self)
+                infect(self)
 
         ##MOVE###
         if self.model.day_count == 1:
@@ -1100,13 +938,13 @@ class TA(Agent):
         self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
-        self.asymptomatic = False
+        self.asymptomatic = False #Does the agent show symptoms during infection period?
 
         self.time_remaining = 105
 
           #Infection parameters
         self.infection_period = 0#How long are they sick?
-        self.incubation_period = 0 #Agents are asymptomatic for 5 days
+        self.incubation_period = math.pi #Agents are asymptomatic for 5 days
         self.non_contageous_period = math.pi #Dummy
 
         self.day_off = False
@@ -1175,10 +1013,8 @@ class TA(Agent):
 
         if is_off_campus(self) == False and self.is_home_sick == False:
             if self.infected == True:
-                if with_dir == True:
-                    infect(self)
-                else:
-                    infect_(self)
+                infect(self)
+
         if self.time_remaining <= 0 and len(self.students)<5:
             TA_to_class(self)
             return
@@ -1194,7 +1030,7 @@ class canteen_Agent(Agent):
         self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
-        self.asymptomatic = False
+        self.asymptomatic = False #Does the agent show symptoms during infection period?
         self.queue = 0
         self.buying_lunch = 0
         self.sitting_in_canteen = 0
@@ -1210,7 +1046,7 @@ class canteen_Agent(Agent):
 
         #Infection parameters
         self.infection_period = 0#How long are they sick?
-        self.incubation_period = 0 #Agents are asymptomatic for 5 days
+        self.incubation_period = math.pi #Agents are asymptomatic for 5 days
         self.non_contageous_period = math.pi
 
         #Class-schedule parameters
@@ -1266,7 +1102,7 @@ class canteen_Agent(Agent):
                 self.in_toilet_queue = False
                 self.sitting_on_toilet = 3
                 self.since_last_toilet = 120
-                if self.model.toilet.has_been_infected == True and self.infected == False:
+                if self.model.toilet.has_been_infected == True and self.infected == False and self.vaccinated == False:
                     if self.mask == True:
                         p = bernoulli.rvs(1/300)
                     else:
@@ -1274,6 +1110,15 @@ class canteen_Agent(Agent):
                     if p == 1:
                         #print(self.model.day_count,self.model.minute_count,self.id,self.pos,"I got infected at the toilet")
                         self.infected == True
+                        if bernoulli.rvs(0.3)==1:
+                            self.asymptomatic = True
+                            self.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length)
+                            self.incubation_period = self.infection_period
+                            self.non_contageous_period =  2 * day_length
+                        else:
+                            self.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length)
+                            self.infection_period = self.incubation_period+10*day_length
+                            self.non_contageous_period = self.incubation_period - 2 * day_length
                 if self.infected == True and self.non_contageous_period == 0 and self.model.toilet.has_been_infected == False:
                     #print(self.model.day_count,self.model.minute_count,self.id,self.pos,"I just infected the toilet")
                     self.model.toilet.has_been_infected = True
@@ -1354,10 +1199,8 @@ class canteen_Agent(Agent):
 
         if is_off_campus(self) == False and self.is_home_sick == False:
             if self.infected == True:
-                if with_dir == True:
-                    infect(self)
-                else:
-                    infect_(self)
+                infect(self)
+
 
 
             #When should canteen agent go to class?
@@ -1386,13 +1229,17 @@ class employee_Agent(Agent):
         self.id = id
         self.infected = False
         self.recovered = False
-        self.mask = False
+
+        if with_mask ==  True:
+            self.mask = True
+        else:
+            self.mask = False
         self.is_home_sick = False
         self.vaccinated = False
-        self.asymptomatic = False
 
+        self.asymptomatic = False #Does the agent show symptoms during infection period?
         self.infection_period = 0#How long are they sick?
-        self.incubation_period = 0 #Agents are asymptomatic for 5 days
+        self.incubation_period = math.pi #Dummy
         self.non_contageous_period = math.pi
         self.reproduction = 0
 
@@ -1402,10 +1249,7 @@ class employee_Agent(Agent):
         if is_off_campus(self):
             return
         if self.infected == True:
-            if with_dir == True:
-                infect(self)
-            else:
-                infect_(self)
+            infect(self)
             update_infection_parameters(self)
 
 
