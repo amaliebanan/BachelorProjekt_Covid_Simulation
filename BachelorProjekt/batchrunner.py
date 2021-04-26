@@ -11,7 +11,7 @@ import csv
 
 fixed_params = {"width":26, "height": 38, "setUpType": [2, 2, 2]}
 variable_params = {"N": range(24,25,1)} # 24 students
-iterationer = 1
+iterationer = 2
 skridt = 525*40
 
 
@@ -106,7 +106,7 @@ def list_of_infected(j):
     data_list = list(ordered_df.values()) #saves batchrunner data in list
     for i in range(len(data_list)):
         data_list[i]['Iteration'] = i+1
-    #pd.concat(data_list).to_csv('csvdata/vaccine60pct'+str(j)+'.csv')
+    #pd.concat(data_list).to_csv('csvdata/basismodel'+str(j)+'.csv')
 
     #next 5 lines is to determine reproduction number
     #list_reproduction = []
@@ -162,7 +162,7 @@ for i in range(len(results)):
             print("MAX SMITTEDE VED:" ,i+2,max(results[i][j]))
     df = pd.DataFrame(samlet)
     dff = df.T
-    #dff.to_csv('csvdata/plotted_data_vaccine60pct_'+str(i+2)+'.csv')
+    #dff.to_csv('csvdata/plotted_data_basismodel_'+str(i+2)+'.csv')
 
 "Uncomment below for plotting the three plots for comparing"
 time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting

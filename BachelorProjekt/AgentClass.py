@@ -315,13 +315,13 @@ def infect(self):
             "Define infection rates"
     if self.mask == True:
         if self.asymptomatic:
-            ir = calculate_percentage(calculate_percentage(infection_rate, 70),25)
-            ir1_2 = calculate_percentage(calculate_percentage(infection_rate_1_to_2_meter, 70),25)
-            ir2_plus = calculate_percentage(calculate_percentage(infection_rate_2plus_meter, 70),25)
+            ir = calculate_percentage(calculate_percentage(infection_rate, infection_decrease_with_mask_pct),25)
+            ir1_2 = calculate_percentage(calculate_percentage(infection_rate_1_to_2_meter, infection_decrease_with_mask_pct),25)
+            ir2_plus = calculate_percentage(calculate_percentage(infection_rate_2plus_meter, infection_decrease_with_mask_pct),25)
         else:
-            ir = calculate_percentage(infection_rate, 70)
-            ir1_2 = calculate_percentage(infection_rate_1_to_2_meter, 70)
-            ir2_plus = calculate_percentage(infection_rate_2plus_meter, 70)
+            ir = calculate_percentage(infection_rate, infection_decrease_with_mask_pct)
+            ir1_2 = calculate_percentage(infection_rate_1_to_2_meter, infection_decrease_with_mask_pct)
+            ir2_plus = calculate_percentage(infection_rate_2plus_meter, infection_decrease_with_mask_pct)
     else:
         if self.asymptomatic:
             ir = calculate_percentage(infection_rate, 25)
@@ -993,7 +993,6 @@ def update_infection_parameters(self):
     if self.asymptomatic == True:       #Agent is asymptomatic
         self.infection_period = max(0,self.infection_period-1)
         if self.infection_period == 0: #Agent is not sick any more
-            print(self.id,"nu bliver jeg rask",self.model.day_count,self.model.minute_count)
             self.infected = False
             self.recovered = True
             self.model.recovered_agents.append(self)

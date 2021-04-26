@@ -119,7 +119,6 @@ def add_init_infected_to_grid(self,n):
             positives.append(randomAgent.pos) # To keep track of initial positives
             self.infected_agents.append(positive_agent)
             i+=1
-            print(positive_agent.id)
         else: pass
 
 def add_init_cantine_agents_to_grid(self,N,n):
@@ -614,7 +613,7 @@ class covid_Model(Model):
 
     def step(self):
         if self.minute_count == 525:
-            print(self.day_count, self.setUpType, get_infected(self), get_asymptom(self), get_home_sick(self), get_recovered(self))
+            print(self.day_count)
         choose_students_to_go_to_toilet(self)
 
         #Gå hjem når du ik har flere kurser
