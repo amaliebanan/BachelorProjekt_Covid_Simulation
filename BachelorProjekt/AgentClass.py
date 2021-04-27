@@ -1102,16 +1102,24 @@ class canteen_Agent(Agent):
                 self.in_toilet_queue = False
                 self.sitting_on_toilet = 3
                 self.since_last_toilet = 120
-                if self.model.toilet.has_been_infected == True and self.infected == False:
+                if self.model.toilet.has_been_infected == True and self.infected == False and self.vaccinated == False:
                     if self.mask == True:
                         p = bernoulli.rvs(1/300)
                     else:
                         p = bernoulli.rvs(5/100)
                     if p == 1:
-                        #print(self.model.day_count,self.model.minute_count,self.id,self.pos,"I got infected at the toilet")
                         self.infected == True
+                        if bernoulli.rvs(0.3) == 1:
+                            self.asymptomatic = True
+                            self.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length) #How long are they sick?
+                            self.incubation_period = self.infection_period
+                            self.non_contageous_period = 2 * day_length
+                        else:
+                            self.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
+                            self.infection_period = self.incubation_period+10*day_length
+                            self.non_contageous_period = self.incubation_period - 2 * day_length
+                  #      print("I was infected in the bathroom",self.id,self.asymptomatic,self.infection_period,self.incubation_period,self.non_contageous_period)
                 if self.infected == True and self.non_contageous_period == 0 and self.model.toilet.has_been_infected == False:
-                    #print(self.model.day_count,self.model.minute_count,self.id,self.pos,"I just infected the toilet")
                     self.model.toilet.has_been_infected = True
 
             else:

@@ -29,7 +29,7 @@ init_canteen_agents = 80
 infection_rate = (0.035/100)
 infection_rate_1_to_2_meter = calculate_percentage(infection_rate, 10.2)
 infection_rate_2plus_meter = calculate_percentage(infection_rate_1_to_2_meter,2.02)
-infection_decrease_with_mask_pct = 70
+infection_decrease_with_mask_pct = 50
 distribution = "p"
 
 
@@ -48,6 +48,10 @@ def get_infected(self):
 
 def get_asymptom(self):
     agents = [a for a in self.schedule.agents if is_human(a) and a.asymptomatic == False]
+    return len(agents)
+
+def get_vaccinated(self):
+    agents = [a for a in self.schedule.agents if is_human(a) and a.vaccinated == True]
     return len(agents)
 
 def get_susceptible(self):
@@ -106,7 +110,7 @@ def add_init_infected_to_grid(self,n):
         students = [a for a in self.schedule.agents if isinstance(a,ac.class_Agent)]
         TA = [a for a in self.schedule.agents if isinstance(a,ac.TA)]
         canteen = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.off_school == False]
-        randomAgent = self.random.choice(canteen)
+        randomAgent = self.random.choice(all_agents)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
         elif is_human(randomAgent):
@@ -116,7 +120,7 @@ def add_init_infected_to_grid(self,n):
 
             positive_agent.non_contageous_period = 0
             positive_agent.incubation_period = 2*day_length
-            positive_agent.infection_period = a.incubation_period+10*day_length
+            positive_agent.infection_period = positive_agent.incubation_period+10*day_length
 
             self.schedule.add(positive_agent)
             positives.append(randomAgent.pos) # To keep track of initial positives
@@ -616,9 +620,9 @@ class covid_Model(Model):
                     vaccinate_agent.vaccinated = True
                     n+=1
 
+        self.N_vaccinated = get_vaccinated(self)
+
     def step(self):
-
-
         if go_home_in_breaks == False:
             choose_students_to_go_to_toilet(self)
 
