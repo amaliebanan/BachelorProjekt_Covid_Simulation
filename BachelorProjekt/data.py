@@ -22,6 +22,19 @@ def parse_datafile_infected(data, plotted_data):
         max_list.append(j_list[48])#removes the bottom 2.5%
     return min_list, max_list, plotted_df['infected'].tolist()
 
+def parse_datafile_infected_new(data, plotted_data):
+    df = pd.read_csv(data)
+    df.columns = ['timestep', 'infected', 'Agent_count', 'recovered', 'Home', 'Iteration']
+    plotted_df = pd.read_csv(plotted_data)
+    plotted_df.columns = ['timestep', 'infected', 'susceptible', 'recovered']
+    allmax = []
+    for i in range(1,51):
+        subdataframes = df.loc[df['Iteration'] == i]
+        allmax.append((max(subdataframes.infected), i))
+    best_It_list = list((df.loc[df['Iteration'] == min(allmax)[1]]).infected)
+    worst_It_list = list((df.loc[df['Iteration'] == max(allmax)[1]]).infected)
+    return best_It_list, worst_It_list, list(plotted_df.infected)
+
 
 path1 = '/Users/mieharder/Desktop/Uni/tredje år/Blok3/Bachelor/raw_Data3/Basis_2.csv'
 path2 = '/Users/mieharder/Desktop/Uni/tredje år/Blok3/Bachelor/plotted_Data/plotted_data_Basis_2.csv'
