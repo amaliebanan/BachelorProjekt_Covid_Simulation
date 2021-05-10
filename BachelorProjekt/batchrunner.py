@@ -1,5 +1,5 @@
 import AgentClass as ac
-from Model import covid_Model,is_human, get_home_sick,get_infected,get_recovered, with_mask, family_groups, go_home_in_breaks, percentages_of_vaccinated
+from Model import covid_Model,is_human, get_home_sick_count,get_infected_count,get_recovered_count, with_mask, family_groups, go_home_in_breaks, percentages_of_vaccinated, number_of_vaccinated
 import numpy as np
 from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
@@ -26,11 +26,11 @@ def plot_infected(fix_par, var_par, model, iter, steps):
     :return: returns a plot of mean number of infected by timesteps and mean number of susceptible by timesteps
     """
     batch_run = BatchRunner(model,
-    variable_parameters=var_par,
-    fixed_parameters=fix_par,
-    iterations=iter,
-    max_steps=steps,
-    model_reporters={"infected": lambda m: get_infected(m)}, )
+                            variable_parameters=var_par,
+                            fixed_parameters=fix_par,
+                            iterations=iter,
+                            max_steps=steps,
+                            model_reporters={"infected": lambda m: get_infected_count(m)}, )
     batch_run.run_all() #run batchrunner
 
     data_list = list(batch_run.get_collector_model().values()) # saves batchrunner data in a list
@@ -68,11 +68,11 @@ def max_infected(fix_par, var_par, model, iter, steps):
     :return: returns a list of maximum number of infected pr iteration
     """
     batch_run = BatchRunner(model,
-    variable_parameters=var_par,
-    fixed_parameters=fix_par,
-    iterations=iter,
-    max_steps=steps,
-    model_reporters={"infected": lambda m: get_infected(m)})
+                            variable_parameters=var_par,
+                            fixed_parameters=fix_par,
+                            iterations=iter,
+                            max_steps=steps,
+                            model_reporters={"infected": lambda m: get_infected_count(m)})
     batch_run.run_all() #run batchrunner
 
     data_list = list(batch_run.get_collector_model().values()) # saves batchrunner data in a list
@@ -93,18 +93,26 @@ def list_of_infected(j):
     :return: returns a list of y-values for plotting
     """
     batch_run = BatchRunner(covid_Model,
-        variable_parameters=variable_params,
-        fixed_parameters={"width": 26, "height": 38, "setUpType": [j,j,j]},
-        iterations=iterationer,
-        max_steps=skridt,
-        model_reporters={"infected": lambda m: get_infected(m)})
+                            variable_parameters=variable_params,
+                            fixed_parameters={"width": 26, "height": 38, "setUpType": [j,j,j]},
+                            iterations=iterationer,
+                            max_steps=skridt,
+                            model_reporters={"infected": lambda m: get_infected_count(m)})
     batch_run.run_all() #run batchrunner
 
     ordered_df = batch_run.get_collector_model()
     data_list = list(ordered_df.values()) #saves batchrunner data in list
     for i in range(len(data_list)):
         data_list[i]['Iteration'] = i+1
-    pd.concat(data_list).to_csv('csvdata/Basis_'+str(j)+'.csv')
+
+    pd.concat(data_list).to_csv('csvdata/Basis_02_5infection_'+str(j)+'.csv')
+
+    #next 5 lines is to determine reproduction number
+    #list_reproduction = []
+    #for i in range(0, iterationer):
+    #    list_reproduction.append(sum(data_list[i]["Reproduction"][skridt]))
+    #print(list_reproduction)
+    #print(sum(list_reproduction)/iterationer)
 
     #next 7 lines is to determine max number of infected
     max_number_of_infected = []
@@ -121,7 +129,7 @@ def list_of_infected(j):
     for i in range(len(data_list)):
         for j in range(len(data_list[i]["infected"])):
             num_of_infected[j]+=data_list[i]["infected"][j]
-            num_of_susceptible[j] += data_list[i]["Agent_count"][j]-(data_list[i]["infected"][j]+data_list[i]["recovered"][j]) #number of susceptible at each time step
+            num_of_susceptible[j] += data_list[i]["Agent_count"][j]-(data_list[i]["infected"][j]+data_list[i]["recovered"][j]+number_of_vaccinated) #number of susceptible at each time step
             num_of_recovered[j] += data_list[i]["recovered"][j]
     num_of_infected =[number / iterationer for number in num_of_infected] #avg number of infected
     num_of_susceptible = [number / iterationer for number in num_of_susceptible]
@@ -142,7 +150,7 @@ for i in range(len(results)):
             print("MAX SMITTEDE VED:" ,i+2,max(results[i][j]))
     df = pd.DataFrame(samlet)
     dff = df.T
-    dff.to_csv('csvdata/plotted_data_Basis_'+str(i+2)+'.csv')
+    dff.to_csv('csvdata/plotted_data_Basis_02_5infection_'+str(i+2)+'.csv')
 
 "Uncomment below for plotting the three plots for comparing"
 time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
@@ -158,7 +166,7 @@ plt.plot([], color='Black', label='Infected')
 plt.plot([], color='Black', label='Susceptible', linestyle='dashed')
 plt.plot([], color='Black', label='Recovered', linestyle='dotted')
 plt.ylabel('Gennemsnit antal smittede')
-plt.suptitle('%s simulation(er)' %iterationer, fontsize=20)
+plt.suptitle('%s simulationer' %iterationer, fontsize=20)
 plt.title('Masker=%s' %with_mask + ', Familiegrupper=%s' %family_groups +', Hjemme i pauser= %s' %go_home_in_breaks + ', Procent vaccinerede=%s' %percentages_of_vaccinated,fontsize=10)
 plt.tight_layout(rect=[0,0,0.75,1]) #placement of legend
 plt.legend(bbox_to_anchor=(1.04, 0.5), loc='upper left') #placement of legend

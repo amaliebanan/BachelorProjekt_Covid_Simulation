@@ -5,27 +5,37 @@ import numpy as np
 import random
 from operator import itemgetter
 import sys
-from Model import covid_Model,with_mask,is_student, is_off_campus, is_human, dir,count_students_who_has_question, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage, with_dir, go_home_in_breaks
+from Model import covid_Model,with_mask,is_student, is_off_campus, is_human, dir,students_who_has_question_count, infection_rate, infection_rate_1_to_2_meter, infection_rate_2plus_meter, infection_decrease_with_mask_pct, calculate_percentage, with_dir, go_home_in_breaks
 from scipy.stats import truncnorm,bernoulli
 
 day_length = 525
-other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
-ids = [i for i in range(0,78)]
+#other_courses = random.sample([4]*26+[5]*26+[6]*26,k=len([4]*26+[5]*26+[6]*26))
+#ids = [i for i in range(0,78)]
 
 ##Helper functions
+def calc_distance(pos1, pos2):
+    '''
+    Calculate the euclidean distance between two points in 2D space
 
-def getDistance(pos1,pos2):
-    return math.sqrt((pos2[0]-pos1[0])**2+(pos2[1]-pos1[1])**2)
-def dotproduct(v1, v2):
-  return v1[0]*v2[0]+v1[1]*v2[1]
-def length(v):
-  return math.sqrt(v[0]**2+v[1]**2)
-def angle(v1, v2):
-  angle_in_radians = math.acos(dotproduct(v1, v2) / (length(v1) * length(v2)))
-  angle_in_degrees = (angle_in_radians*180)/math.pi
-  return angle_in_degrees
+    :param pos1: a tuple
+    :param pos2: a tuple
+    :return: the distance in float
+    '''
+    
+    x1,y1 = pos1
+    x2,y2 = pos2
+    return math.sqrt((x2-x1)**2+(y2-y1)**2)
 
-def change_direction(self, start_pos, end_pos):
+def update_direction(self, start_pos, end_pos):
+    '''
+    Update the direction based on how the agent moves
+
+    :param self: agent-object
+    :param start_pos: a tuple
+    :param end_pos: a tuple
+    :return: A tuple indicating the direction
+    '''
+
     if end_pos == None:
         return dir['E']
     change_of_pos = np.subtract(start_pos, end_pos)
@@ -49,25 +59,50 @@ def change_direction(self, start_pos, end_pos):
         return self.coords
     else:
         return self.coords
-def angle_between(selfdirection, agentdirection): #virker
-    """
-    arctan takes in (y,x) which is why we invert the input vector.
-    ang1 and ang2 is two angels. each is the angle we get from creating  threesome with their (x,y) coordinates.
-    :return returns the difference between the two angels:
-    """
-    ang1 = np.arctan2(*agentdirection[::-1])
-    ang2 = np.arctan2(*selfdirection[::-1])
+
+def calc_angle(self_direction, other_agent_direction):
+    '''
+    Calculate the angle between two agents based on their direction
+
+    :param self_direction: a tuple
+    :param other_agent_direction: a tuple
+    :return: An angle (float)
+    '''
+
+    ang1 = np.arctan2(*self_direction[::-1])
+    ang2 = np.arctan2(*other_agent_direction[::-1])
     return ((ang1 - ang2) % (2 * np.pi))
 
 def get_agent_at_cell(self,pos):
+    '''
+    Get the agent located at a specific position in the grid
+
+    :param self: agent-object
+    :param pos: a tuple
+    :return: agent-object
+    '''
     return self.model.grid.get_cell_list_contents(pos)[0]
 
 def truncnorm_(a,b,mu,sigma):
-        alpha, beta = (a-mu)/sigma, (b-mu)/sigma
-        return math.floor(truncnorm.rvs(alpha,beta,loc=mu,scale=sigma))
+    '''
+    Generates a float number from a truncated normal distribution
 
-#Wander around function
+    :param a: integer, lower bound
+    :param b: integer, upper bound
+    :param mu: integer, mean value
+    :param sigma: integer, standard deviation
+    :return: a float
+    '''
+
+    alpha, beta = (a-mu)/sigma, (b-mu)/sigma
+    return math.floor(truncnorm.rvs(alpha,beta,loc=mu,scale=sigma))
 def wander(self):
+    '''
+    Moves an agent randomly to a possible position in the grid
+
+    :param self: agent-object
+    :return: None
+    '''
     possible_steps = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=True)
     possible_empty_steps = []
     for position in possible_steps:
@@ -93,45 +128,63 @@ def wander(self):
         next_move = self.random.choice(pos_to_go_to)
         self.model.grid.move_agent(self, next_move)
 
-    if go_home_in_breaks is False:
-        if self.pos in [x for (x,y) in self.model.canteen_tables]:
-                if self.sitting_in_canteen == 0:
-                    if self.model.minute_count in range(225,301):
-                        if self.pos in [x for (x,y) in self.model.canteen_table_1]:
-                            self.coords = dir['E']
-                        else:
-                            self.coords = dir['W']
-                        self.sitting_in_canteen = 70
-                        self.mask = False
-                    else:
-                        if self.pos in [x for (x,y) in self.model.canteen_table_1]:
-                            self.coords = dir['E']
-                        else:
-                            self.coords = dir['W']
-                        self.sitting_in_canteen = 60
-                        self.mask = False
+    if go_home_in_breaks is False and self.pos in [x for (x,y) in self.model.canteen_tables] and self.sitting_in_canteen == 0:
+        set_parameters_sitting_in_canteen(self)
+def set_parameters_sitting_in_canteen(self):
+    '''
+    Set direction and timer on agent who just sat down at table in canteen
+    Depending on what time of the day the agent sits down and what table the agent sits with,
+    these two parameters will change
+
+    :param self: agent-object
+    :return: None
+    '''
+
+    if self.model.minute_count in range(225,301):
+        if self.pos in [x for (x,y) in self.model.canteen_table_1]:
+            self.coords = dir['E']
+        else:
+            self.coords = dir['W']
+        self.sitting_in_canteen = 70
+        self.mask = False
+    else:
+        if self.pos in [x for (x,y) in self.model.canteen_table_1]:
+            self.coords = dir['E']
+        else:
+            self.coords = dir['W']
+        self.sitting_in_canteen = 60
+        self.mask = False
 
 def infect(self):
-    if self.non_contageous_period != 0:   #Agent smitter ikke endnu.
+    '''
+    Finds all susceptible neighbors within distance of 2 (meter) from infectious agent and calculates mu based on
+    direction and distance from infectious agent. Then decides if neighbor is getting infected by random variable bernoulli(mu)
+
+    :param self: agent-object
+    :return: None
+    '''
+
+    "Agent doesn't infect yet"
+    if self.non_contageous_period != 0:
         return
-    if (self.is_home_sick == True) or (isinstance(self,canteen_Agent) and self.off_school == True): #Agenten er derhjemme og kan ikke smitte
+    "Agent is off campus, thus cannot infect"
+    if (self.is_home_sick == True) or (isinstance(self,canteen_Agent) and self.off_school == True) or (go_home_in_breaks == True and self.pos in self.model.entre):
         return
 
+    "Get the correct neighbors based on what type of agent 'self' is."
     if isinstance(self, TA):
         all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=True,radius=2)
         all_neighbors_within_radius = [n for n in all_neighbors_within_radius if isinstance(n,class_Agent)]
     else:
         all_neighbors_within_radius = self.model.grid.get_neighbors(self.pos,moore=True,include_center=False,radius=2)
-    #Ikke smit igennem vægge hvis du er til time
     if isinstance(self,class_Agent):
         all_neighbors_within_radius = [n for n in all_neighbors_within_radius if (isinstance(n,class_Agent) and n.courses[0] == self.courses[0]) or (isinstance(n,TA) and n.door.id == self.door.id)]
-
-    #Canteen-agents kan ikke smitte class eller TA-agents (fordi det er igennem væggen)
-    if isinstance(self,canteen_Agent):
+    elif isinstance(self,canteen_Agent):
         all_neighbors_within_radius = [n for n in all_neighbors_within_radius if not isinstance(n,TA) and not isinstance(n,class_Agent)]
 
 
-    #Smit kun dit eget hold (A eller B) hvis dagen skifter
+
+    "Only infect your own squad (A or B) when day is changing"
     if self.model.minute_count in list(range(0,60)):
         if self.id in list(range(0,(len(self.model.setUpType)*self.model.n_agents)))+[1001,1002,1003]:
             all_neighbors_within_radius = [n for n in all_neighbors_within_radius if n.id in list(range(0,(len(self.model.setUpType)*self.model.n_agents)))+[1001,1002,1003]]
@@ -139,11 +192,12 @@ def infect(self):
             all_neighbors_within_radius = [n for n in all_neighbors_within_radius if n.id in list(range((len(self.model.setUpType)*self.model.n_agents)+1,2*(len(self.model.setUpType)*self.model.n_agents)))+[1004,1005,1006]]
 
 
+    "Extract all the humans within radius"
     all_humans_within_radius = []
     for neighbor in all_neighbors_within_radius:
         if is_human(neighbor):
             #Dont infect neighbors that are home sick / not on campus
-            if neighbor.is_home_sick == True or (isinstance(neighbor,canteen_Agent) and neighbor.off_school == True):
+            if neighbor.is_home_sick == True or (isinstance(neighbor,canteen_Agent) and neighbor.off_school == True) or (go_home_in_breaks == True and neighbor.pos in neighbor.model.entre):
                 continue
             #Dont infect neighbors that are vaccinated, recorvered or infected
             if neighbor.vaccinated == True or neighbor.recovered == True or neighbor.infected == True: # kan ikke blive smittet, da den er immun eller allerede infected
@@ -151,7 +205,7 @@ def infect(self):
             if not self.model.grid.is_cell_empty(neighbor.pos):
                     all_humans_within_radius.append(neighbor)
 
-            "Define infection rates"
+    "Define infection rates depending on agent's parameters (mask and asymptomatic)"
     if self.mask == True:
         if self.asymptomatic:
             ir = calculate_percentage(calculate_percentage(infection_rate, infection_decrease_with_mask_pct),25)
@@ -170,7 +224,6 @@ def infect(self):
             ir = infection_rate
             ir1_2 = infection_rate_1_to_2_meter
             ir2_plus = infection_rate_2plus_meter
-
 
     "Splits neighbors into lists"
     N_list = []
@@ -326,10 +379,9 @@ def infect(self):
         if bernoulli.rvs(ir*10) == 1:
             newly_infected.append(agent)
             self.model.infected_agents.append(agent)
-
     for agent in N_list:
-        distance = getDistance(self.pos,agent.pos)
-        if angle_between(self.coords, agent.coords) == math.pi: #10xir
+        distance = calc_distance(self.pos, agent.pos)
+        if calc_angle(self.coords, agent.coords) == math.pi: #10xir
             if 1 <= distance <= 2:
                 if bernoulli.rvs(ir1_2*10) == 1:
                     newly_infected.append(agent)
@@ -339,7 +391,7 @@ def infect(self):
                     newly_infected.append(agent)
                     self.model.infected_agents.append(agent)
 
-        elif angle_between(self.coords, agent.coords) in [math.pi*5/4, math.pi*3/4]: #8x ir
+        elif calc_angle(self.coords, agent.coords) in [math.pi * 5 / 4, math.pi * 3 / 4]: #8x ir
             if 1 <= distance <= 2:
                 if bernoulli.rvs(ir1_2*8) == 1:
                     newly_infected.append(agent)
@@ -348,7 +400,7 @@ def infect(self):
                 if bernoulli.rvs(ir2_plus*8) == 1:
                     newly_infected.append(agent)
                     self.model.infected_agents.append(agent)
-        elif angle_between(self.coords, agent.coords) in [math.pi*3/2, math.pi/2]: #6xir
+        elif calc_angle(self.coords, agent.coords) in [math.pi * 3 / 2, math.pi / 2]: #6xir
             if 1 <= distance <= 2:
                 if bernoulli.rvs(ir1_2*6) == 1:
                     newly_infected.append(agent)
@@ -366,10 +418,9 @@ def infect(self):
                 if bernoulli.rvs(ir2_plus*4) == 1:
                     newly_infected.append(agent)
                     self.model.infected_agents.append(agent)
-
     for agent in NE_list:
-            distance = getDistance(self.pos,agent.pos)
-            if angle_between(self.coords, agent.coords) == math.pi*3/4: #7xir
+            distance = calc_distance(self.pos, agent.pos)
+            if calc_angle(self.coords, agent.coords) == math.pi*3/4: #7xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*7) == 1:
                         newly_infected.append(agent)
@@ -378,7 +429,7 @@ def infect(self):
                     if bernoulli.rvs(ir2_plus*7) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
-            elif angle_between(self.coords, agent.coords) in [math.pi, math.pi/2]: #5xir
+            elif calc_angle(self.coords, agent.coords) in [math.pi, math.pi / 2]: #5xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*5) == 1:
                         newly_infected.append(agent)
@@ -387,7 +438,7 @@ def infect(self):
                     if bernoulli.rvs(ir2_plus*5) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
-            elif angle_between(self.coords, agent.coords) in [math.pi/4, math.pi*5/4]: #3xir
+            elif calc_angle(self.coords, agent.coords) in [math.pi / 4, math.pi * 5 / 4]: #3xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*3) == 1:
                         newly_infected.append(agent)
@@ -405,9 +456,8 @@ def infect(self):
                     if bernoulli.rvs(ir2_plus*2) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
-
     for agent in E_list:
-            distance = getDistance(self.pos,agent.pos)
+            distance = calc_distance(self.pos, agent.pos)
             if (isinstance(self, class_Agent) and self.pos in self.model.classroom_2+self.model.classroom_3+self.model.classroom_4) or self.pos in self.model.canteen_tables:# if nextdoor neighbor in class
                 if distance <2:
                     if bernoulli.rvs(ir1_2*10) == 1:
@@ -415,7 +465,7 @@ def infect(self):
                         self.model.infected_agents.append(agent)
                     continue
 
-            if angle_between(self.coords, agent.coords) == math.pi/2: #4xir
+            if calc_angle(self.coords, agent.coords) == math.pi/2: #4xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*4) == 1:
                         newly_infected.append(agent)
@@ -424,7 +474,7 @@ def infect(self):
                     if bernoulli.rvs(ir2_plus*4) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
-            elif angle_between(self.coords, agent.coords) in [math.pi/4, math.pi*3/4]: #3xir
+            elif calc_angle(self.coords, agent.coords) in [math.pi / 4, math.pi * 3 / 4]: #3xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*3) == 1:
                         newly_infected.append(agent)
@@ -433,7 +483,7 @@ def infect(self):
                     if bernoulli.rvs(ir2_plus*3) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
-            elif angle_between(self.coords, agent.coords) in [0, math.pi]: #2xir
+            elif calc_angle(self.coords, agent.coords) in [0, math.pi]: #2xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*2) == 1:
                         newly_infected.append(agent)
@@ -451,9 +501,8 @@ def infect(self):
                     if bernoulli.rvs(ir2_plus) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
-
-    for agent in Behind_list: #1xir
-        distance = getDistance(self.pos,agent.pos)
+    for agent in Behind_list:
+        distance = calc_distance(self.pos, agent.pos)
         if 1 <= distance <= 2:
                 if bernoulli.rvs(ir1_2) == 1:
                     newly_infected.append(agent)
@@ -462,16 +511,15 @@ def infect(self):
                 if bernoulli.rvs(ir2_plus) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
-
     for agent in W_list:
-            distance = getDistance(self.pos,agent.pos)
+            distance = calc_distance(self.pos, agent.pos)
             if (isinstance(self, class_Agent) and self.pos in self.model.classroom_2+self.model.classroom_3+self.model.classroom_4) or self.pos in self.model.canteen_tables:
                 if distance <2:
                     if bernoulli.rvs(ir1_2*10) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
                 continue
-            if angle_between(self.coords, agent.coords) == math.pi*3/2: #4xir
+            if calc_angle(self.coords, agent.coords) == math.pi*3/2: #4xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*4) == 1:
                         newly_infected.append(agent)
@@ -480,7 +528,7 @@ def infect(self):
                     if bernoulli.rvs(ir2_plus*4) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
-            elif angle_between(self.coords, agent.coords) in [math.pi*7/4, math.pi*5/4]: #3xir
+            elif calc_angle(self.coords, agent.coords) in [math.pi * 7 / 4, math.pi * 5 / 4]: #3xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*3) == 1:
                         newly_infected.append(agent)
@@ -489,7 +537,7 @@ def infect(self):
                     if bernoulli.rvs(ir2_plus*3) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
-            elif angle_between(self.coords, agent.coords) in [0, math.pi]: #2xir
+            elif calc_angle(self.coords, agent.coords) in [0, math.pi]: #2xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*2) == 1:
                         newly_infected.append(agent)
@@ -507,10 +555,9 @@ def infect(self):
                     if bernoulli.rvs(ir2_plus) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
-
     for agent in NW_list:
-            distance = getDistance(self.pos,agent.pos)
-            if angle_between(self.coords, agent.coords) == math.pi*5/4: #7xir
+            distance = calc_distance(self.pos, agent.pos)
+            if calc_angle(self.coords, agent.coords) == math.pi*5/4: #7xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*7) == 1:
                         newly_infected.append(agent)
@@ -519,7 +566,7 @@ def infect(self):
                     if bernoulli.rvs(ir2_plus*7) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
-            elif angle_between(self.coords, agent.coords) in [math.pi, math.pi*3/2]: #5xir
+            elif calc_angle(self.coords, agent.coords) in [math.pi, math.pi * 3 / 2]: #5xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*5) == 1:
                         newly_infected.append(agent)
@@ -528,7 +575,7 @@ def infect(self):
                     if bernoulli.rvs(ir2_plus*5) == 1:
                         newly_infected.append(agent)
                         self.model.infected_agents.append(agent)
-            elif angle_between(self.coords, agent.coords) in [math.pi*7/4, math.pi*3/4]: #3xir
+            elif calc_angle(self.coords, agent.coords) in [math.pi * 7 / 4, math.pi * 3 / 4]: #3xir
                 if 1 <= distance <= 2:
                     if bernoulli.rvs(ir1_2*3) == 1:
                         newly_infected.append(agent)
@@ -561,10 +608,16 @@ def infect(self):
             a.infection_period = a.incubation_period+10*day_length
             a.non_contageous_period = a.incubation_period - 2 * day_length
 
-###CHANGING OBJECT-TYPE###
-#Get all essential parameters transfered
+"CHANGING OBJECT-TYPE"
 def change_obj_params(new,old):
+    '''
+    Function called when objects change from class-to-canteen, canteen-to-class, TA-to-class, canteen-to-TA
+    Transfer essential parameters from old object type to new
 
+    :param new: agent-object
+    :param old: agent-object
+    :return: None
+    '''
     new.is_home_sick, new.vaccinated = old.is_home_sick,\
                                        old.vaccinated
 
@@ -580,31 +633,47 @@ def change_obj_params(new,old):
     new.pos = old.pos
     new.asymptomatic = old.asymptomatic
 
-###CHANGING OBJECT-TYPE###
-
-#Turn canteen-object to class-object
 def canteen_to_class(self):
-    c_agent = class_Agent(self.id, self.model)
-    change_obj_params(c_agent,self)
+    '''
+    Copy canteen object to class object
 
-    c_agent.courses = self.courses
-    c_agent.moving_to_door = 0
-    c_agent.door = self.door
+    :param self: canteen-object
+    :return: None
+    '''
 
-    #Which classroom are agent entering, adjust the y-coordinate accordingly.
+    "Which classroom are agent entering, adjust the y-coordinate accordingly."
     i = self.door.id-501
 
-    #Get a seat
-    seat = self.model.seats[i].pop()
+    try:
+        seat = self.model.seats[i].pop()
 
-    self.model.schedule.remove(self)
-    self.model.grid.remove_agent(self)
-    self.model.schedule.add(c_agent)
+        c_agent = class_Agent(self.id, self.model)
+        change_obj_params(c_agent,self)
 
-    return c_agent,seat
+        c_agent.courses = self.courses
+        c_agent.leaving_class = False
+        c_agent.door = self.door
 
-#Turn class-object to canteen-object
+        self.model.schedule.remove(self)
+        self.model.grid.remove_agent(self)
+        self.model.schedule.add(c_agent)
+
+        return c_agent,seat
+    except:
+        seat = ()
+        print(self.model.day_count, self.model.minute_count,self.day_off,self.next_to_attend_class,self.pos,self.id)
+        agents = [a for a in self.model.schedule.agents if is_human(a)]
+        newlist = sorted(agents, key=lambda a: a.id, reverse=True)
+        return self, seat
+
 def class_to_canteen(self):
+    '''
+    Copy class object to canteen object
+
+    :param self: class-object
+    :return: None
+    '''
+
     c_agent = canteen_Agent(self.id,self.model)
     change_obj_params(c_agent,self)
 
@@ -619,7 +688,7 @@ def class_to_canteen(self):
     elif y in [1,2,3]:
         next_door_id = 500+y
     else:
-        next_door_id = self.door.id ##TO BE FIXED !! TAS DOOR
+        next_door_id = self.door.id ##TA has the same door throughout (always go to same classroom)
 
     next_door = [a for a in self.model.schedule.agents if isinstance(a,door) and a.id == next_door_id]
     c_agent.door = next_door[0]
@@ -643,12 +712,18 @@ def class_to_canteen(self):
 
     return c_agent
 
-#Turn TA-object to class-object
 def TA_to_class(self):
+    '''
+    Copy TA object to class object
+
+    :param self: TA-object
+    :return: None
+    '''
+
     c_agent = class_Agent(self.id, self.model)
     change_obj_params(c_agent,self)
 
-    c_agent.door, c_agent.moving_to_door = self.door, 1
+    c_agent.door, c_agent.leaving_class = self.door, True
 
     self.model.grid.remove_agent(self)
     self.model.schedule.remove(self)
@@ -658,8 +733,14 @@ def TA_to_class(self):
     self.model.grid.place_agent(c_agent,c_agent.pos)
     c_agent.coords = dir['E']
 
-#Turn canteen-object to TA-object
 def canteen_to_TA(self):
+    '''
+    Copy canteen object to TA object
+
+    :param self: canteen-object
+    :return: None
+    '''
+
     c_agent = TA(self.id,self.model)
     change_obj_params(c_agent,self)
 
@@ -675,39 +756,28 @@ def canteen_to_TA(self):
 
     return c_agent
 
-def move_in_queue(self, pos_):
-    if self.buying_lunch != 0:
-        self.buying_lunch -= 1
-        if self.buying_lunch == 0:
-            self.coords = dir['N']
-    else:
-        possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
-        possible_empty_steps = [cell for cell in possible_steps if self.model.grid.is_cell_empty(cell)]
-        if len(possible_empty_steps) == 0: #if someone in front of you - dont move
-            return
-        distances = [(pos,getDistance(pos_,pos)) for pos in possible_empty_steps]
-        x_,y_ = min(distances,key=lambda x:x[1])[0]
-        if min(getDistance((x_,y_), pos_), getDistance(self.pos, pos_)) == getDistance(self.pos, pos_):
-            return
-        else:
-            self.model.grid.move_agent(self,(x_,y_))
-            if self.pos == (23,17):
-                self.buying_lunch = 3
-                self.coords = dir['E']
+def move_to_entre(self):
+    '''
+    Move agent one step closer to a randomly chosen entré-position
 
-def go_to_entre(self):
+    :param self: agent-object
+    :return: None
+    '''
     if self.entre_door == ():
         self.entre_door = self.model.entre[random.randint(0,len(self.model.entre)-1)]
 
     pos_ = self.entre_door
     possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
     possible_empty_steps = [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos) or pos == pos_]
+
+    "Back up list if list of possible steps are empty"
     if len(possible_empty_steps) == 0:
           pos_other_agents = [cell for cell in self.model.grid.get_neighbors(self.pos,moore=True,include_center=False) if is_human(cell)]
           possible_empty_steps = [cell.pos for cell in pos_other_agents]
-    distances = [(pos,getDistance(pos_,pos)) for pos in possible_empty_steps]
+
+    distances = [(pos, calc_distance(pos_, pos)) for pos in possible_empty_steps]
     x_,y_ = min(distances,key=lambda x:x[1])[0]
-    if min(getDistance((x_,y_), pos_), getDistance(self.pos, pos_)) == getDistance(self.pos, pos_):
+    if min(calc_distance((x_, y_), pos_), calc_distance(self.pos, pos_)) == calc_distance(self.pos, pos_):
         return
     else:
         self.model.grid.move_agent(self,(x_,y_))
@@ -715,102 +785,132 @@ def go_to_entre(self):
             self.off_school = True
             self.entre_door = ()
 
-def move_to_specific_pos(self,pos_):
-    if self.id in [1001,1002,1003,1004,1005,1006]:
-        if isinstance(self,canteen_Agent):
-            newAgent = canteen_to_TA(self)
-            #"push" agent through door
-            x,y = pos_                      #Door position
-            newY = random.randint(-1, 1)
-            newAgent.pos = x-1,y+newY
-            newAgent.coords = dir['W']
-            newAgent.mask = with_mask  #From Model
-            self.model.grid.place_agent(newAgent, newAgent.pos)
-            return
+def move_for_class(self, position):
+    '''
+    Invoked when an agent is moving either towards, in or from classroom
 
-
+    :param self: agent-object
+    :param position: a tuple
+    :return: None
+    '''
     possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
     possible_empty_steps = [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos) or is_off_campus(get_agent_at_cell(self, pos))]
 
-    #If no cell is empty, agent can go through others "person"-agents (to avoid bottleneck)
+    #If no cell is empty, agent can go through others human-agents (to avoid bottleneck)
     #Back-up list contains cells with covid,TA and canteen agents in
     pos_other_agents = [cell for cell in self.model.grid.get_neighbors(self.pos,moore=True,include_center=False)
                         if is_human(cell)]
     back_up_empty_cells = [cell.pos for cell in pos_other_agents]
 
-    #If goal-position is in possible steps, go there
-    if pos_ in possible_steps:
-        #If goal-position is a door change object accordingly
-        if pos_ == self.door.pos:
+    if position in possible_steps:
+        if position == self.door.pos:
             if isinstance(self, class_Agent):
                 newAgent = class_to_canteen(self)
-                #"push" agent through door
-                x,y = pos_                         #Door position
+                x,y = position
                 newY = random.randint(-1, 1)
                 newAgent.pos = x+1,y+newY
                 newAgent.coords = dir['E']
                 self.model.grid.place_agent(newAgent, newAgent.pos)
                 if go_home_in_breaks == True:
-                    go_to_entre(newAgent)
+                    move_to_entre(newAgent)
                 if newAgent.has_more_courses_today == False:
-                    go_to_entre(newAgent)
+                    move_to_entre(newAgent)
                 return
-            elif isinstance(self,canteen_Agent):
-                    newAgent,seat_ = canteen_to_class(self)
-                    #"push" agent through door
-                    x,y = pos_                      #Door position
+            elif isinstance(self,canteen_Agent) and self.id in [1001,1002,1003,1004,1005,1006]:
+                    newAgent = canteen_to_TA(self)
+                    x,y = position
                     newY = random.randint(-1, 1)
                     newAgent.pos = x-1,y+newY
-                    newAgent.seat = seat_[0]
-                    newAgent.seat_coords = seat_[1]
                     newAgent.coords = dir['W']
+                    newAgent.mask = with_mask  #From model
                     self.model.grid.place_agent(newAgent, newAgent.pos)
                     return
+            elif isinstance(self,canteen_Agent):
+                    newAgent,seat_ = canteen_to_class(self)
+                    if seat_ == ():
+                        print(self.model.day_count,self.model.minute_count,self, "JEG BLEV LAVET OM",self.id,self.pos,self.courses)
+                        move_to_entre(self)
+                    else:
+                        x,y = position
+                        newY = random.randint(-1, 1)
+                        newAgent.pos = x-1,y+newY
+                        newAgent.seat = seat_[0]
+                        newAgent.seat_coords = seat_[1]
+                        newAgent.coords = dir['W']
+                        self.model.grid.place_agent(newAgent, newAgent.pos)
+                    return
+
         #If goal-position is the seat, go there
-        if isinstance(self, class_Agent) and pos_ == self.seat:
-            self.model.grid.move_agent(self,pos_)
+        if isinstance(self, class_Agent) and position == self.seat:
+            self.model.grid.move_agent(self, position)
             self.coords = self.seat_coords
             self.mask = False
             return
 
     #If you are already at your seat, stay there
-    if pos_ == self.pos:
+    if position == self.pos:
         return
 
 
-   #### Agent is moving one step closer to goal-position ####
-
-    #Which list to use? If possible_empty_steps is empty, use back-up list (allowing agent to go through agents)
+    "Agent is moving one step closer to goal-position"
+    #If possible_empty_steps is empty, use back-up list (allowing agent to go through agents)
     if len(possible_empty_steps) == 0:
         cells_to_check = back_up_empty_cells
     else: cells_to_check = possible_empty_steps
 
     #Distances from all possible positions and goal-position
-    distances = [(pos,getDistance(pos_,pos)) for pos in cells_to_check]
+    distances = [(pos, calc_distance(position, pos)) for pos in cells_to_check]
 
     #Get x,y position of the cell with the smallest distance between goal-position and possible cells to go to
     x_,y_ = min(distances,key=lambda x:x[1])[0]
 
+    #Force agent to goal_pos - avoid logic flaw when agent is flipping back and forth between two positions
     if self.model.minute_count in [40,160,340,470]:
-        x,y = pos_
+        x,y = position
         force_agent_to_specific_pos(self,(x+1,y))
         return
     self.model.grid.move_agent(self,(x_,y_))
 
 def force_agent_to_specific_pos(self,pos):
+    '''
+    Moves an agent from its current position to a new specified position
+
+    :param self: agent-object
+    :param pos: a tuple - the position the agent is to be moved to
+    :return: None
+    '''
     self.model.grid.move_agent(self,pos)
 
 def send_agent_home(self):
+    '''
+    If an agent is showing symptoms, set an agents parameter is_home_sick to True, thus making the agent go home.
+    If agent going home is an employee, create a back-up employee
+
+    :param self: agent-object
+    :return: None
+    '''
     if self.asymptomatic == True:
         return
     self.is_home_sick = True
     self.model.agents_at_home.append(self)
+
     if isinstance(self, employee_Agent) and self.id not in [1252,1253]:
-        call_backup_employee(self)
+        newLunchlady = employee_Agent(self.id+2,self.model)
+        newLunchlady.coords = dir['W']
+        self.model.schedule.add(newLunchlady)
+        self.model.grid.place_agent(newLunchlady, self.pos)
         if self in self.model.canteen_agents_at_work:
             self.model.canteen_agents_at_work.remove(self)
 
 def send_agent_back_to_school(self):
+    '''
+    Agents who have been home sick are now ready to go back to school.
+    Agent is now recovered.
+
+    :param self: agent-object
+    :return: None
+    '''
+
     newList_at_home = [a for a in self.model.agents_at_home if a.id != self.id]
     self.model.agents_at_home = newList_at_home
 
@@ -822,6 +922,13 @@ def send_agent_back_to_school(self):
         self.model.canteen_agents_at_work.append(self)
 
 def update_infection_parameters(self):
+    '''
+    Update an infected agent's infection_period, incubation_period and non_contageous_period.
+
+    :param self: agent-object
+    :return: None
+    '''
+
     if self.recovered == True:
         return              #Agent is recovered
 
@@ -843,69 +950,120 @@ def update_infection_parameters(self):
     self.incubation_period = max(0, self.incubation_period - 1)
     if self.incubation_period == 0:
         send_agent_home(self)
-    self.non_contageous_period = max(0, self.non_contageous_period - 1)    #If already 0 stay there, if larger than 0 subtract one
+    self.non_contageous_period = max(0, self.non_contageous_period - 1)
     self.infection_period = max(0,self.infection_period-1)
 
-def call_backup_employee(self):
-    newLunchlady = employee_Agent(self.id+2,self.model)
-    newLunchlady.coords = dir['W']
-    self.model.schedule.add(newLunchlady)
-    self.model.grid.place_agent(newLunchlady, self.pos)
-
 class class_Agent(Agent):
+    '''
+    A class to represent the agents attending class as students
+
+    Attributes
+    ----------
+    id : int
+        States which agent we are looking at
+    model : Model
+        Model the agent belongs to
+    infected: bool
+        States if the agent is infected or not
+    asymptomatic : bool
+        States if the agent is going to show symptoms or not
+    recovered : bool
+        States if the agent is recovered from the disease or not
+    vaccinated : bool
+        States if the agent is vaccinated or not
+    is_home_sick : bool
+        States if the agent is home sick or not
+    mask : bool
+        States if the agent is wearing a mask or not
+    infection_period : int
+        The number of timesteps the agent is infected (only invoked if agent gets infected)
+    incubation_period : int
+        The number of timesteps the agent is asymptomatic and thus infect others without knowing it (only invoked if agent gets infected)
+    non_contageous_period : int
+        The number of timesteps the agent does not infect or show symptoms (only invoked if agent gets infected)
+    reproduction : int
+        The number of individuals the agent infects
+    coords : tuple ()
+        Direction of the agent
+    day_off : bool
+         States if the agent has the day off (from school)
+    door : door-object
+        The door to the classroom the agent is attending class in next
+    courses : list []
+        List of the two courses the agent is attending (specifies which classroom)
+    leaving_class : bool
+        States if the agent is going to class or not
+    seat : tuple ()
+        The position of the seat the agent will sit on
+    seat_coords : tuple ()
+        Direction of that agent's seat
+    TA : TA-object
+        The TA of the class the agent is attending
+    has_question : bool
+        States if the agent has a question or not
+    '''
     def __init__(self, id, model):
         super().__init__(id, model)
         self.id = id
         self.model = model
-        self.coords = ()
 
         self.infected = False
-        self.recovered = False
-        self.mask = False
-        self.is_home_sick = False
-        self.vaccinated = False
         self.asymptomatic = False #Does the agent show symptoms during infection period?
+        self.recovered = False
+        self.vaccinated = False
+        self.is_home_sick = False
+        self.mask = False
 
-        #Infection parameters
-
-        self.infection_period = 0#How long are they sick?
-        self.incubation_period = math.pi #Agents are asymptomatic for 5 days
+        self.infection_period = 0
+        self.incubation_period = math.pi
         self.non_contageous_period = math.pi
+        self.reproduction = 0
+        self.coords = ()
 
         self.day_off = False
-        self.moving_to_door = 0
         self.door = ()
         self.courses = [0,0]
+        self.leaving_class = False
 
-
-        self.TA = ()
         self.seat = ()
         self.seat_coords = ()
 
-        #Relevant for classroom only
-        self.hasQuestion = False
-        self.hasEnteredDoor = []
-        self.reproduction = 0
+        self.TA = ()
+        self.has_question = False
 
-    def move(self,timestep=False):
+    def move(self, move_in_class=False):
+        '''
+        Called every time step. Depending on agent's state and objective, move agent accordingly
 
+        :param self: class-object
+        :optional param leave_class: bool
+        :return: None
+        '''
         start_pos = self.pos
-        if timestep is True:
-            if self.moving_to_door == 1: #Agents go to door
-                move_to_specific_pos(self,self.door.pos)
-                if with_mask == True:
+        if move_in_class:
+            if self.leaving_class == True: #Agents go to door
+                move_for_class(self, self.door.pos)
+                if with_mask:
                     self.mask = True
-            elif self.moving_to_door == 0: #Agents go to seat
-                move_to_specific_pos(self,self.seat)
+            elif self.leaving_class == False: #Agents go to seat
+                move_for_class(self, self.seat)
         else: wander(self)
-        if with_dir == True:
+        if with_dir:
             end_pos = self.pos
             if self.pos != self.seat:
-                self.coords = change_direction(self, start_pos, end_pos)
+                self.coords = update_direction(self, start_pos, end_pos)
 
-
-    #The step method is the action the agent takes when it is activated by the model schedule.
     def step(self):
+        ''''
+        Invoked every time step and is multi-purposed.
+        Update agent's parameters and handle if the agent is off_campus.
+        Invoke infect-function if agent is infectious and present at campus.
+        Keep track of and change direction of agent.
+        Invoke move-function.
+
+        :param self: class-object
+        :return: None
+        '''
         if self.infected == True:
             update_infection_parameters(self)
 
@@ -919,88 +1077,163 @@ class class_Agent(Agent):
             if self.infected == True:
                 infect(self)
 
-        ##MOVE###
+        "Move the agent"
         if self.model.day_count == 1:
             if self.model.minute_count in self.model.class_times and self.model.minute_count%2 == 1:
-                self.moving_to_door = 1
+                self.leaving_class = True
 
         elif self.model.day_count > 1 and self.model.minute_count in self.model.class_times+[1] and self.model.minute_count%2 == 1:
-            self.moving_to_door = 1
+            self.leaving_class = True
 
         self.move(True)
-
 class TA(Agent):
+    '''
+    A class to represent the TA-agents
+
+    Attributes
+    ----------
+    id : int
+        States which agent we are looking at
+    model : Model
+        Model the agent belongs to
+    infected: bool
+        States if the agent is infected or not
+    asymptomatic : bool
+        States if the agent is going to show symptoms or not
+    recovered : bool
+        States if the agent is recovered from the disease or not
+    vaccinated : bool
+        States if the agent is vaccinated or not
+    is_home_sick : bool
+        States if the agent is home sick or not
+    mask : bool
+        States if the agent is wearing a mask or not
+    infection_period : int
+        The number of timesteps the agent is infected (only invoked if agent gets infected)
+    incubation_period : int
+        The number of timesteps the agent is asymptomatic and thus infect others without knowing it (only invoked if agent gets infected)
+    non_contageous_period : int
+        The number of timesteps the agent does not infect or show symptoms (only invoked if agent gets infected)
+    reproduction : int
+        The number of individuals the agent infects
+    day_off : bool
+         States if the agent has the day off (from school)
+    time_remaining : int
+
+    time_to_teach : int
+        The number of timesteps each student is given when asking a question
+    door : door-object
+      The door to the classroom the agent is attending class in next
+    courses : List []
+         List of the two courses the agent is attending (specifies which classroom)
+    students : List []
+         List of the students the agent is teaching at the moment
+    coords : tuple ()
+        Direction of the agent
+    '''
     def __init__(self,id,model):
         super().__init__(id,model)
         self.id = id
+        self.model = model
+
         self.infected = False
+        self.asymptomatic = False
         self.recovered = False
-        self.mask = False
-        self.is_home_sick = False
         self.vaccinated = False
-        self.asymptomatic = False #Does the agent show symptoms during infection period?
+        self.is_home_sick = False
 
-        self.time_remaining = 105
+        self.mask = False
 
-          #Infection parameters
         self.infection_period = 0#How long are they sick?
         self.incubation_period = math.pi #Agents are asymptomatic for 5 days
         self.non_contageous_period = math.pi #Dummy
-
-        self.day_off = False
-        self.timeToTeach = 5
-        self.door = ()
-        self.students = []
-        self.coords = ()
         self.reproduction = 0
 
+        self.day_off = False
+
+        self.time_remaining = 105
+        self.time_to_teach = 5
+
+        self.door = ()
+        self.courses = []
+        self.students = []
+        self.coords = ()
+
     def move_to_student(self,student):
+        '''
+        Go to the student who asked a question
 
+        :param self: TA-object
+        :param student: class-object
+        :return: None
+        '''
         x,y = student.pos
-        if self.timeToTeach == 0:           #Student has recieved help for 5 minutes
-            student.hasQuestion = False            #Student does not have question anymore
-            self.timeToTeach = 5          #Reset timer
+        if self.time_to_teach == 0: #Student has recieved help for 5 minutes
+            student.has_question = False            #Student does not have question anymore
+            self.time_to_teach = 5          #Reset timer
 
-        elif self.timeToTeach == 4:   #Student has not recieved help yet, go to that student
+        elif self.time_to_teach == 5:   #Go to that student and answer question
             newTA = self
             self.model.schedule.remove(self)
             self.model.grid.remove_agent(self)
             self.model.schedule.add(newTA)
             self.model.grid.place_agent(newTA,(x,y))
-            self.timeToTeach -= 1
-        else:                               #Student is still recieving help, subtract one minut and stay put
-            self.timeToTeach -= 1
+            self.time_to_teach -= 1
+        else:  #Student is still recieving help, subtract one minut and stay put
+            self.time_to_teach -= 1
 
     def connect_TA_and_students(self):
-        ss = [a for a in self.model.schedule.agents if isinstance(a, class_Agent) and a.door == self.door]
+        '''
+        Every time a class starts, connect the TA with the correct students (allows for questions)
+
+        :param self: TA-object
+        :return: None
+        '''
+        students_in_class = [a for a in self.model.schedule.agents if isinstance(a, class_Agent) and a.door == self.door]
 
         #Get the correct students, because they can overlap when a class is ending and new one is starting
         if self.id in [1001,1002,1003]:
-            self.students = [a for a in ss if a.id in range(0,(self.model.n_agents+1)*3) and a.is_home_sick == False]
+            self.students = [a for a in students_in_class if a.id in range(0,(self.model.n_agents+1)*3) and a.is_home_sick == False]
         elif self.id in [1004,1005,1006]:
-            self.students = [a for a in ss if a.id not in range(0,(self.model.n_agents+1)*3) and a.is_home_sick == False]
+            self.students = [a for a in students_in_class if a.id not in range(0,(self.model.n_agents+1)*3) and a.is_home_sick == False]
 
         #Apply TA to students
         for s in self.students:
             s.TA = self
 
     def move(self):
-        question_count = count_students_who_has_question(self.model, self.students)
+        '''
+        Move the TA. Either the TA wanders around or else the TA answers a question from a student.
 
-        if question_count > 0 and len(self.students) > 15:  #Class is started and somebody a question
+        :param self: TA-object
+        :return: None
+        '''
+        question_count = students_who_has_question_count(self.model, self.students)
+
+        if question_count > 0 and len(self.students) > 15:  #Class is started and somebody has a question
             for s in self.students:
-                if s.hasQuestion == True:
+                if s.has_question == True:
                     self.move_to_student(s)
                     self.coords = s.coords
         else:
-            wander(self)
             start_pos = self.pos
             wander(self)
             if with_dir == True:
                 end_pos = self.pos
-                self.coords = change_direction(self, start_pos, end_pos)
+                self.coords = update_direction(self, start_pos, end_pos)
 
     def step(self):
+        '''
+        Invoked every timestep and is multi-purposed.
+        Update parameters accordingly.
+        If agent is infected, the infect-function is invoked.
+        Connect TA and students.
+        When class has ended and students have left the room, TA-duty is over, hence turn TA-object into class-object.
+
+        :param self: TA-object
+        :return: None
+        '''
+
         if self.infected == True:
             update_infection_parameters(self)
         if is_off_campus(self):
@@ -1008,7 +1241,7 @@ class TA(Agent):
                 return
             else:
                 self.model.grid.move_agent(self,self.model.entre[random.randint(0,2)])
-        self.time_remaining -=1
+
         self.connect_TA_and_students()
 
         if is_off_campus(self) == False and self.is_home_sick == False:
@@ -1019,70 +1252,153 @@ class TA(Agent):
             TA_to_class(self)
             return
         self.move()
-
+        self.time_remaining -=1
 class canteen_Agent(Agent):
+    '''
+    A class to represent the students in the canteen-area
+
+    Attributes
+    ----------
+    id : int
+        States which agent we are looking at
+    model : Model
+        Model the agent belongs to
+    infected: bool
+        States if the agent is infected or not
+    asymptomatic : bool
+        States if the agent is going to show symptoms or not
+    recovered : bool
+        States if the agent is recovered from the disease or not
+    vaccinated : bool
+        States if the agent is vaccinated or not
+    is_home_sick : bool
+        States if the agent is home sick or not
+    mask : bool
+        States if the agent is wearing a mask or not
+    infection_period : int
+        The number of timesteps the agent is infected (only invoked if agent gets infected)
+    incubation_period : int
+        The number of timesteps the agent is asymptomatic and thus infect others without knowing it (only invoked if agent gets infected)
+    non_contageous_period : int
+        The number of timesteps the agent does not infect or show symptoms (only invoked if agent gets infected)
+    reproduction : int
+        The number of individuals the agent infects
+    coords : tuple ()
+        Direction of the agent
+    queue : bool
+        States if the agent is queuing in canteen or not
+    buying_lunch : int
+        The number of timesteps it takes to make a purchase at the desk in the canteen (only invoked if agent is queuing in the canteen)
+    sitting_in_canteen : int
+        The number of timesteps the agent is sitting at one of the tables in the canteen (only invoked when agent sits down)
+    going_to_toilet : bool
+         States if the agent is going to the toilet or not
+    in_toilet_queue : bool
+         States if the agent is queuing for the toilet or not
+    sitting_on_toilet : int
+         The number of timesteps the agent is still in the toilet (only invoked when agent is at toilet)
+    since_last_toilet : int
+        The number of timesteps until the agent can feel the need to go to toilet again
+    off_school : bool
+         States if the agent is off campus or not
+    next_to_attend_class : bool
+         States if the agent is going to attend class next or not
+    day_off : bool
+         States if the agent has the day off (from school)
+    has_more_courses_today : bool
+         States if the agent has more courses that day or not
+
+    entre_door : tuple ()
+        The position (in the entre) the agent goes to when leaving campus
+    door : door-object
+        The door to the classroom the agent is attending class in next
+    courses : list []
+        List of the two courses the agent is attending (specifies which classroom)
+    going_to_class : bool
+        States if the agent is going to class or not
+    TA : TA-object
+        The TA which will be the TA of the class the agent is attending next
+    '''
     def __init__(self, id, model):
         super().__init__(id, model)
-        #Person parameters
         self.id = id
+        self.model = model
+
         self.infected = False
+        self.asymptomatic = False
         self.recovered = False
-        self.mask = False
-        self.is_home_sick = False
         self.vaccinated = False
-        self.asymptomatic = False #Does the agent show symptoms during infection period?
-        self.queue = 0
+        self.is_home_sick = False
+        self.mask = False
+
+
+        self.infection_period = 0
+        self.incubation_period = math.pi
+        self.non_contageous_period = math.pi
+        self.reproduction = 0
+
+        self.coords = ()
+        self.queue = False
         self.buying_lunch = 0
         self.sitting_in_canteen = 0
 
         self.going_to_toilet = False
         self.in_toilet_queue = False
+
+
         self.sitting_on_toilet = 0
         self.since_last_toilet = 0
 
-        self.off_school = 0
-        self.coords = ()
-        self.reproduction = 0
-
-        #Infection parameters
-        self.infection_period = 0#How long are they sick?
-        self.incubation_period = math.pi #Agents are asymptomatic for 5 days
-        self.non_contageous_period = math.pi
-
         #Class-schedule parameters
+        self.off_school = False
         self.next_to_attend_class = False
         self.day_off = False
         self.has_more_courses_today = True
 
         self.entre_door = ()
         self.door = ()
-        self.courses = ()
-        self.moving_to_door = 0
+        self.courses = []
+        self.going_to_class = False
         self.TA = ()
 
-    def update_queue_parameters(self):
+    def check_if_agent_is_queuing(self):
+        '''
+        If an agent is in the pre-defined canteen area, set the agent to stand in line for buying food.
+        Update an agent's queue parameters when the agent is queuing in the line in the canteen
+
+        :param self: canteen-object
+        :return: None
+        '''
+
         if self.model.minute_count in range(225,301):
             if self.pos in self.model.enter_canteen_area12: #in beginning of queue area at lunchbreak
-                if self.off_school ==0 and self.is_home_sick ==0:
-                    self.queue =1 #stands in line for canteen
+                if self.off_school ==False and self.is_home_sick ==False:
+                    self.queue = True #stands in line for canteen
         else:
             if self.pos in self.model.enter_canteen_area10: #in beginning of queue area at 10break
-                if self.off_school ==0 and self.is_home_sick ==0:
-                    self.queue =1 #stands in line for canteen
-        if self.pos in [(23,j) for j in range(4,20)]: #already in queue area
-            self.queue=1
-        elif self.pos == (23,20):
-            self.queue = 0 #done in line
+                if self.off_school == False and self.is_home_sick == False:
+                    self.queue = True #stands in line for canteen
 
-    def go_to_toilet_queue(self):
+        if self.pos in [(23,j) for j in range(4,20)]: #already in queue area
+            self.queue= True
+        elif self.pos == (23,20):
+            self.queue = False #done in line
+
+    def move_to_toilet(self):
+        '''
+        Go one step closer to the toilet queue
+
+        :param self: canteen-object
+        :return: None
+        '''
         pos_ = self.model.toilet.queue[-1]
         possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
         possible_empty_steps = [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos) and pos not in self.model.toilet.queue[:-1]]
         if len(possible_empty_steps) == 0: #nowhere to go, stay
             return
-        distances = [(pos,getDistance(pos_,pos)) for pos in possible_empty_steps]
+        distances = [(pos, calc_distance(pos_, pos)) for pos in possible_empty_steps]
         x_,y_ = min(distances,key=lambda x:x[1])[0]
-        if min(getDistance((x_,y_), pos_), getDistance(self.pos, pos_)) == getDistance(self.pos, pos_): #Hvis du kun kan rykke længere væk
+        if min(calc_distance((x_, y_), pos_), calc_distance(self.pos, pos_)) == calc_distance(self.pos, pos_): #Hvis du kun kan rykke længere væk
             return
         else:
             if (x_,y_) == pos_:
@@ -1095,35 +1411,48 @@ class canteen_Agent(Agent):
             else:
                 self.model.grid.move_agent(self,(x_,y_))
 
-    def move_in_toilet_queue(self):
-        if self.pos == self.model.toilet.queue[0]: #Forest i køen
-            if len(self.model.grid.get_cell_list_contents(self.model.toilet.pos))<4:
-                self.model.grid.move_agent(self,self.model.toilet.pos)
-                self.in_toilet_queue = False
-                self.sitting_on_toilet = 3
-                self.since_last_toilet = 120
-                if self.model.toilet.has_been_infected == True and self.infected == False and self.vaccinated == False:
-                    if self.mask == True:
-                        p = bernoulli.rvs(1/300)
-                    else:
-                        p = bernoulli.rvs(5/100)
-                    if p == 1:
-                        self.infected == True
-                        if bernoulli.rvs(0.3) == 1:
-                            self.asymptomatic = True
-                            self.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length) #How long are they sick?
-                            self.incubation_period = self.infection_period
-                            self.non_contageous_period = 2 * day_length
-                        else:
-                            self.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
-                            self.infection_period = self.incubation_period+10*day_length
-                            self.non_contageous_period = self.incubation_period - 2 * day_length
-                  #      print("I was infected in the bathroom",self.id,self.asymptomatic,self.infection_period,self.incubation_period,self.non_contageous_period)
-                if self.infected == True and self.non_contageous_period == 0 and self.model.toilet.has_been_infected == False:
-                    self.model.toilet.has_been_infected = True
+    def use_toilet(self):
+        '''
+        Use and possibly infect the toilet
 
-            else:
-                return
+        :param self: canteen-object
+        :return: None
+        '''
+        if len(self.model.grid.get_cell_list_contents(self.model.toilet.pos))<4:
+            self.model.grid.move_agent(self,self.model.toilet.pos)
+            self.in_toilet_queue = False
+            self.sitting_on_toilet = 3
+            self.since_last_toilet = 120
+            if self.model.toilet.has_been_infected == True and self.infected == False and self.vaccinated == False:
+                if self.mask == True:
+                    p = bernoulli.rvs(1/300)
+                else:
+                    p = bernoulli.rvs(5/100)
+                if p == 1:
+                    self.infected == True
+                    if bernoulli.rvs(0.3) == 1:
+                        self.asymptomatic = True
+                        self.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length) #How long are they sick?
+                        self.incubation_period = self.infection_period
+                        self.non_contageous_period = 2 * day_length
+                    else:
+                        self.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
+                        self.infection_period = self.incubation_period+10*day_length
+                        self.non_contageous_period = self.incubation_period - 2 * day_length
+            if self.infected == True and self.non_contageous_period == 0 and self.model.toilet.has_been_infected == False:
+                self.model.toilet.has_been_infected = True
+        else:
+            return
+
+    def move_in_toilet_queue(self):
+        '''
+        Move one step in the toilet queue if possible. If agent is the first in the line, the agent uses the toilet.
+
+        :param self: canteen-object
+        :return: None
+        '''
+        if self.pos == self.model.toilet.queue[0]: #Forest i køen
+            self.use_toilet()
         else:
             possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
             next_queue_steps = [pos for pos in possible_steps if (self.model.grid.is_cell_empty(pos) or is_off_campus(get_agent_at_cell(self, pos))) and pos in self.model.toilet.queue]
@@ -1131,62 +1460,109 @@ class canteen_Agent(Agent):
                 return
             else:
                 pos_ = self.model.toilet.pos
-                distances = [(pos,getDistance(pos_,pos)) for pos in next_queue_steps]
+                distances = [(pos, calc_distance(pos_, pos)) for pos in next_queue_steps]
                 x_,y_ = min(distances,key=lambda x:x[1])[0]
-                if min(getDistance((x_,y_), pos_), getDistance(self.pos, pos_)) == getDistance(self.pos, pos_):
-                    return #Der er nogen foran dig, men ikke nogen bagved dig
+                "There is someone in front of you, but not behind you"
+                if min(calc_distance((x_, y_), pos_), calc_distance(self.pos, pos_)) == calc_distance(self.pos, pos_):
+                    return
                 self.model.grid.move_agent(self,(x_,y_))
 
-    def move(self,timestep=False):
-        if timestep is True: #Agents go to door
-            if self.queue == 0 and self.sitting_in_canteen == 0:
+    def move_in_canteen_queue(self, pos_):
+        '''
+        Move one step in canteen queue
+
+        :param self: canteen-object
+        :param pos_: a tuple
+        :return: None
+        '''
+        if self.buying_lunch != 0:
+            self.buying_lunch -= 1
+            if self.buying_lunch == 0:
+                self.coords = dir['N']
+        else:
+            possible_steps = self.model.grid.get_neighborhood(self.pos, moore=True, include_center=False)
+            possible_empty_steps = [cell for cell in possible_steps if self.model.grid.is_cell_empty(cell)]
+            if len(possible_empty_steps) == 0: #if someone in front of you - dont move
+                return
+            distances = [(pos, calc_distance(pos_, pos)) for pos in possible_empty_steps]
+            x_,y_ = min(distances,key=lambda x:x[1])[0]
+            if min(calc_distance((x_, y_), pos_), calc_distance(self.pos, pos_)) == calc_distance(self.pos, pos_):
+                return
+            else:
+                self.model.grid.move_agent(self,(x_,y_))
+                if self.pos == (23,17):
+                    self.buying_lunch = 3
+                    self.coords = dir['E']
+
+    def move(self, go_to_class=False):
+        '''
+        Called every time step. Depending on agent's state and objective, move agent accordingly
+
+        :param self: canteen-object
+        :optional param go_to_class: bool
+        :return: None
+        '''
+
+        if go_to_class is True: #Agent go to class
+            if self.queue == False and self.sitting_in_canteen == 0:
                 if with_mask == True:
                     self.mask = True
-                move_to_specific_pos(self,self.door.pos)
+                move_for_class(self, self.door.pos)
 
             else:
                 if self.in_toilet_queue == True:
                     force_agent_to_specific_pos(self,self.model.toilet.exit)
-                self.queue = 0
+                self.queue, self.going_to_toilet,self.in_toilet_queue = False, False, False
                 self.sitting_in_canteen = 0
-                self.in_toilet_queue = False
-                self.going_to_toilet = False
                 self.sitting_on_toilet = 0
-                move_to_specific_pos(self,self.door.pos)
-        else:
+                move_for_class(self, self.door.pos)
+
+        else: #Agent dont go to class
+            #Go home
             if (go_home_in_breaks == True or self.has_more_courses_today == False) and self.entre_door != ():
-                go_to_entre(self)
+                move_to_entre(self)
+            #Dont go home
             else:
-                if self.going_to_toilet == True: #På vej til toiletkø
-                    self.go_to_toilet_queue()
-                elif self.in_toilet_queue == True:  #I kø til toilettet
+                if self.going_to_toilet == True: #Go to toilet
+                    self.move_to_toilet()
+                elif self.in_toilet_queue == True:  #Queuing to toilet already
                     self.move_in_toilet_queue()
-                elif self.sitting_on_toilet>0: #Sidder på toa
+                elif self.sitting_on_toilet>0: #Sitting in toilet
                     self.sitting_on_toilet = max(0,self.sitting_on_toilet-1)
                     if self.sitting_on_toilet == 0:
                         self.model.grid.move_agent(self,self.model.toilet.exit)
-                elif self.queue == 1:
+                elif self.queue == True: #Queuing to canteen
                     if self.pos in [(23,j) for j in range(0,20)]:
-                        move_in_queue(self, (23,20)) # moves towards end of canteen
+                        self.move_in_canteen_queue((23,20)) # moves towards end of canteen
                     else:
-                        move_in_queue(self, (23,3))
-                elif self.sitting_in_canteen > 45:
+                        self.move_in_canteen_queue((23,3))# move towards canteen-line-entrance
+                elif self.sitting_in_canteen > 45: # sitting in canteen, stay there
                     self.sitting_in_canteen = max(0, self.sitting_in_canteen-1)
-                elif self.sitting_in_canteen in range(0,46):
+                elif self.sitting_in_canteen in range(0,46): # not sitting in canteen, wander around
                     self.sitting_in_canteen = max(0, self.sitting_in_canteen-1)
                     if with_mask == True:
                         self.mask = True
                     wander(self)
-
-
                 else: wander(self)
 
     def step(self):
+        ''''
+        Invoked every time step and is multi-purposed.
+        Update agent's parameters and handle if the agent is off_campus.
+        Invoke infect-function if agent is infectious and present at campus.
+        Keep track of and change direction of agent.
+        Invoke move-function.
+
+        :param self: canteen-object
+        :return: None
+        '''
         self.since_last_toilet = max(0,self.since_last_toilet-1)
-        if self.infected == True:
+
+        if self.infected:
             update_infection_parameters(self)
-        if go_home_in_breaks is False:
-            self.update_queue_parameters()
+
+        if go_home_in_breaks == False:
+            self.check_if_agent_is_queuing()
 
         if is_off_campus(self):
             if self.pos in self.model.entre:
@@ -1194,51 +1570,92 @@ class canteen_Agent(Agent):
             else:
                 self.model.grid.move_agent(self,self.model.entre[random.randint(0,len(self.model.entre)-1)])
 
-        start_pos = self.pos #for changing direction
+        "For changing direction"
+        start_pos = self.pos
 
         if is_off_campus(self) == False and self.is_home_sick == False:
-            if self.infected == True:
+            if self.infected:
                 infect(self)
 
-
-
-            #When should canteen agent go to class?
+        "When should the agent go to class?"
         if self.model.day_count == 1:
-            if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 0 and self.next_to_attend_class is True:
-                self.moving_to_door = 1
+            if self.model.minute_count in self.model.class_times and self.model.minute_count % 2 == 0 and self.next_to_attend_class == True:
+                self.going_to_class = True
         elif (self.model.minute_count == 0 or (self.model.minute_count in self.model.class_times+[2] and self.model.minute_count%2 == 0))\
-                and self.next_to_attend_class is True:
-            self.moving_to_door = 1
-        if self.moving_to_door == 1:
+                and self.next_to_attend_class:
+            self.going_to_class = True
+
+        if self.going_to_class:
             self.move(True)
         else:
             self.move()
+
+        "Avoid agents to go inside the toilet area (top left corner of grid)"
         try:
             if self.pos[0]<8 and self.pos[1]>32:
                 force_agent_to_specific_pos(self,self.model.toilet.exit)
         except:
             pass
+
+        "Change direction"
         if with_dir == True and self.sitting_in_canteen <= 45:
             end_pos = self.pos
-            self.coords = change_direction(self, start_pos, end_pos)
-
+            self.coords = update_direction(self, start_pos, end_pos)
 class employee_Agent(Agent):
+    '''
+    A class to represent the employees in the canteen
+
+    Attributes
+    ----------
+    id : int
+        States which agent we are looking at
+    model : Model
+        Model the agent belongs to
+    infected: bool
+        States if the agent is infected or not
+    asymptomatic : bool
+        States if the agent is going to show symptoms or not
+    recovered : bool
+        States if the agent is recovered from the disease or not
+    vaccinated : bool
+        States if the agent is vaccinated or not
+    is_home_sick : bool
+        States if the agent is home sick or not
+
+    mask : bool
+        States if the agent is wearing a mask or not
+
+    infection_period : int
+        The number of timesteps the agent is infected (only invoked if agent gets infected)
+    incubation_period : int
+        The number of timesteps the agent is asymptomatic and thus infect others without knowing it (only invoked if agent gets infected)
+    non_contageous_period : int
+        The number of timesteps the agent does not infect or show symptoms (only invoked if agent gets infected)
+    reproduction : int
+        The number of individuals the agent infects
+
+    coords : tuple ()
+        Direction of the agent
+    '''
     def __init__(self,id,model):
         super().__init__(id,model)
         self.id = id
+        self.model = model
+
         self.infected = False
+        self.asymptomatic = False
         self.recovered = False
+        self.vaccinated = False
+        self.is_home_sick = False
 
         if with_mask ==  True:
             self.mask = True
         else:
             self.mask = False
-        self.is_home_sick = False
-        self.vaccinated = False
 
-        self.asymptomatic = False #Does the agent show symptoms during infection period?
-        self.infection_period = 0#How long are they sick?
-        self.incubation_period = math.pi #Dummy
+
+        self.infection_period = 0
+        self.incubation_period = math.pi
         self.non_contageous_period = math.pi
         self.reproduction = 0
 
@@ -1263,42 +1680,89 @@ class employee_Agent(Agent):
         wander(self)
         if with_dir == True:
             end_pos = self.pos
-            self.coords = change_direction(self, start_pos, end_pos)
-
+            self.coords = update_direction(self, start_pos, end_pos)
 class wall(Agent):
-    """" Door for people to enter by and to exit by end of class"""
+    '''
+    A class to represent the walls
+
+    Attributes
+    ----------
+    id : int
+        States which agent we are looking at
+    model : Model
+        Model the agent belongs to
+    '''
     def __init__(self, id, model):
         super().__init__(id, model)
         self.id = id
         self.orientation = ()
-
 class door(Agent):
-    """" Door for people to enter by and to exit by end of class"""
-    def __init__(self, id, pos, model):
+    '''
+    A class to represent the doors to enter and exit the classrooms
+
+    Attributes
+    ----------
+    id : int
+        States which agent we are looking at
+    model : Model
+        Model the agent belongs to
+    '''
+    def __init__(self, id, model):
         super().__init__(id, model)
-        self.pos = pos
         self.id = id
         self.model = model
-        self.classroom = 0
-
 class desk(Agent):
-    """" Desk is for the canteen. Get's ID"""
-    def __init__(self, id, pos, model):
+    '''
+    A class to represent the desk at the canteen.
+
+    Attributes
+    ----------
+    id : int
+        States which agent we are looking at
+    model : Model
+        Model the agent belongs to
+    '''
+
+    def __init__(self, id, model):
         super().__init__(id, model)
         self.id = id
-        self.pos=pos
-
+        self.model = model
 class table(Agent):
-    def __init__(self,id, model):
-        super().__init__(id,model)
-        self.id = id
-        self.model = model
+    '''
+    A class to represent a table.
 
-class toilet(Agent):
+    Attributes
+    ----------
+    id : int
+        States which agent we are looking at
+    model : Model
+        Model the agent belongs to
+    '''
     def __init__(self,id, model):
         super().__init__(id,model)
         self.id = id
         self.model = model
-        self.queue = []
+class toilet(Agent):
+    '''
+    A class to represent a toilet.
+
+    Attributes
+    ----------
+    id : int
+        States which agent we are looking at
+    model : Model
+        Model the agent belongs to
+    has_been_infected: bool
+        Indicating wether or not the toilet has been infected
+    queue : list []
+        List of positions indicating the queue of toilet
+    exit : tuple ()
+        The position of the exit of the toilet
+    '''
+    def __init__(self,id, model):
+        super().__init__(id,model)
+        self.id = id
+        self.model = model
         self.has_been_infected = False
-        self.exit = ()
+        self.queue = [(i,37) for i in range(9,15)]
+        self.exit = (9,34)

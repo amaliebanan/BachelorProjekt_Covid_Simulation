@@ -10,6 +10,7 @@ import numpy as np
 from scipy.stats import truncnorm,norm,poisson
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import scipy.stats as stats
 import math
 
@@ -184,13 +185,11 @@ def plot_seiir():
 #plot_seiir()
 
 
-
-
-def plot_seiir_days():
-    beta = 0.00001
-    gamma = 1/(9*24)
-    eta = 0.7
-    psi = 1/(6*24)
+def plot_seiir_days(beta,gamma,eta,psi):
+    beta = beta
+    gamma = gamma
+    eta = eta
+    psi = psi
 
 
     dt = 1/60        # 1 minut
@@ -206,7 +205,7 @@ def plot_seiir_days():
     Is = np.zeros(N_t+1)
     R = np.zeros(N_t+1)
 
-    S[0] = 9700
+    S[0] = 156
     E[0] = 0
     I[0] = 0
     Ia[0] = 0
@@ -221,17 +220,16 @@ def plot_seiir_days():
         Is[n+1] = Is[n] + dt*eta*psi*E[n] - dt*gamma*Is[n]
         I[n+1] = Is[n+1]+Ia[n+1]
         R[n+1] = R[n] + dt*gamma*(Ia[n]+Is[n])
-    print((beta/gamma)*S[0])
+    print(len(I))
     fig = plt.figure()
-  #  l1, l2, l3, l4, l5 = plt.plot(t, S, t, E, t, Ia, t, Is, t, R)
-   # fig.legend((l1, l2, l3, l4, l5), ('S','E','Ia', 'Is', 'R'))
-    l1, l2, l3, l4, l5, l6 = plt.plot(t, S, t, E, t, I, t, Ia, t, Is, t, R)
-    fig.legend((l1, l2, l3, l4, l5, l6), ('S','E','I','Ia', 'Is', 'R'))
+    l1, l2, l3, l4 = plt.plot(t, S, t, E, t, I, t, R)
+    fig.legend((l1, l2, l3, l4), ('S','E','I', 'R'))
+  #  l1, l2, l3, l4, l5, l6 = plt.plot(t, S, t, E, t, I, t, Ia, t, Is, t, R)
+  #  fig.legend((l1, l2, l3, l4, l5, l6), ('S','E','I','Ia', 'Is', 'R'))
     plt.title("SEIR med asymptomatiske og symptomatiske")
-    plt.xlabel('minutter')
+    plt.xlabel('timer')
     plt.show()
-#plot_seiir_days()
-
+plot_seiir_days(1/100,1/150,0.7,1/(6*24))
 
 
 #http://hplgit.github.io/prog4comp/doc/pub/._p4c-solarized-Python021.html
@@ -280,6 +278,136 @@ def plot_sir():
     plt.xlabel('timer')
     plt.ylabel('Andel af befolkningen')
    # plt.show()
-plot_sir()
+#plot_sir()
 
 
+def plot_sveiir_days():
+    beta = 0.00001
+    gamma = 1/(9*24)
+    eta = 0.7
+    psi = 1/(6*24)
+    alpha = 0.00001
+    sigma = 0.0000001
+
+
+    dt = 1       # 1 minut
+    D = 56          # 8 uger (med weekend)
+    N_t = int(D*24)  #Antallet af minutter på 8 uger - 56x24x60 = 80640 minutter = 1344 timer
+
+    print(N_t)
+    t = np.linspace(0, N_t*dt, N_t+1)
+    S = np.zeros(N_t+1)
+    V = np.zeros(N_t+1)
+    E = np.zeros(N_t+1)
+    I = np.zeros(N_t+1)
+    Ia = np.zeros(N_t+1)
+    Is = np.zeros(N_t+1)
+    R = np.zeros(N_t+1)
+
+    percent_vaccinated = 0.5
+    N_susceptibles = 9699
+
+    S[0] = math.ceil(N_susceptibles*(1-percent_vaccinated))
+    V[0] = math.floor(N_susceptibles*percent_vaccinated)
+    E[0] = 0
+    I[0] = 0
+    Ia[0] = 0
+    Is[0] = 1
+    R[0] = 0
+
+    print(S[0]+V[0]+Is[0])
+
+    #Euler
+    for n in range(N_t):
+        S[n+1] = S[n] - dt*beta*S[n]*(Ia[n]+Is[n]) - alpha*S[n]
+        V[n+1] = V[n] + alpha*S[n]
+        E[n+1] = E[n] + dt*beta*S[n]*(Ia[n]+Is[n]) - dt*psi*E[n] + sigma*(Ia[n]+Is[n])*V[n]
+        Ia[n+1] = Ia[n] + dt*(1-eta)*psi*E[n] - dt*gamma*Ia[n]
+        Is[n+1] = Is[n] + dt*eta*psi*E[n] - dt*gamma*Is[n]
+        R[n+1] = R[n] + dt*gamma*(Ia[n]+Is[n]) - sigma*(Ia[n]+Is[n])*V[n]
+
+
+        #Just for show/plot
+        I[n+1] = Is[n+1]+Ia[n+1]
+ #   print(math.floor(S[N_t]+E[N_t]+Ia[N_t]+Is[N_t]+R[N_t]+V[N_t]))
+    print(max(I))
+    fig = plt.figure()
+  #  l1, l2, l3, l4, l5 = plt.plot(t, S, t, E, t, Ia, t, Is, t, R)
+   # fig.legend((l1, l2, l3, l4, l5), ('S','E','Ia', 'Is', 'R'))
+    l1, l2, l3, l4, l5, l6 = plt.plot(t, S, t, E, t, I, t, Ia, t, Is, t, R)
+    fig.legend((l1, l2, l3, l4, l5, l6), ('S','E','I','Ia', 'Is', 'R'))
+    plt.title("Med vaccinationer ")
+    plt.xlabel('timer')
+    plt.ylim(0,N_susceptibles)
+    plt.show()
+#plot_sveiir_days()
+
+def plot_loss_immunity_seiir_days():
+    beta = 0.00001
+    gamma = 1/(9*24)
+    eta = 0.7
+    psi = 1/(6*24)
+    alpha = 0.00001
+    sigma = 0.01
+
+
+    dt = 1/60        # 1 minut
+    D = 56           # 8 uger (med weekend)
+    N_t = int(D*24/dt)  #Antallet af minutter på 8 uger - 56x24x60 = 80640 minutter = 1344 timer
+
+    print(N_t)
+    t = np.linspace(0, N_t*dt, N_t+1)
+    S = np.zeros(N_t+1)
+    V = np.zeros(N_t+1)
+    E = np.zeros(N_t+1)
+    I = np.zeros(N_t+1)
+    Ia = np.zeros(N_t+1)
+    Is = np.zeros(N_t+1)
+    R = np.zeros(N_t+1)
+
+    S[0] = 9700
+    V[0] = 0
+    E[0] = 0
+    I[0] = 0
+    Ia[0] = 0
+    Is[0] = 1
+    R[0] = 0
+
+    #Euler
+    for n in range(N_t):
+        S[n+1] = S[n] - dt*beta*S[n]*(Ia[n]+Is[n]) + alpha*R[n]
+     #   V[n+1] = alpha*S[n]-sigma*beta*S[n]*(Ia[n]+Is[n])
+        E[n+1] = E[n] + dt*beta*S[n]*(Ia[n]+Is[n]) - dt*psi*E[n]
+        Ia[n+1] = Ia[n] + dt*(1-eta)*psi*E[n] - dt*gamma*Ia[n]
+        Is[n+1] = Is[n] + dt*eta*psi*E[n] - dt*gamma*Is[n]
+        I[n+1] = Is[n+1]+Ia[n+1]
+        R[n+1] = R[n] + dt*gamma*(Ia[n]+Is[n]) - alpha*R[n]
+    print((beta/gamma)*S[0])
+    fig = plt.figure()
+  #  l1, l2, l3, l4, l5 = plt.plot(t, S, t, E, t, Ia, t, Is, t, R)
+   # fig.legend((l1, l2, l3, l4, l5), ('S','E','Ia', 'Is', 'R'))
+    l1, l2, l3, l4, l5, l6 = plt.plot(t, S, t, E, t, I, t, Ia, t, Is, t, R)
+    fig.legend((l1, l2, l3, l4, l5, l6), ('S','E','I','Ia', 'Is', 'R'))
+    plt.title("SEIR med asymptomatiske og symptomatiske")
+    plt.xlabel('minutter')
+    plt.show()
+#plot_loss_immunity_seiir_days()
+
+def plot_vaccine_decrease():
+    x2 = [90.14,70.3,53.6,44.1,26.2,14.78,4.24]
+    x3 = [93.88,73.2,60.5,41.6,29.8,15.3,3.96]
+    x4 = [104.78,82.1,67.8,52,38.2,20.7,6.1]
+
+    y = [0,10,20,30,40,50,70]
+    plt.plot(y,x2)
+    plt.plot(y,x3)
+    plt.plot(y,x4)
+    plt.show()
+#plot_vaccine_decrease()
+
+def parse_datafile_infected(data):
+    df = pd.read_csv(data)
+    list_of_infected = list(df.iloc[:,1])
+    return list_of_infected
+
+print("PARSE",len(parse_datafile_infected("/Users/amaliepalmund/Documents/Bachelor/1_B/BachelorProjekt/Data_amalie/plotted_data_Basis_4.csv")))
