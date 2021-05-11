@@ -144,28 +144,30 @@ def plot_sir():
     plt.show()
 
 
-def plot_seiir():
-    beta = 0.000035
-    gamma = 1/5775
+"Denne kan er basis. Den skal kopieres, hvis du vil lave modifikationer"
+def plot_seiir_basis(N_susceptible):
+    beta = 0.0000240
+    gamma = 1/6037 #11.5 dage syg
     eta = 0.7
-    psi = 1/1575
+    rho = gamma/beta
+    psi = 1/1575 #Tre dage
 
-    D = 56           # 8 uger (med weekend)
+    D = 40                      #8 uger (hverdage)
+    N_t = math.floor(D*8.75*60) #Antallet af minutter på 8 uger (40 dage) - 21000
 
-    N_t = D*24*60  #Antallet af minutter på 8 uger - 56 dage á 7 timer
-
-    print(N_t)
     t = np.linspace(0, N_t, N_t+1)
     S = np.zeros(N_t+1)
     E = np.zeros(N_t+1)
     Ia = np.zeros(N_t+1)
     Is = np.zeros(N_t+1)
+    I = np.zeros(N_t+1)
     R = np.zeros(N_t+1)
 
-    S[0] = 9700
+    S[0] = N_susceptible
     E[0] = 0
     Ia[0] = 0
     Is[0] = 1
+    I[0] = Ia[0] + Is[0]
     R[0] = 0
 
     #Euler
@@ -174,62 +176,17 @@ def plot_seiir():
         E[n+1] = E[n] + beta*S[n]*(Ia[n]+Is[n]) - psi*E[n]
         Ia[n+1] = Ia[n] + (1-eta)*psi*E[n] - gamma*Ia[n]
         Is[n+1] = Is[n] + eta*psi*E[n] - gamma*Is[n]
+        I[n+1] = Is[n+1]+Ia[n+1]
         R[n+1] = R[n] + gamma*(Ia[n]+Is[n])
-    print((beta/gamma))
     fig = plt.figure()
-    l1, l2, l3, l4, l5 = plt.plot(t, S, t, E, t, Ia, t, Is, t, R)
-    fig.legend((l1, l2, l3, l4, l5), ('S','E', 'Ia', 'Is', 'R'))
+  #  l1, l2, l3, l4, l5 = plt.plot(t, S, t, E, t, Ia, t, Is, t, R)
+   # fig.legend((l1, l2, l3, l4, l5), ('S','E', 'Ia', 'Is', 'R'))
+    l1, l2, l3, l4, l5 = plt.plot(t, S, t, I, t, Ia, t, Is, t, R)
+    fig.legend((l1, l2, l3, l4, l5), ('S','I', 'Ia', 'Is', 'R'))
     plt.title("SEIR med asymptomatiske og symptomatiske")
     plt.xlabel('minutter')
     plt.show()
-#plot_seiir()
-
-
-def plot_seiir_days(beta,gamma,eta,psi):
-    beta = beta
-    gamma = gamma
-    eta = eta
-    psi = psi
-
-
-    dt = 1/60        # 1 minut
-    D = 56           # 8 uger (med weekend)
-    N_t = int(D*24/dt)  #Antallet af minutter på 8 uger - 56x24x60 = 80640 minutter = 1344 timer
-
-    print(N_t)
-    t = np.linspace(0, N_t*dt, N_t+1)
-    S = np.zeros(N_t+1)
-    E = np.zeros(N_t+1)
-    I = np.zeros(N_t+1)
-    Ia = np.zeros(N_t+1)
-    Is = np.zeros(N_t+1)
-    R = np.zeros(N_t+1)
-
-    S[0] = 156
-    E[0] = 0
-    I[0] = 0
-    Ia[0] = 0
-    Is[0] = 1
-    R[0] = 0
-
-    #Euler
-    for n in range(N_t):
-        S[n+1] = S[n] - dt*beta*S[n]*(Ia[n]+Is[n])
-        E[n+1] = E[n] + dt*beta*S[n]*(Ia[n]+Is[n]) - dt*psi*E[n]
-        Ia[n+1] = Ia[n] + dt*(1-eta)*psi*E[n] - dt*gamma*Ia[n]
-        Is[n+1] = Is[n] + dt*eta*psi*E[n] - dt*gamma*Is[n]
-        I[n+1] = Is[n+1]+Ia[n+1]
-        R[n+1] = R[n] + dt*gamma*(Ia[n]+Is[n])
-    print(len(I))
-    fig = plt.figure()
-    l1, l2, l3, l4 = plt.plot(t, S, t, E, t, I, t, R)
-    fig.legend((l1, l2, l3, l4), ('S','E','I', 'R'))
-  #  l1, l2, l3, l4, l5, l6 = plt.plot(t, S, t, E, t, I, t, Ia, t, Is, t, R)
-  #  fig.legend((l1, l2, l3, l4, l5, l6), ('S','E','I','Ia', 'Is', 'R'))
-    plt.title("SEIR med asymptomatiske og symptomatiske")
-    plt.xlabel('timer')
-    plt.show()
-plot_seiir_days(1/100,1/150,0.7,1/(6*24))
+plot_seiir_basis(156)
 
 
 #http://hplgit.github.io/prog4comp/doc/pub/._p4c-solarized-Python021.html
@@ -410,4 +367,4 @@ def parse_datafile_infected(data):
     list_of_infected = list(df.iloc[:,1])
     return list_of_infected
 
-print("PARSE",len(parse_datafile_infected("/Users/amaliepalmund/Documents/Bachelor/1_B/BachelorProjekt/Data_amalie/plotted_data_Basis_4.csv")))
+#print("PARSE",len(parse_datafile_infected("/Users/amaliepalmund/Documents/Bachelor/1_B/BachelorProjekt/Data_amalie/plotted_data_Basis_4.csv")))
