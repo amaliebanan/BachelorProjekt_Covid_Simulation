@@ -1,7 +1,7 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement
 from mesa.visualization.ModularVisualization import ModularServer
 import AgentClass as ac
-from Model import covid_Model,get_infected,is_off_campus,is_student, with_dir, dir, is_human
+from Model import covid_Model,get_infected_count,is_off_campus,is_student, with_dir, dir, is_human
 from PIL import Image
 import numpy as np
 from mesa.batchrunner import BatchRunner
@@ -20,7 +20,7 @@ class infected_Element(TextElement):
         pass
 
     def render(self, model):
-        return "Infected agents: " + str(get_infected(model))
+        return "Infected agents: " + str(get_infected_count(model))
 
 class count_Days(TextElement):
     '''
@@ -68,7 +68,7 @@ def covid_draw(agent):
                 portrayal["Shape"] = "resources/exposed.png"
                 portrayal["scale"] = 0.9
 
-        if isinstance(agent, ac.class_Agent) and agent.hasQuestion == True:
+        if isinstance(agent, ac.class_Agent) and agent.has_question == True:
             if agent.infected == True:
                 portrayal["Color"] = "#000"
             if agent.infected == False:
