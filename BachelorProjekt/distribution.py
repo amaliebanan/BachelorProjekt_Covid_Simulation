@@ -13,6 +13,9 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 import math
+from scipy.interpolate import interp2d
+from control.phaseplot import phase_plot
+
 
 #Covid infektionen er geometrisk fordelt. Sandsynligheden for at blive smittet akkumulerer over tid.
 
@@ -109,50 +112,14 @@ def truncnorm_():
     #mu = 1/2
     #xx = np.linspace(0,3,1000)
 
-#truncnorm_()
-
-
-def plot_sir():
-    # Time unit: 1 minute
-    beta = 0.001
-    gamma = 0.015
-    dt = 1/60            # 6 min
-    D = 40             # Simulate for D days
-    N_t = int((D*7)/dt)   # Corresponding no of minutes
-    print(N_t)
-    t = np.linspace(0, N_t, N_t+1)
-    print(len(t))
-    S = np.zeros(N_t+1)
-    I = np.zeros(N_t+1)
-    R = np.zeros(N_t+1)
-
-    # Initial condition
-    S[0] = 157
-    I[0] = 1
-    R[0] = 0
-
-    # Step equations forward in time
-    for n in range(N_t):
-        S[n+1] = S[n] - dt*beta*S[n]*I[n]
-        I[n+1] = I[n] + dt*beta*S[n]*I[n] - dt*gamma*I[n]
-        R[n+1] = R[n] + dt*gamma*I[n]
-
-    fig = plt.figure()
-    l1, l2, l3 = plt.plot(t, S, t, I, t, R)
-    fig.legend((l1, l2, l3), ('S', 'I', 'R'), 'upper left')
-    plt.xlabel('minutes')
-    plt.show()
-
-
-"Denne kan er basis. Den skal kopieres, hvis du vil lave modifikationer"
-def plot_seiir_basis(N_susceptible):
-    beta = 0.0000240
-    gamma = 1/6037 #11.5 dage syg
+def SIR_BASIS(beta_, gamma_,N_susceptible,N_infected):
     eta = 0.7
-    rho = gamma/beta
     psi = 1/1575 #Tre dage
+    delta = 0.75
 
-    D = 40                      #8 uger (hverdage)
+    s_,i_,r_ = [],[],[]
+
+    D = 5*8                   #8 uger (hverdage)
     N_t = math.floor(D*8.75*60) #Antallet af minutter på 8 uger (40 dage) - 21000
 
     t = np.linspace(0, N_t, N_t+1)
@@ -166,31 +133,97 @@ def plot_seiir_basis(N_susceptible):
     S[0] = N_susceptible
     E[0] = 0
     Ia[0] = 0
-    Is[0] = 1
+    Is[0] = N_infected
     I[0] = Ia[0] + Is[0]
     R[0] = 0
 
-    #Euler
-    for n in range(N_t):
-        S[n+1] = S[n] - beta*S[n]*(Ia[n]+Is[n])
-        E[n+1] = E[n] + beta*S[n]*(Ia[n]+Is[n]) - psi*E[n]
-        Ia[n+1] = Ia[n] + (1-eta)*psi*E[n] - gamma*Ia[n]
-        Is[n+1] = Is[n] + eta*psi*E[n] - gamma*Is[n]
-        I[n+1] = Is[n+1]+Ia[n+1]
-        R[n+1] = R[n] + gamma*(Ia[n]+Is[n])
-    fig = plt.figure()
-  #  l1, l2, l3, l4, l5 = plt.plot(t, S, t, E, t, Ia, t, Is, t, R)
-   # fig.legend((l1, l2, l3, l4, l5), ('S','E', 'Ia', 'Is', 'R'))
-    l1, l2, l3, l4, l5 = plt.plot(t, S, t, I, t, Ia, t, Is, t, R)
-    fig.legend((l1, l2, l3, l4, l5), ('S','I', 'Ia', 'Is', 'R'))
-    plt.title("SEIR med asymptomatiske og symptomatiske")
+    for i in range(len(beta_)):
+        rho = gamma_[i]/beta_[i]
+        r0 = (beta_[i]/gamma_[i])*N_susceptible
+        iMax = N_susceptible/r0
+        print("Values R0, Imax and S(inf)",r0,iMax,S[N_t-1])
+        #Euler
+        for n in range(N_t):
+            S[n+1] = S[n] - beta_[i]*S[n]*I[n]
+            I[n+1] = I[n] + beta_[i]*S[n]*I[n] - gamma_[i]*I[n]
+            R[n+1] = R[n] + gamma_[i]*I[n]
+            if S[n]-0.1 <= np.floor(iMax) <= S[n+1]+0.1:
+                print(n)
+
+        fig = plt.figure()
+        l1, l2, l3 = plt.plot(t, S, t, I, t, R)
+        fig.legend((l1, l2, l3), ('S','I', 'R'),'center right')
+        s_.append(S)
+        i_.append(I)
+        r_.append(R)
+
+ #   plt.axvline(x=8591, color='red', linestyle='dashed',linewidth='0.75')
+
+    plt.title("SIR epidemi model")
     plt.xlabel('minutter')
     plt.show()
-plot_seiir_basis(156)
+    return s_,i_,r_
+#SIR_BASIS([1/800000],[1/10000],9699,1)
+def norm(data):
+    return (data)/(max(data)-min(data))
+def phaseplot():
+    S_basis1, I_basis1, R_basis1 = SIR_BASIS([0.000025], [1/6037],156,1)
+    S_basis2, I_basis2, R_basis2 = SIR_BASIS([0.000025], [1/6037],150,7)
+    S_basis3, I_basis3, R_basis3 = SIR_BASIS([0.000025], [1/6037],143,14)
+    S_basis4, I_basis4, R_basis4 = SIR_BASIS([0.000025], [1/6037],135,21)
+ #   S_basis2, I_basis2, R_basis2 = SIR_BASIS([1/1000], [1/1000],900,100)
+ #   S_basis3, I_basis3, R_basis3 = SIR_BASIS([1/900000], [1/6500],950,50)
+ #   S_basis4, I_basis4, R_basis4 = SIR_BASIS([1/70000], [1/6700],500,500)
+    sy1 = norm(S_basis1[0])
+    ix1 = norm(I_basis1[0])
+    sy2 = norm(S_basis2[0])
+    ix2 = norm(I_basis2[0])
+    sy3 = norm(S_basis3[0])
+    ix3 = norm(I_basis3[0])
+    sy4 = norm(S_basis4[0])
+    ix4 = norm(I_basis4[0])
+
+    plt.plot(ix1*1000, sy1*1000,ix2*1000, sy2*1000,ix3*1000, sy3*1000,ix4*1000, sy4*1000)
+
+    plt.xlabel("I")
+    plt.ylabel("S")
+    plt.title("Faseplot for I og S")
+
+    plt.show()
+#phaseplot()
+"Denne kan er basis. Den skal kopieres, hvis du vil lave modifikationer"
+
+def phaseplot_seiir():
+    S_basis1, I_basis1, R_basis1 = plot_seiir_basis(120,37)
+    S_basis2, I_basis2, R_basis2 = plot_seiir_basis(37,120)
+    S_basis3, I_basis3, R_basis3 = plot_seiir_basis(156.5,0.5)
+    S_basis4, I_basis4, R_basis4 = plot_seiir_basis(150,7)
+
+    print(S_basis2)
+ #   S_basis2, I_basis2, R_basis2 = SIR_BASIS([1/1000], [1/1000],900,100)
+ #   S_basis3, I_basis3, R_basis3 = SIR_BASIS([1/900000], [1/6500],950,50)
+ #   S_basis4, I_basis4, R_basis4 = SIR_BASIS([1/70000], [1/6700],500,500)
+    iy1 = norm(I_basis1)
+    sx1 = norm(S_basis1)
+    iy2 = norm(I_basis2)
+    sx2 = norm(S_basis2)
+    iy3 = norm(I_basis3)
+    sx3 = norm(S_basis3)
+    iy4 = norm(I_basis4)
+    sx4 = norm(S_basis4)
+
+    print(sx2)
+    plt.plot(sx1,iy1, sx2, iy2, sx3,iy3, sx4,iy4)
+
+    plt.xlabel("S")
+    plt.ylabel("I")
+    plt.title("Faseplot for I og S")
+
+    plt.show()
+#phaseplot_seiir()
 
 
 #http://hplgit.github.io/prog4comp/doc/pub/._p4c-solarized-Python021.html
-
 def plot_sir():
     beta = 0.02
     gamma = 1/(8*24)
@@ -199,7 +232,7 @@ def plot_sir():
 
 
     dt = 1/60        # 1 minut
-    D = 56           # 8 uger (med weekend)
+    D = 40          # 8 uger (med weekend)
     N_t = int(D*24/dt)  #Antallet af minutter på 8 uger - 56x24x60 = 80640 minutter = 1344 timer
 
     print(N_t)
@@ -212,9 +245,9 @@ def plot_sir():
     R = np.zeros(N_t+1)
 
     N = 1000
-    S[0] = 0.99
+    S[0] = 999
     E[0] = 0
-    I[0] = 0.01
+    I[0] = 1
     Ia[0] = 0
     Is[0] = 1
     R[0] = 0
@@ -234,70 +267,8 @@ def plot_sir():
     plt.title("SIR epidemi model")
     plt.xlabel('timer')
     plt.ylabel('Andel af befolkningen')
-   # plt.show()
-#plot_sir()
-
-
-def plot_sveiir_days():
-    beta = 0.00001
-    gamma = 1/(9*24)
-    eta = 0.7
-    psi = 1/(6*24)
-    alpha = 0.00001
-    sigma = 0.0000001
-
-
-    dt = 1       # 1 minut
-    D = 56          # 8 uger (med weekend)
-    N_t = int(D*24)  #Antallet af minutter på 8 uger - 56x24x60 = 80640 minutter = 1344 timer
-
-    print(N_t)
-    t = np.linspace(0, N_t*dt, N_t+1)
-    S = np.zeros(N_t+1)
-    V = np.zeros(N_t+1)
-    E = np.zeros(N_t+1)
-    I = np.zeros(N_t+1)
-    Ia = np.zeros(N_t+1)
-    Is = np.zeros(N_t+1)
-    R = np.zeros(N_t+1)
-
-    percent_vaccinated = 0.5
-    N_susceptibles = 9699
-
-    S[0] = math.ceil(N_susceptibles*(1-percent_vaccinated))
-    V[0] = math.floor(N_susceptibles*percent_vaccinated)
-    E[0] = 0
-    I[0] = 0
-    Ia[0] = 0
-    Is[0] = 1
-    R[0] = 0
-
-    print(S[0]+V[0]+Is[0])
-
-    #Euler
-    for n in range(N_t):
-        S[n+1] = S[n] - dt*beta*S[n]*(Ia[n]+Is[n]) - alpha*S[n]
-        V[n+1] = V[n] + alpha*S[n]
-        E[n+1] = E[n] + dt*beta*S[n]*(Ia[n]+Is[n]) - dt*psi*E[n] + sigma*(Ia[n]+Is[n])*V[n]
-        Ia[n+1] = Ia[n] + dt*(1-eta)*psi*E[n] - dt*gamma*Ia[n]
-        Is[n+1] = Is[n] + dt*eta*psi*E[n] - dt*gamma*Is[n]
-        R[n+1] = R[n] + dt*gamma*(Ia[n]+Is[n]) - sigma*(Ia[n]+Is[n])*V[n]
-
-
-        #Just for show/plot
-        I[n+1] = Is[n+1]+Ia[n+1]
- #   print(math.floor(S[N_t]+E[N_t]+Ia[N_t]+Is[N_t]+R[N_t]+V[N_t]))
-    print(max(I))
-    fig = plt.figure()
-  #  l1, l2, l3, l4, l5 = plt.plot(t, S, t, E, t, Ia, t, Is, t, R)
-   # fig.legend((l1, l2, l3, l4, l5), ('S','E','Ia', 'Is', 'R'))
-    l1, l2, l3, l4, l5, l6 = plt.plot(t, S, t, E, t, I, t, Ia, t, Is, t, R)
-    fig.legend((l1, l2, l3, l4, l5, l6), ('S','E','I','Ia', 'Is', 'R'))
-    plt.title("Med vaccinationer ")
-    plt.xlabel('timer')
-    plt.ylim(0,N_susceptibles)
     plt.show()
-#plot_sveiir_days()
+#plot_sir()
 
 def plot_loss_immunity_seiir_days():
     beta = 0.00001
@@ -368,3 +339,353 @@ def parse_datafile_infected(data):
     return list_of_infected
 
 #print("PARSE",len(parse_datafile_infected("/Users/amaliepalmund/Documents/Bachelor/1_B/BachelorProjekt/Data_amalie/plotted_data_Basis_4.csv")))
+def add_arrow(line, position=None, direction='right', size=15, color=None):
+    """
+    add an arrow to a line.
+
+    line:       Line2D object
+    position:   x-position of the arrow. If None, mean of xdata is taken
+    direction:  'left' or 'right'
+    size:       size of the arrow in fontsize points
+    color:      if None, line color is taken.
+    """
+    if color is None:
+        color = line.get_color()
+
+    xdata = line.get_xdata()
+    ydata = line.get_ydata()
+
+    if position is None:
+        position = xdata.mean()+xdata.std()
+    # find closest index
+    start_ind = np.argmin(np.absolute(xdata - position))
+    if direction == 'right':
+        end_ind = start_ind + 1
+    else:
+        end_ind = start_ind - 1
+    line.axes.annotate('',
+        xytext=(xdata[start_ind], ydata[start_ind]),
+        xy=(xdata[end_ind], ydata[end_ind]),
+        arrowprops=dict(arrowstyle="->", color=color),
+        size=size
+    )
+def reproduction_number1(S,beta,gamma):
+    Re_list = []
+    x_val = [x for x in range(len(S))]
+    for n in range(len(S)):
+        Re_list.append(beta*(S[n])/157*gamma)
+    #plt.xticks([x*10080 for x in range(0,9)], [x*7 for x in range(0,9)])
+   # plt.ylim(0,2)
+    plt.plot(x_val,Re_list)
+def reproduction_number_correct(S, r0):
+    Re_list = []
+    x_val = [x for x in range(len(S))]
+    first = True
+    for n in range(len(S)):
+        re = (S[n]/9700)*r0
+        if re < 1 and first:
+            print("Rt is below 1 for the first time in timestep:",n)
+            first = False
+        Re_list.append(re)
+
+    #plt.xticks([x*10080 for x in range(0,9)], [x*7 for x in range(0,9)])
+   # plt.ylim(0,2)
+    plt.axhline(y=1, color='indianred', linestyle='--')
+    plt.plot(x_val,Re_list)
+    return x_val,Re_list
+
+def plot_seiir_basis(N_susceptible,N_infected):
+    N_total = N_susceptible + N_infected
+    beta = 0.00000003*0.65
+    gamma = 1/14400
+    eta = 0.7
+    rho = gamma/beta
+    psi = 1/4320 #2.7 dage
+    delta = 0.75
+    dt = 1
+    D = 7*8    #8 uger
+    N_t = math.floor(D*24*60*dt) #Antallet af minutter på 8 uger (40 dage) - 21000X
+
+    t = np.linspace(0, N_t, N_t+1)
+    S = np.zeros(N_t+1)
+    E = np.zeros(N_t+1)
+    Ia = np.zeros(N_t+1)
+    Is = np.zeros(N_t+1)
+    I = np.zeros(N_t+1)
+    R = np.zeros(N_t+1)
+
+    S[0] = N_susceptible
+    E[0] = 0
+    Ia[0] = N_infected*(1-eta)
+    Is[0] = N_infected*(eta)
+    I[0] = Ia[0] + Is[0]
+    R[0] = 0
+    r0 = np.abs((beta*((-1+eta)*delta-eta))/gamma)*N_total
+    first = True
+    #Euler
+    for n in range(N_t):
+        S[n+1] = dt*S[n] - dt*beta*S[n]*(delta*Ia[n]+Is[n])
+        E[n+1] = dt*E[n] + dt*beta*S[n]*(delta*Ia[n]+Is[n]) - dt*psi*E[n]
+        Ia[n+1] = dt*Ia[n] + dt*(1-eta)*psi*E[n] - dt*gamma*Ia[n]
+        Is[n+1] = dt*Is[n] + dt*eta*psi*E[n] - dt*gamma*Is[n]
+        I[n+1] = dt*Is[n+1]+Ia[n+1]
+        R[n+1] = dt*R[n] + dt*gamma*(Ia[n]+Is[n])
+
+    fig = plt.figure()
+   # print(r0,iMax)
+   # print("dette er r0 pangdang",(N_susceptible+N_infected)*gamma/beta)
+    r0 = np.abs((beta*(delta*(-1+eta)-eta))/gamma)*N_total
+    print("r0 SEIR",r0)
+    print()
+
+    print("teoretisk indtræffer imax når St=",S[0]/r0)
+    print("imax er rent faktisk", max(I),"Ved index:",np.argmax(I))
+    print("Ved index",np.argmax(I),"er S faktisk",S[np.argmax(I)])
+    print(S[69408],I[69408])
+    l1, l2, l3, l4 = plt.plot(t, S, t, E, t, I, t, R)
+    l5, l6 = plt.plot(t,Ia,t,Is,linestyle="dashed")
+    fig.legend((l1, l2,l5, l6,l3,l4), ('S','E','Ia', 'Is','I','R'),'center right')
+    plt.title("SE$I_{a}$$I_{s}$R model med " '$\Re_{0}= $'+ "2.5 og $S_{0}$ = 99%")
+    plt.xlabel('Dage')
+    plt.ylim(0,10000)
+    plt.xticks([x*10080 for x in range(0,9)], [x*7 for x in range(0,9)])
+    plt.ylabel("Antal mennesker")
+    print(N_t,"I max", max(I), "I mean", np.mean(I), "I std", np.std(I), "sslut",S[N_t], "islut", I[N_t],"Rslut",R[N_t])
+    print("I total efter sim", (I[N_t]+E[N_t]+R[N_t])/N_total)
+
+    plt.show()
+    return S,I,R
+
+
+
+################WORKING MODELS FOR N=9700#######################
+def per(N,n):
+    return (N/100)*n
+plot_seiir_basis(9700-per(9700,1),per(9700,1))
+print(9700-per(9700,2),per(9700,2))
+def plot_seiir_basis(N_susceptible,N_infected):
+    N_total = N_susceptible + N_infected
+    beta = 0.00000003*0.65
+    gamma = 1/14400
+    eta = 0.7
+    rho = gamma/beta
+    psi = 1/4320 #2.7 dage
+    delta = 0.75
+    D = 7*8    #8 uger
+    N_t = math.floor(D*24*60) #Antallet af minutter på 8 uger (40 dage) - 21000X
+
+    t = np.linspace(0, N_t, N_t+1)
+    S = np.zeros(N_t+1)
+    E = np.zeros(N_t+1)
+    Ia = np.zeros(N_t+1)
+    Is = np.zeros(N_t+1)
+    I = np.zeros(N_t+1)
+    R = np.zeros(N_t+1)
+
+    S[0] = N_susceptible
+    E[0] = 0
+    Ia[0] = N_infected*(1-eta)
+    Is[0] = N_infected*(eta)
+    I[0] = Ia[0] + Is[0]
+    R[0] = 0
+    index_max = 0
+    r0 = np.abs((beta*((-1+eta)*delta-eta))/gamma)*N_total
+    imax_when_st_is = S[0]/r0
+    first = False
+
+    ismax = (gamma*Is)/(eta*psi) #E skal være dette
+    iamax = -((-1 + eta)*psi*E)/gamma #Ia skal være dette
+    first = True
+    #Euler
+    for n in range(N_t):
+        S[n+1] = S[n] - beta*S[n]*(delta*Ia[n]+Is[n])
+        E[n+1] = E[n] + beta*S[n]*(delta*Ia[n]+Is[n]) - psi*E[n]
+     #   if gamma*Is[n]/(eta*psi)-0.01 < E[n] <gamma*Is[n]/(eta*psi)+0.01:
+           # print("HEJEHEJ",gamma*Is[n]/(eta*psi))
+        Ia[n+1] = Ia[n] + (1-eta)*psi*E[n] - gamma*Ia[n]
+       # if -((-1 + eta)*psi*E[n])/gamma-0.1 < Ia[n] < -((-1 + eta)*psi*E[n])/gamma+0.1:
+      #      print("HEJ", -((-1 + eta)*psi*E[n])/gamma)
+        Is[n+1] = Is[n] + eta*psi*E[n] - gamma*Is[n]
+        I[n+1] = Is[n+1]+Ia[n+1]
+        R[n+1] = R[n] + gamma*(Ia[n]+Is[n])
+        if imax_when_st_is - 2 < S[n+1] < imax_when_st_is + 2:
+            index_max = n
+      #  if n>100 and I[n+1] < I[n] and first:
+      #      first = False
+      #      print("max er her",n)
+  # print(S[index_max],E[index_max], Ia[index_max],Is[index_max],R[index_max])
+   # print(max(I),"hejehj")
+   # reproduction_number1(S,beta,gamma)
+    x_rt, y_rt = reproduction_number_correct(S, r0)
+    fig = plt.figure()
+   # print(r0,iMax)
+   # print("dette er r0 pangdang",(N_susceptible+N_infected)*gamma/beta)
+    r0 = np.abs((beta*(delta*(-1+eta)-eta))/gamma)*N_total
+    print("r0 SEIR",r0)
+    print()
+
+    print("teoretisk indtræffer imax når St=",S[0]/r0)
+    print("imax er rent faktisk", max(I),"Ved index:",np.argmax(I))
+    print("Ved index",np.argmax(I),"er S faktisk",S[np.argmax(I)])
+    print(S[69408],I[69408])
+    l1, l2, l3, l4 = plt.plot(t, S, t, E, t, I, t, R)
+    l5, l6 = plt.plot(t,Ia,t,Is,linestyle="dashed")
+    fig.legend((l1, l2,l5, l6,l3,l4), ('S','E','Ia', 'Is','I','R'),'center right')
+    plt.title("SE$I_{a}$$I_{s}$R model med " '$\Re_{0}= $'+ "2.5 og $S_{0}$ = 99%")
+    plt.xlabel('Dage')
+    plt.ylim(0,10000)
+    plt.xticks([x*10080 for x in range(0,9)], [x*7 for x in range(0,9)])
+    plt.ylabel("Antal mennesker")
+    print(N_t,"I max", max(I), "I mean", np.mean(I), "I std", np.std(I), "sslut",S[N_t], "islut", I[N_t],"Rslut",R[N_t])
+    print("I total efter sim", (I[N_t]+E[N_t]+R[N_t])/N_total)
+
+    plt.show()
+    return S,I,R
+#plot_seiir_basis(9700-per(9700,1),per(9700,1))
+
+
+def plot_sveiir_days(N_susceptible,N_inf,percent_vaccinated):
+    N_total = N_susceptible + N_inf
+    beta = 0.00000003*0.8
+    beta2 = 0.0000000001
+    gamma = 1/14400
+    eta = 0.7
+    rho = gamma/beta
+    psi = 1/4320
+    delta = 0.75
+    alpha = 0.0000001
+    D = 7*8            #8 uger
+    N_t = math.floor(D*24*60) #Antallet af minutter på 8 uger (40 dage) - 21000
+
+    print(N_t)
+    t = np.linspace(0, N_t, N_t+1)
+    S = np.zeros(N_t+1)
+    V = np.zeros(N_t+1)
+    E = np.zeros(N_t+1)
+    I = np.zeros(N_t+1)
+    Ia = np.zeros(N_t+1)
+    Is = np.zeros(N_t+1)
+    R = np.zeros(N_t+1)
+
+    percent_vaccinated = percent_vaccinated
+    N_susceptibles = N_susceptible
+
+
+    S[0] = math.ceil(N_susceptibles*(1-percent_vaccinated))
+    V[0] = math.floor(N_susceptibles*percent_vaccinated)
+    E[0] = 0
+    Ia[0] = N_inf*(1-eta)
+    Is[0] = N_inf*(eta)
+    I[0] = Ia[0] + Is[0]
+    R[0] = 0
+
+    print("Så mange s+v",S[0]+V[0])
+    index_max = 0
+    r0 = np.abs(((beta+beta2)*(delta*(-1+eta)-eta))/gamma)*N_total
+
+    imax_when_st_is = S[0]/r0
+    #Euler
+    for n in range(N_t):
+        S[n+1] = S[n] - beta*S[n]*(delta*Ia[n]+Is[n]) - alpha*S[n]
+        V[n+1] = V[n] + alpha*S[n] - beta2*V[n]*(delta*Ia[n]+Is[n])
+        E[n+1] = E[n] + beta*S[n]*(delta*Ia[n]+Is[n]) - psi*E[n] + beta2*V[n]*(delta*Ia[n]+Is[n])
+        Ia[n+1] = Ia[n] + (1-eta)*psi*E[n] - gamma*Ia[n]
+        Is[n+1] = Is[n] + eta*psi*E[n] - gamma*Is[n]
+        R[n+1] = R[n] + gamma*(Ia[n]+Is[n])
+        if imax_when_st_is - 0.5 < S[n+1] < imax_when_st_is + 0.5:
+            index_max = n
+         #   print("hejh",index_max,S[n+1])
+
+        #Just for show/plot
+        I[n+1] = Is[n+1]+Ia[n+1]
+ #   print(math.floor(S[N_t]+E[N_t]+Ia[N_t]+Is[N_t]+R[N_t]+V[N_t]))
+    print("troede jeg",I[index_max],"rigtig Imax",max(I))
+    print("st skal være ",S[0]/r0)
+    print("R0 SVEIR",(np.abs((beta+beta2)*(delta*(-1+eta)-eta))/gamma)*N_total)
+    print("Other r0 SVIER",np.abs((((delta + beta - 1)*eta - delta - beta2)*beta - eta*beta2)*N_total/gamma))
+    fig = plt.figure()
+  #  plt.axvline(x=index_max, color='red', linestyle='dashed',linewidth='0.75')
+  #  l1, l2, l3, l4, l5 = plt.plot(t, S, t, E, t, Ia, t, Is, t, R)
+   # fig.legend((l1, l2, l3, l4, l5), ('S','E','Ia', 'Is', 'R'))
+    l1, l2, l5, l6 = plt.plot(t, S, t, E, t, I, t, R)
+    l3, l4 = plt.plot(t,Ia,t,Is,linestyle="dashed")
+
+    fig.legend((l1, l2, l3, l4, l5, l6), ('S','E','Ia','Is','I','R'))
+    plt.title("SVE$I_{a}$$I_{s}$R model med " '$\Re_{0}= $'+ "2.5 og $S_{0}$ = 99%")
+    plt.xlabel('minutter')
+    plt.ylim(0,10000)
+    plt.show()
+#plot_sveiir_days(9700-per(9700,10),per(9700,10),0.67)
+
+def test_seiir_change_N(N_list,first,second):
+    "N_list should consist of 0<n<1, where n is the percentage of susceptible."
+    plt.figure()
+
+    N=9700
+    for i in range(len(N_list)):
+        beta = 0.00000003*0.8
+        gamma = 1/14400
+        eta = 0.7
+        rho = gamma/beta
+        psi = 1/4320 #2.7 dage
+        delta = 0.75
+        D = 7*16          #8 uger
+        N_t = math.floor(D*24*60) #Antallet af minutter på 8 uger (40 dage) - 21000X
+        r0 = np.abs((beta*((-1+eta)*delta-eta))/gamma)*N
+
+
+        t = np.linspace(0, N_t, N_t+1)
+        S = np.zeros(N_t+1)
+        E = np.zeros(N_t+1)
+        Ia = np.zeros(N_t+1)
+        Is = np.zeros(N_t+1)
+        I = np.zeros(N_t+1)
+        R = np.zeros(N_t+1)
+
+        S[0] = np.floor(N*N_list[i])+1
+        E[0] = 0
+        Ia[0] = 0
+        Is[0] = N-S[0]
+        I[0] = Ia[0] + Is[0]
+        R[0] = 0
+
+        #Euler
+        for n in range(N_t):
+            S[n+1] = S[n] - beta*S[n]*(Ia[n]*delta+Is[n])
+            E[n+1] = E[n] + beta*S[n]*(Ia[n]*delta+Is[n]) - psi*E[n]
+            Ia[n+1] = Ia[n] + (1-eta)*psi*E[n] - gamma*Ia[n]
+            Is[n+1] = Is[n] + eta*psi*E[n] - gamma*Is[n]
+            I[n+1] = Is[n+1]+Ia[n+1]
+            R[n+1] = R[n] + gamma*(Ia[n]+Is[n])
+        choice_list = ['t', 'S', 'I']
+        true_choice_list = [t,S,I]
+        if first in choice_list:
+            indx = choice_list.index(first)
+            x = true_choice_list[indx]
+        else:
+            print('choose first value: t,s,i')
+        if second in choice_list:
+            indx = choice_list.index(second)
+            y = true_choice_list[indx]
+        else:
+            print('choose second value: t,s,i')
+        p = str(N_list[i]*100)
+        plt.plot(x,y,label="$S_{0}$ = "+p+"%")
+        if first != 't':
+            add_arrow(plt.plot(x,y)[0])
+            plt.xlim(0-N/100,N)
+            plt.ylim(0-N/100,N)
+            plt.xticks([0,1000,2000,3000,4000,5000,6000,7000,8000,9000])
+            plt.yticks([0,1000,2000,3000,4000,5000,6000,7000,8000,9000])
+            plt.title("Faseplot for S,I ved "r'$\Re_0$ = 2.5')
+            plt.legend()
+            plt.grid(True)
+        else:
+            plt.title('Tidsplot')
+            plt.ylim(0,N)
+    plt.ylabel("Antal infektiøse, "+second)
+    plt.xlabel("Antal modtagelige, "+first)
+    print(r0)
+    plt.show()
+#test_seiir_change_N([0.99,0.95,0.90,0.80,0.70,0.60,0.50,0.40], 'S','I')
+

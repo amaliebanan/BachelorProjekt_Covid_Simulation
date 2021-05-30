@@ -26,10 +26,10 @@ day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
 init_canteen_agents = 80
-infection_rate = (0.025/100)
+infection_rate = (0.035/100)
 infection_rate_1_to_2_meter = calculate_percentage(infection_rate, 10.2)
 infection_rate_2plus_meter = calculate_percentage(infection_rate_1_to_2_meter,2.02)
-infection_decrease_with_mask_pct = 50
+infection_decrease_with_mask_pct = 60
 
 
 go_home_in_breaks = False
@@ -41,6 +41,13 @@ number_of_vaccinated = math.floor(percentages_of_vaccinated*(init_canteen_agents
 
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
+
+def get_toilet_inf_count(self):
+    agents = [a.counter for a in self.schedule.agents if isinstance(a,ac.toilet)]
+    return sum(agents)
+
+def get_canteen_table_inf_count(self):
+    return self.canteen_counter
 
 def get_infected_count(self):
     '''
@@ -241,10 +248,11 @@ def add_init_infected(self, n):
     i = 0
     positives = []
     while i<n:
-        all_agents = [a for a in self.schedule.agents if is_human(a)]
+        all_agents = [a for a in self.schedule.agents if is_human(a) and a.id in [x for x in range(3*24,3*24*3-1)] or a.id in [1004,1005,1006]]
      #   students = [a for a in self.schedule.agents if isinstance(a,ac.class_Agent)]
       #  TA = [a for a in self.schedule.agents if isinstance(a,ac.TA)]
-       # canteen = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.off_school == False]
+        #canteen = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.off_school == False]
+        employee = [a for a in self.schedule.agents if isinstance(a,ac.employee_Agent)]
         randomAgent = self.random.choice(all_agents)
         if randomAgent.pos in positives: #Dont pick the same agent as before
             pass
@@ -254,6 +262,10 @@ def add_init_infected(self, n):
             positive_agent.infected = True
             print(positive_agent.id)
 
+           # positive_agent.asymptomatic = True
+           # positive_agent.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length) - 2* day_length #How long are they sick?
+           # positive_agent.incubation_period = positive_agent.infection_period
+           # positive_agent.non_contageous_period = 0
             positive_agent.non_contageous_period = 0
             positive_agent.incubation_period = 2*day_length
             positive_agent.infection_period = positive_agent.incubation_period+10*day_length
@@ -367,14 +379,14 @@ def set_up_classroom(self, N, setUpType, i):
     '''
     listOfPositions = []
     if setUpType == 2: #Horseshoe
-        if self.n_agents==24:
+        if self.n_agents<24:
             list = [((x,y+i*11),z) for ((x,y),(z)) in self.classroom_2]
             list_ = random.sample(list,k=len(list))
         else:
             list_ = [((x,y+i*11),z) for ((x,y),(z)) in self.classroom_2]
         listOfPositions = list_
     elif setUpType == 3: #Rows
-        if self.n_agents==24:
+        if self.n_agents<24:
             list = [((x,y+i*11),z) for ((x,y),(z)) in self.classroom_3]
             list_ = random.sample(list,k=len(list))
         else:
@@ -544,7 +556,8 @@ def make_classroom_seating(list_of_setuptypes, self):
     for j in range(len(list_of_setuptypes)):
         number = str("classroom_") + str(list_of_setuptypes[j])    #Which type of class room are we constructing?
         classroom_ = [((x,y+j*11),z) for ((x,y),z) in getattr(self, number)]
-        seats.append(classroom_)
+        list_ = random.sample(classroom_,k=len(classroom_))
+        seats.append(list_)
     return seats
 
 def weekend(self):
@@ -577,29 +590,32 @@ def weekend(self):
 
     n = new_positives_after_weekends
 
-    while n>0:
-         if percentages_of_vaccinated == 0: #Get all susceptibles (not sick, not recovered)
-             agents_to_infect = get_susceptible_count(self)
-         else: #Get all susceptibles (not sick, not recovered, not vaccinated)
-             agents_to_infect = [a for a in self.schedule.agents if is_human(a) and a.infected == False and a.recovered == False]
-         if len(agents_to_infect)>0:
-            a = self.random.choice(agents_to_infect)
-            if a.vaccinated:
-                n-=1
-            else:
-                a.infected = True
-                n-=1
-                if bernoulli.rvs(0.3)==1:
-                    a.asymptomatic = True
-                    a.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length)#How long are they sick?
-                    a.incubation_period = a.infection_period #Agents are asymptomatic for 5 days
-                    a.non_contageous_period =  2 * day_length
+    if self.day_count%2 == 1:
+        return
+    else:
+        while n>0:
+             if percentages_of_vaccinated == 0: #Get all susceptibles (not sick, not recovered)
+                 agents_to_infect = get_susceptible_count(self)
+             else: #Get all susceptibles (not sick, not recovered, not vaccinated)
+                 agents_to_infect = [a for a in self.schedule.agents if is_human(a) and a.infected == False and a.recovered == False]
+             if len(agents_to_infect)>0:
+                a = self.random.choice(agents_to_infect)
+                if a.vaccinated:
+                    n-=1
                 else:
-                    a.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
-                    a.infection_period = a.incubation_period+10*day_length#How long are they sick?
-                    a.non_contageous_period = a.incubation_period - 2 * day_length
-         else:
-            n-=1
+                    a.infected = True
+                    n-=1
+                    if bernoulli.rvs(0.3)==1:
+                        a.asymptomatic = True
+                        a.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length)#How long are they sick?
+                        a.incubation_period = a.infection_period #Agents are asymptomatic for 5 days
+                        a.non_contageous_period =  2 * day_length
+                    else:
+                        a.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
+                        a.infection_period = a.incubation_period+10*day_length#How long are they sick?
+                        a.non_contageous_period = a.incubation_period - 2 * day_length
+             else:
+                n-=1
 
 def choose_agents_to_go_to_toilet(self):
     '''
@@ -623,12 +639,138 @@ def choose_agents_to_go_to_toilet(self):
         except: #No one in list
             break
 
+def students_with_questions(self):
+    '''
+    If no one is recieving help, let a bernoulli distribution with mu = 1/5 decide if a new student has a question
+    Set that student's has_question attribute to True
+
+    :param self: model-object
+    :return: None
+    '''
+    for ta in self.TAs:
+        p = bernoulli.rvs(1/5)
+        if len(ta.students) == 0 or p == 0:
+            continue
+        if len(ta.students)>10 and p == 1:
+            questions_ = [a for a in ta.students if a.has_question == True]
+            if len(questions_) == 0: #Only answer question if no one is recieving help at the moment
+                TAs_students = [a for a in ta.students if a.is_home_sick == False]
+                randomStudent = self.random.choice(TAs_students)
+                randomStudent.has_question = True
+
+def set_canteen_employees(self):
+    '''
+    When employee is recovered, send the back-up employee home
+
+    :param self: model-object
+    :return: None
+    '''
+    for agent in self.canteen_backups_to_go_home: #sending home spare employees
+        if not agent.pos is None:
+            self.grid.remove_agent(agent)
+            self.schedule.remove(agent)
+            self.canteen_backups_to_go_home.remove(agent)
+        else:
+            self.canteen_backups_to_go_home.remove(agent)
+
+def vaccinate_agents(self):
+    '''
+    Vaccinate the % of the population specified in the model parameters.
+    Setting the agent's attribute vaccinated = True.
+    Can not happen to initial infected(s) agent(s).
+
+    :param self: model-object
+    :return: None
+    '''
+    n_agents_has_been_vaccinated = math.floor(all_agents_count(self) * percentages_of_vaccinated)
+    n = 0
+    agents = [a for a in self.schedule.agents if is_human(a)]
+    while n_agents_has_been_vaccinated>n:
+        vaccinate_agent = self.random.choice(agents)
+        if vaccinate_agent.vaccinated == True or vaccinate_agent.infected == True:
+            continue
+        else:
+            vaccinate_agent.vaccinated = True
+            n+=1
+
+def set_students_go_to_class_next(self):
+    '''
+    Calls the set_canteen_agents_next_to_attend_class-function in correct time steps if go_home_in_breaks is False.
+    Sets the attribute directly if go_home_in_breaks is True.
+
+    The timing depends on wether go_home_in_breaks is True or False.
+    :param self: model-object
+    :return: None
+    '''
+    if go_home_in_breaks == False:
+        if self.day_count>1 and self.minute_count in [100,220,400,520]:
+            set_canteen_agents_next_to_attend_class(self)
+        elif self.minute_count in [220,400,520]:
+            set_canteen_agents_next_to_attend_class(self)
+    else:
+        if self.minute_count in [100,400]:
+            self.seats = make_classroom_seating(self.setUpType, self)
+            for a in agents:
+                a.next_to_attend_class = True
+        if self.minute_count in [220,520]:
+            self.seats = make_classroom_seating(self.setUpType, self)
+            agents = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) if (a.id < 3*24 or a.id in [1001,1002,1003]) and a.day_off == False and a.pos in self.entre]
+            for a in agents:
+                a.next_to_attend_class = True
+
+def set_up_initial_attributes(self):
+    '''
+    Calls other functions.
+    If go_home_in_breaks is False, set up canteen and toilet.
+    Always set up classrooms.
+    Add initial canteen agents and initial infected
+
+    :param self: model-object
+    :return: None
+    '''
+    if go_home_in_breaks == False:
+            set_up_canteen(self)
+    #Add agents to model and grid
+    i = 0
+    for s in self.setUpType:
+        set_up_classroom(self, self.n_agents, s, i)
+        i+=1
+    if go_home_in_breaks == False:
+        set_up_toilet(self)
+    if len(self.setUpType)>1:
+        add_init_canteen_agents(self, (self.n_agents) * i, init_canteen_agents)
+    add_init_infected(self, init_positive_agents)
+
+def create_courses(self):
+    '''
+    Depending on wether or not family_groups is True or False,
+    set up courses. Family_groups dictacted that everyone has both courses with the same people.
+    Otherwise, the courses are randomly distributed amongst the students.
+
+    :param self: model-object
+    :return: None
+    '''
+    if family_groups == False: #Shuffle courses
+        self.other_courses = random.sample([4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents,
+                                           k=len([4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents))
+
+        self.range46 = random.sample([4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents,
+                                 k=len([4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents))
+
+        self.range13 = random.sample([1]*self.n_agents+[2]*self.n_agents+[3]*self.n_agents,
+                                 k=len([1]*self.n_agents+[2]*self.n_agents+[3]*self.n_agents))
+    elif family_groups == True: #Wihtout shuffle
+        self.other_courses = [4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents
+        self.range46 = [4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents
+        self.range13 = [1]*self.n_agents+[2]*self.n_agents+[3]*self.n_agents
+
 class covid_Model(Model):
     """
-    Class representing Model. The Model is responsible for the logical structure of our ABM.
+    Class representing Model. The Model is responsible for the logical structure of the ABM.
     Here, the model is set up both visually to the grid and logical to the algorithm
 
-    Attributes
+    The most important attributes are listed below.
+    The rest is commented in the class below.
     ---------
     N : int
         Number of agents in grid in current timestep
@@ -636,6 +778,8 @@ class covid_Model(Model):
         height of grid
     width : int
         width of grid
+    setUpType : List
+        List of classroom types/construction (2,3,4/H,R,G)
     grid : grid
         Visual grid
     schedule : module
@@ -648,21 +792,36 @@ class covid_Model(Model):
         Counting minutes
     hour_count : int
         Counting hours
+    day_count : int
+        Counting days
+    TAs : List
+        List of TAs at the current time_step
+    classroom_2 : List
+        List of seat-positions with corrosponding direction in the H set up
+    classroom_3 : List
+        List of seat-positions with corrosponding direction in the R set up
+    classroom_4 : List
+        List of seat-positions with corrosponding direction in the G set up
 
     """
     def __init__(self, N, height, width,setUpType):
         self.n_agents = N
         self.height = height
-        self.TAs = []
+
         self.grid = MultiGrid(width, height, torus=False) #torus wraps edges
         self.schedule = SimultaneousActivation(self)
         self.setUpType = setUpType
         self.datacollector = DataCollector(model_reporters={"infected": lambda m: get_infected_count(self),
                                                             "Agent_count": lambda m: all_agents_count(self),
                                                             "recovered": lambda m: get_recovered_count(self),
-                                                            "Home":lambda m: get_home_sick_count(self)
+                                                            "Home":lambda m: get_home_sick_count(self),
+                                                            "Toilet":lambda m: get_toilet_inf_count(self),
+                                                            "CanTables":lambda  m: get_canteen_table_inf_count(self)
                                                             #,"Reproduction": lambda m: get_list_of_reproduction(self)
                                                              })
+
+        #Lists to hold agent-objects with with different states
+        self.TAs = []
         self.agents_at_home = []
         self.recovered_agents = []
         self.infected_agents = []
@@ -673,34 +832,23 @@ class covid_Model(Model):
         self.minute_count = 1
         self.hour_count = 1
         self.day_count = 1
-        self.door = ()
+      #  self.door = ()
 
         self.entre = [(15,0),(16,0),(17,0),(25,34),(25,33),(25,32)]
 
+        #Define time schedule + when breaks are
         self.class_times = [105,120,225,300,405,420,525]
         self.breaks_for_all = [i for i in range(105, 120)] + [i for i in range(225, 300)] + [i for i in range(405, 420)]
         self.breaks_for_ft = [i for i in range(105,300)]
         self.breaks_for_sf = [i for i in range(225,420)]
 
+
         self.other_courses, self.range46, self.range13 = [], [], []
 
-        if family_groups == False: #Shuffle courses
-            self.other_courses = random.sample([4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents,
-                                               k=len([4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents))
-
-            self.range46 = random.sample([4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents,
-                                     k=len([4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents))
-
-            self.range13 = random.sample([1]*self.n_agents+[2]*self.n_agents+[3]*self.n_agents,
-                                     k=len([1]*self.n_agents+[2]*self.n_agents+[3]*self.n_agents))
-        elif family_groups == True: #Wihtout shuffle
-            self.other_courses = [4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents
-            self.range46 = [4]*self.n_agents+[5]*self.n_agents+[6]*self.n_agents
-            self.range13 = [1]*self.n_agents+[2]*self.n_agents+[3]*self.n_agents
+        create_courses(self)
 
 
-
-        #Classrooms +  directions
+        #Define classrooms +  directions
         self.classroom_2 = [((0,0),dir['E']),((1,0),dir['N']),((2,0),dir['N']),((3,0),dir['N']),((4,0),dir['N']),
                            ((5,0),dir['N']),((6,0),dir['N']),((7,0),dir['N']),((0,1),dir['E']),((0,2),dir['E']),
                            ((0,3),dir['E']),((0,4),dir['E']),((0,5),dir['E']),((0,6),dir['E']),
@@ -719,12 +867,12 @@ class covid_Model(Model):
                            ((4,4),dir['N']),((4,5),dir['S']),((5,4),dir['N']),((5,5),dir['S']),
                            ((4,7),dir['N']),((4,8),dir['S']),((5,7),dir['N']),((5,8),dir['S'])]
 
+        #Set up seats, canteen tables, queuing area
         self.seats, self.seat,self.toilet = [], (), ()
-
-
         self.canteen_table_1 = [((22,y), dir['E']) for y in range(25,33)]+[((18,y), dir['E']) for y in range(25,33)]+[((14,y), dir['E']) for y in range(25,33)]
         self.canteen_table_2 = [((23,y), dir['W']) for y in range(25,33)]+[((19,y), dir['W']) for y in range(25,33)]+[((15,y), dir['W']) for y in range(25,33)]
         self.canteen_tables = self.canteen_table_1+self.canteen_table_2
+        self.canteen_counter = 0
         self.enter_canteen_area12 = [(x,y) for y in range(0,4) for x in range(17,26)]
         self.enter_canteen_area10 = [(x,y) for y in range(0,4) for x in range(21,26)]
         self.canteen_queue_area = [(22,3), (24,3)]+[(23, y) for y in range(3,21)]+[(25, y) for y in range(5,19)]
@@ -732,121 +880,80 @@ class covid_Model(Model):
         self.toilet_queue_area = [(x,y) for x in range(8,15) for y in [height-1, height-2]]
 
 
-        if go_home_in_breaks == False:
-                set_up_canteen(self)
+        set_up_initial_attributes(self)
 
-        #Add agents to model and grid
-        i = 0
-        for s in setUpType:
-            set_up_classroom(self, self.n_agents, s, i)
-            i+=1
-
-        if go_home_in_breaks == False:
-            set_up_toilet(self)
-
-        if len(self.setUpType)>1:
-            add_init_canteen_agents(self, (self.n_agents) * i, init_canteen_agents)
-
-        add_init_infected(self, init_positive_agents)
-
+        #Make seats (if family group restriction is on, dont shuffle)
         self.seat = make_classroom_seating(setUpType, self)
         for list in self.seat:
             if family_groups == False: #Shuffle
                 self.seats.append(random.sample(list,k=len(list)))
             elif family_groups == True: #Dont shuffle
                 self.seats.append(list)
+
         self.copy_of_seats = self.seats
         self.datacollector.collect(self)
         self.running = True
 
 
-        if 0 <= percentages_of_vaccinated < 1:
-            n_agents_has_been_vaccinated = math.floor(all_agents_count(self) * percentages_of_vaccinated)
-            n = 0
-            agents = [a for a in self.schedule.agents if is_human(a)]
-            while n_agents_has_been_vaccinated>n:
-                vaccinate_agent = self.random.choice(agents)
-                if vaccinate_agent.vaccinated == True or vaccinate_agent.infected == True:
-                    continue
-                else:
-                    vaccinate_agent.vaccinated = True
-                    n+=1
+        if 0 < percentages_of_vaccinated < 1:
+            vaccinate_agents(self)
+
 
     def step(self):
+        ''''
+        Invoked every time step and is multi-purposed.
+        Collect data in the data-collector and invokes all agents' step() function
+
+        Tracks and manage time and time count, including weekends, day off and off school parameters at students.
+        Initiate several different functions; chosing agents to go toilet, set students with questions in class,
+        make classroom seating, set canteen employees,
+
+        :param self: class-object
+        :return: None
+        '''
+        #Only let people go to toilet, if toilet is open (closed when everyone go home in breaks)
         if go_home_in_breaks == False:
             choose_agents_to_go_to_toilet(self)
 
-        #Gå hjem når du ik har flere kurser eller hvis du
+        #Go home if you dont have any more courses today
         set_off_school(self)
-        #Hold fri når du har fridag
+
+        #Day off
         if self.day_count%7==2 or self.day_count%7==3 or self.day_count%7==4 or self.day_count%7==5:
             set_day_off(self)
 
+        #Update classroom seatings
         if go_home_in_breaks == False:
             if self.minute_count in [1,119,299,419]:
                 self.seats = make_classroom_seating(self.setUpType, self)
 
-        for agent in self.canteen_backups_to_go_home: #sending home spare employees
-                    if not agent.pos is None:
-                        self.grid.remove_agent(agent)
-                        self.schedule.remove(agent)
-                        self.canteen_backups_to_go_home.remove(agent)
-                    else:
-                        self.canteen_backups_to_go_home.remove(agent)
+        #Handle employees
+        set_canteen_employees(self)
+        #Answer questions
+        students_with_questions(self)
 
+        #Tell the students that are attending class next, that they need to go to class. Timing this depends on
+        #wether or not everyone go home in breaks or not
+        set_students_go_to_class_next(self)
 
-        for ta in self.TAs:
-            p = bernoulli.rvs(20/100)
-            if len(ta.students) == 0 or p == 0:
-                continue
-            if len(ta.students)>10 and p == 1:
-                questions_ = [a for a in ta.students if a.has_question == 1]
-                if len(questions_) == 0: #Only answer question if no one is recieving help at the moment
-                    TAs_students = [a for a in ta.students if a.is_home_sick == False]
-                    randomStudent = self.random.choice(TAs_students)
-                    randomStudent.has_question = 1
-
-        if go_home_in_breaks == False:
-            if self.day_count>1 and self.minute_count in [100,220,400,520]:
-                set_canteen_agents_next_to_attend_class(self)
-            elif self.minute_count in [220,400,520]:
-                set_canteen_agents_next_to_attend_class(self)
-        else:
-            if self.minute_count in [100,400]:
-                self.seats = make_classroom_seating(self.setUpType, self)
-                agents = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) if a.id >= 3*24 and a.id not in [1001,1002,1003] and a.day_off == False and a.pos in self.entre]
-                ##print(len(self.seats[0]),len(self.seats[1]),len(self.seats[2]))
-                #print("længde:",len(agents))
-                for a in agents:
-                    a.next_to_attend_class = True
-            if self.minute_count in [220,520]:
-                self.seats = make_classroom_seating(self.setUpType, self)
-                #print(len(self.seats[0]),len(self.seats[1]),len(self.seats[2]))
-                agents = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) if (a.id < 3*24 or a.id in [1001,1002,1003]) and a.day_off == False and a.pos in self.entre]
-               # print("længde:",len(agents))
-                for a in agents:
-                    a.next_to_attend_class = True
-
-
+        #Step every agent and collect data
         self.schedule.step()
         self.datacollector.collect(self)
 
-
-        #Time count
+        #Time count, manage weekends and toilet cleaning
         self.minute_count += 1
         if self.minute_count % 60 == 0:
             self.hour_count += 1
 
-
         if self.minute_count % 526 == 0:
             self.day_count += 1
-            if self.day_count in [6,13,20,27,34,41,48,55,62]: ##WEEKEND
+            if self.day_count in [6,13,20,27,34,41,48,55,62]:
                self.day_count+=2
                weekend(self)
             self.minute_count = 1
             self.hour_count = 1
             try:
-                self.toilet.has_been_infected = False #Gøres rent hver dag
+                self.toilet.has_been_infected = False #Clean toilet everyday
             except:
                 return
 

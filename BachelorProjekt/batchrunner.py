@@ -55,7 +55,6 @@ def plot_infected(fix_par, var_par, model, iter, steps):
     plt.legend()
     return
 
-
 "uncomment below to see a plot of a single setup type. Change setup type by changing fixed_params at line 10"
 #plot_infected(fixed_params, variable_params, covid_Model, iterationer, skridt)
 #plt.show()
@@ -105,7 +104,7 @@ def list_of_infected(j):
     for i in range(len(data_list)):
         data_list[i]['Iteration'] = i+1
 
-    pd.concat(data_list).to_csv('csvdata/Basis_02_5infection_'+str(j)+'.csv')
+    pd.concat(data_list).to_csv('csvdata/HoldB'+str(j)+'.csv')
 
     #next 5 lines is to determine reproduction number
     #list_reproduction = []
@@ -126,16 +125,23 @@ def list_of_infected(j):
     num_of_infected = [0]*(skridt+1) #makes list for y-values for Infected
     num_of_susceptible = [0]*(skridt+1) #makes list for y-values for Susceptible
     num_of_recovered = [0]*(skridt+1) #makes list for y-values for Recovered
+    num_of_toilets = [0]*(skridt+1) #makes list for y-values for Recovered
+    num_of_canteen = [0]*(skridt+1) #makes list for y-values for Recovered
+
     for i in range(len(data_list)):
         for j in range(len(data_list[i]["infected"])):
             num_of_infected[j]+=data_list[i]["infected"][j]
             num_of_susceptible[j] += data_list[i]["Agent_count"][j]-(data_list[i]["infected"][j]+data_list[i]["recovered"][j]+number_of_vaccinated) #number of susceptible at each time step
             num_of_recovered[j] += data_list[i]["recovered"][j]
+            num_of_toilets[j] += data_list[i]["Toilet"][j]
+            num_of_canteen[j] += data_list[i]["CanTables"][j]
     num_of_infected =[number / iterationer for number in num_of_infected] #avg number of infected
     num_of_susceptible = [number / iterationer for number in num_of_susceptible]
     num_of_recovered = [number / iterationer for number in num_of_recovered]
+    num_of_toilets = [number / iterationer for number in num_of_toilets]
+    num_of_canteen = [number / iterationer for number in num_of_canteen]
 
-    return num_of_infected, num_of_susceptible, num_of_recovered
+    return num_of_infected, num_of_susceptible, num_of_recovered, num_of_toilets,num_of_canteen
 
 "uncomment below to run list_of_infected function with different set up types. Change line 12 and 13 to change number of iterations and timesteps"
 pool = mp.Pool(mp.cpu_count()) #opens pools for running parallel programs
@@ -150,7 +156,7 @@ for i in range(len(results)):
             print("MAX SMITTEDE VED:" ,i+2,max(results[i][j]))
     df = pd.DataFrame(samlet)
     dff = df.T
-    dff.to_csv('csvdata/plotted_data_Basis_02_5infection_'+str(i+2)+'.csv')
+    dff.to_csv('csvdata/plotted_data_HoldB_'+str(i+2)+'.csv')
 
 "Uncomment below for plotting the three plots for comparing"
 time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
@@ -162,7 +168,7 @@ for i in range(1,3,1):
     plt.plot(time, results[i-1][1], color=colors[i-1], linestyle='dashed')
     plt.plot(time, results[i-1][2], color=colors[i-1], linestyle='dotted')
 plt.xlabel('Tidsskridt')
-plt.plot([], color='Black', label='Infected')
+plt.plot([], color='Black', label='Infeqcted')
 plt.plot([], color='Black', label='Susceptible', linestyle='dashed')
 plt.plot([], color='Black', label='Recovered', linestyle='dotted')
 plt.ylabel('Gennemsnit antal smittede')

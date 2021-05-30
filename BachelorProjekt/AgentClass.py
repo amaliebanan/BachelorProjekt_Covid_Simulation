@@ -375,7 +375,10 @@ def infect(self):
                     N_list.append(agent)
 
     "Now we'll infect"
+
     for agent in Same_pos:
+        if agent.mask == True:
+            ir = calculate_percentage(ir,15)
         if bernoulli.rvs(ir*10) == 1:
             newly_infected.append(agent)
             self.model.infected_agents.append(agent)
@@ -595,8 +598,13 @@ def infect(self):
                         self.model.infected_agents.append(agent)
 
     self.reproduction += len(newly_infected)
+    if self.pos in self.model.canteen_tables:
+        print(self.id,self.pos,self.model.day_count,self.model.minute_count,"Im sitting and chillin and Im sick!")
 
     for a in newly_infected:
+        self.reproduction =+ 1
+        if a.mask and bernoulli(0.15) == 1:
+            continue
         a.infected = True
         if bernoulli.rvs(0.3) == 1:
             a.asymptomatic = True
@@ -605,8 +613,11 @@ def infect(self):
             a.non_contageous_period = 2 * day_length
         else:
             a.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
-            a.infection_period = a.incubation_period+10*day_length
+            a.infection_period = a.incubation_period + 10*day_length
             a.non_contageous_period = a.incubation_period - 2 * day_length
+        if a.pos in self.model.canteen_tables:
+            print(a.pos,self.pos,"it happened")
+            self.canteen_counter = self.canteen_counter+1
 
 "CHANGING OBJECT-TYPE"
 def change_obj_params(new,old):
@@ -911,8 +922,8 @@ def send_agent_back_to_school(self):
     :return: None
     '''
 
-    newList_at_home = [a for a in self.model.agents_at_home if a.id != self.id]
-    self.model.agents_at_home = newList_at_home
+   # newList_at_home = [a for a in self.model.agents_at_home if a.id != self.id]
+    #self.model.agents_at_home = newList_at_home
 
     self.model.recovered_agents.append(self)
     self.is_home_sick = False
@@ -1212,13 +1223,13 @@ class TA(Agent):
 
         if question_count > 0 and len(self.students) > 15:  #Class is started and somebody has a question
             for s in self.students:
-                if s.has_question == True:
+                if s.has_question:
                     self.move_to_student(s)
                     self.coords = s.coords
         else:
             start_pos = self.pos
             wander(self)
-            if with_dir == True:
+            if with_dir:
                 end_pos = self.pos
                 self.coords = update_direction(self, start_pos, end_pos)
 
@@ -1234,7 +1245,7 @@ class TA(Agent):
         :return: None
         '''
 
-        if self.infected == True:
+        if self.infected:
             update_infection_parameters(self)
         if is_off_campus(self):
             if self.pos in self.model.entre:
@@ -1245,7 +1256,7 @@ class TA(Agent):
         self.connect_TA_and_students()
 
         if is_off_campus(self) == False and self.is_home_sick == False:
-            if self.infected == True:
+            if self.infected:
                 infect(self)
 
         if self.time_remaining <= 0 and len(self.students)<5:
@@ -1424,12 +1435,13 @@ class canteen_Agent(Agent):
             self.sitting_on_toilet = 3
             self.since_last_toilet = 120
             if self.model.toilet.has_been_infected == True and self.infected == False and self.vaccinated == False:
-                if self.mask == True:
+                if self.mask:
                     p = bernoulli.rvs(1/300)
                 else:
                     p = bernoulli.rvs(5/100)
                 if p == 1:
-                    self.infected == True
+                    self.infected = True
+                    self.model.toilet.counter = self.model.toilet.counter+1
                     if bernoulli.rvs(0.3) == 1:
                         self.asymptomatic = True
                         self.infection_period = truncnorm_(5 * day_length, 21*day_length, 10*day_length, 2*day_length) #How long are they sick?
@@ -1439,7 +1451,7 @@ class canteen_Agent(Agent):
                         self.incubation_period = truncnorm_(3 * day_length, 11.5*day_length, 5*day_length, 1*day_length) #Agents are asymptomatic for 5 days
                         self.infection_period = self.incubation_period+10*day_length
                         self.non_contageous_period = self.incubation_period - 2 * day_length
-            if self.infected == True and self.non_contageous_period == 0 and self.model.toilet.has_been_infected == False:
+            if self.infected and self.non_contageous_period == 0 and self.model.toilet.has_been_infected == False:
                 self.model.toilet.has_been_infected = True
         else:
             return
@@ -1505,12 +1517,12 @@ class canteen_Agent(Agent):
 
         if go_to_class is True: #Agent go to class
             if self.queue == False and self.sitting_in_canteen == 0:
-                if with_mask == True:
+                if with_mask:
                     self.mask = True
                 move_for_class(self, self.door.pos)
 
             else:
-                if self.in_toilet_queue == True:
+                if self.in_toilet_queue:
                     force_agent_to_specific_pos(self,self.model.toilet.exit)
                 self.queue, self.going_to_toilet,self.in_toilet_queue = False, False, False
                 self.sitting_in_canteen = 0
@@ -1523,15 +1535,15 @@ class canteen_Agent(Agent):
                 move_to_entre(self)
             #Dont go home
             else:
-                if self.going_to_toilet == True: #Go to toilet
+                if self.going_to_toilet: #Go to toilet
                     self.move_to_toilet()
-                elif self.in_toilet_queue == True:  #Queuing to toilet already
+                elif self.in_toilet_queue:  #Queuing to toilet already
                     self.move_in_toilet_queue()
                 elif self.sitting_on_toilet>0: #Sitting in toilet
                     self.sitting_on_toilet = max(0,self.sitting_on_toilet-1)
                     if self.sitting_on_toilet == 0:
                         self.model.grid.move_agent(self,self.model.toilet.exit)
-                elif self.queue == True: #Queuing to canteen
+                elif self.queue: #Queuing to canteen
                     if self.pos in [(23,j) for j in range(0,20)]:
                         self.move_in_canteen_queue((23,20)) # moves towards end of canteen
                     else:
@@ -1540,7 +1552,7 @@ class canteen_Agent(Agent):
                     self.sitting_in_canteen = max(0, self.sitting_in_canteen-1)
                 elif self.sitting_in_canteen in range(0,46): # not sitting in canteen, wander around
                     self.sitting_in_canteen = max(0, self.sitting_in_canteen-1)
-                    if with_mask == True:
+                    if with_mask:
                         self.mask = True
                     wander(self)
                 else: wander(self)
@@ -1598,7 +1610,7 @@ class canteen_Agent(Agent):
             pass
 
         "Change direction"
-        if with_dir == True and self.sitting_in_canteen <= 45:
+        if with_dir and self.sitting_in_canteen <= 45:
             end_pos = self.pos
             self.coords = update_direction(self, start_pos, end_pos)
 class employee_Agent(Agent):
@@ -1664,7 +1676,7 @@ class employee_Agent(Agent):
     def step(self):
         if is_off_campus(self):
             return
-        if self.infected == True:
+        if self.infected:
             infect(self)
             update_infection_parameters(self)
 
@@ -1678,7 +1690,7 @@ class employee_Agent(Agent):
     def move(self):
         start_pos = self.pos
         wander(self)
-        if with_dir == True:
+        if with_dir:
             end_pos = self.pos
             self.coords = update_direction(self, start_pos, end_pos)
 class wall(Agent):
@@ -1737,11 +1749,14 @@ class table(Agent):
         States which agent we are looking at
     model : Model
         Model the agent belongs to
+    counter : int
+        Counter of how many people get infected at the tables
     '''
     def __init__(self,id, model):
         super().__init__(id,model)
         self.id = id
         self.model = model
+        self.counter = 0
 class toilet(Agent):
     '''
     A class to represent a toilet.
@@ -1758,6 +1773,8 @@ class toilet(Agent):
         List of positions indicating the queue of toilet
     exit : tuple ()
         The position of the exit of the toilet
+    counter : int
+        Counter of how many people have been infected at the toilet
     '''
     def __init__(self,id, model):
         super().__init__(id,model)
@@ -1766,3 +1783,4 @@ class toilet(Agent):
         self.has_been_infected = False
         self.queue = [(i,37) for i in range(9,15)]
         self.exit = (9,34)
+        self.counter = 0
