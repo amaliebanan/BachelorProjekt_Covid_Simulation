@@ -13,15 +13,16 @@ import numpy as np
 from mesa.datacollection import DataCollector
 from scipy.stats import truncnorm,bernoulli
 
-def truncnorm_(lower,upper,mu,sigma):
-    return int(truncnorm.rvs((lower - mu) /sigma, (upper - mu) /sigma, loc = mu, scale=sigma))
 
 def calculate_percentage(original_number, percent_to_subtract):
-    return original_number-(percent_to_subtract*original_number/100)
-def intersect(list1,list2):
-    list3 = [v for v in list1 if v in list2]
-    return list3
+    '''
+    Calculate the percentage X of Y
 
+    :param original_number: int
+    :param percent_to_subtract: int
+    :return: int
+    '''
+    return original_number-(percent_to_subtract*original_number/100)
 day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
@@ -34,7 +35,7 @@ infection_decrease_with_mask_pct = 60
 
 go_home_in_breaks = False
 family_groups = False
-with_mask = False
+with_mask = True
 with_dir = True
 percentages_of_vaccinated = 0 #Number 0<=x<1
 number_of_vaccinated = math.floor(percentages_of_vaccinated*(init_canteen_agents+3*25+2))
@@ -42,16 +43,52 @@ number_of_vaccinated = math.floor(percentages_of_vaccinated*(init_canteen_agents
 dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
 listOfSetup = []
 
+
+def truncnorm_(lower,upper,mu,sigma):
+    '''
+    Returns an int-version of a value from a truncated normal distribution of specified by parameters
+
+    :param lower: int
+    :param upper: int
+    :param mu: int
+    :param sigma: int
+    :return: int
+    '''
+    return int(truncnorm.rvs((lower - mu) /sigma, (upper - mu) /sigma, loc = mu, scale=sigma))
+
+def intersect(list1,list2):
+    '''
+    Returns the intersection of two lists
+
+    :param list1: List
+    :param list2: List
+    :return: List
+    '''
+    list3 = [v for v in list1 if v in list2]
+    return list3
+
 def get_toilet_inf_count(self):
+    '''
+    Retrieves the number of agents who has been infected in the toilet
+
+    :param self: model-object
+    :return: int
+    '''
     agents = [a.counter for a in self.schedule.agents if isinstance(a,ac.toilet)]
     return sum(agents)
 
 def get_canteen_table_inf_count(self):
+    '''
+    Retrieves the number of agents who has been infected at the canteen tables
+
+    :param self: model-object
+    :return: int
+    '''
     return self.canteen_counter
 
 def get_infected_count(self):
     '''
-    Retrieves the number of infectied agents
+    Retrieves the number of infected agents
 
     :param self: model-object
     :return: int
@@ -109,13 +146,12 @@ def get_home_sick_count(self):
     agents = [a for a in self.schedule.agents if is_human(a) and a.is_home_sick == True]
     return len(agents)
 
-"KAN EVT SLETTES?"
 def get_list_of_reproduction(self):
     '''
-    Retrieves the number of asymptomatic agents
+    Retrieves the number of how many people every infected agent has infected
 
     :param self: model-object
-    :return: int
+    :return: List [] of ints
     '''
     list_of_reproduction = []
     agents = [a for a in self.schedule.agents if is_human(a)]
@@ -248,7 +284,7 @@ def add_init_infected(self, n):
     i = 0
     positives = []
     while i<n:
-        all_agents = [a for a in self.schedule.agents if is_human(a) and a.id in [x for x in range(3*24,3*24*3-1)] or a.id in [1004,1005,1006]]
+        all_agents = [a for a in self.schedule.agents if is_human(a)]
      #   students = [a for a in self.schedule.agents if isinstance(a,ac.class_Agent)]
       #  TA = [a for a in self.schedule.agents if isinstance(a,ac.TA)]
         #canteen = [a for a in self.schedule.agents if isinstance(a,ac.canteen_Agent) and a.off_school == False]
@@ -276,7 +312,6 @@ def add_init_infected(self, n):
             i+=1
         else: pass
 
-"ÆNDRE NAVN PÅ DENNE FUNK"
 def add_init_canteen_agents(self, N, n):
     '''
     Add agents to both (visual) grid og (logical) schedule
@@ -815,9 +850,7 @@ class covid_Model(Model):
                                                             "Agent_count": lambda m: all_agents_count(self),
                                                             "recovered": lambda m: get_recovered_count(self),
                                                             "Home":lambda m: get_home_sick_count(self),
-                                                            "Toilet":lambda m: get_toilet_inf_count(self),
-                                                            "CanTables":lambda  m: get_canteen_table_inf_count(self)
-                                                            #,"Reproduction": lambda m: get_list_of_reproduction(self)
+                                                           "Reproduction": lambda m: get_list_of_reproduction(self)
                                                              })
 
         #Lists to hold agent-objects with with different states

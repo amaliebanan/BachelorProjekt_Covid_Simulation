@@ -13,7 +13,7 @@ fixed_params = {"width":26, "height": 38, "setUpType": [2, 2, 2]}
 variable_params = {"N": range(24,25,1)} # 24 students
 
 iterationer = 50
-skridt = 525*40
+skridt = 525*80
 
 
 
@@ -104,7 +104,7 @@ def list_of_infected(j):
     for i in range(len(data_list)):
         data_list[i]['Iteration'] = i+1
 
-    pd.concat(data_list).to_csv('csvdata/HoldB'+str(j)+'.csv')
+    pd.concat(data_list).to_csv('csvdata/mundbind60_16uger_'+str(j)+'.csv')
 
     #next 5 lines is to determine reproduction number
     #list_reproduction = []
@@ -133,15 +133,15 @@ def list_of_infected(j):
             num_of_infected[j]+=data_list[i]["infected"][j]
             num_of_susceptible[j] += data_list[i]["Agent_count"][j]-(data_list[i]["infected"][j]+data_list[i]["recovered"][j]+number_of_vaccinated) #number of susceptible at each time step
             num_of_recovered[j] += data_list[i]["recovered"][j]
-            num_of_toilets[j] += data_list[i]["Toilet"][j]
-            num_of_canteen[j] += data_list[i]["CanTables"][j]
+#            num_of_toilets[j] += data_list[i]["Toilet"][j]
+#            num_of_canteen[j] += data_list[i]["CanTables"][j]
     num_of_infected =[number / iterationer for number in num_of_infected] #avg number of infected
     num_of_susceptible = [number / iterationer for number in num_of_susceptible]
     num_of_recovered = [number / iterationer for number in num_of_recovered]
-    num_of_toilets = [number / iterationer for number in num_of_toilets]
-    num_of_canteen = [number / iterationer for number in num_of_canteen]
+  #  num_of_toilets = [number / iterationer for number in num_of_toilets]
+  #  num_of_canteen = [number / iterationer for number in num_of_canteen]
 
-    return num_of_infected, num_of_susceptible, num_of_recovered, num_of_toilets,num_of_canteen
+    return num_of_infected, num_of_susceptible, num_of_recovered
 
 "uncomment below to run list_of_infected function with different set up types. Change line 12 and 13 to change number of iterations and timesteps"
 pool = mp.Pool(mp.cpu_count()) #opens pools for running parallel programs
@@ -156,7 +156,7 @@ for i in range(len(results)):
             print("MAX SMITTEDE VED:" ,i+2,max(results[i][j]))
     df = pd.DataFrame(samlet)
     dff = df.T
-    dff.to_csv('csvdata/plotted_data_HoldB_'+str(i+2)+'.csv')
+    dff.to_csv('csvdata/plotted_data_mundbind60_16uger_'+str(i+2)+'.csv')
 
 "Uncomment below for plotting the three plots for comparing"
 time = [i for i in range(0,skridt+1)] #makes a list of x-values for plotting
