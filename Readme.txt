@@ -1,4 +1,4 @@
-README.me
+# Covid simulation on HCØ Institute, Copenhagen University
 
 A mesa-ABM model of the spread of corona virus on HCØ Institute at Copenhagen University.
 
