@@ -1,8 +1,28 @@
-Ved batchrun tjek:
+#Covid simulation on HCØ Institute, Copenhagen University
 
-*infection rate passer
-*IKKE udkommenteret at gemme csv fil
-*Rigtigt navn på csv fil - SÅ DEN IKKE OVERWRITER TIDLIGERE SIMULATIONER
-*kør run for at tjekke
+A mesa-ABM model of the spread of corona virus on HCØ Institute at Copenhagen University.
 
-*husk at af-udkommentere toiletter i Model599
+It is necessary to have python3 installed to run the project.
+
+1. Download and install an IDÉ (Fx Pycharm, Visual Studio Code, IntelliJ, etc.)
+2. From your terminal or your IDÉ clone the project
+
+Needed libraries:
+
+- MESA
+- Numpy
+- Matplotlib
+- math
+- scipy
+- random
+
+
+Run the project:
+1. Open the project in your IDÉ
+2. If you want to add a restriction, do it in top of Model.py file by changing one or more of the following: 
+  - Close the common area by setting go_home_in_break == True                    (Line 36)
+  - Implement family groups in the classroom by setting family_groups == True    (Line 37)
+  - Put masks on people when they walk or stand by setting with_mask == True     (Line 38)
+        - Change how much masks decrease the probability of infection others by changing the infection_decrease_with_mask_pct-parameter (Line 33)
+  - Vaccinate parts of the population by changing the percentages_of_vaccinated-parameter to a number between in range [0,1]. (Line 39)      
+3. Start the simulation by running run.py. This will open a local browser, where you can run the simulation. 
