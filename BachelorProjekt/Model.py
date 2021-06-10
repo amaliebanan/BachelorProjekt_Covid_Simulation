@@ -23,6 +23,10 @@ def calculate_percentage(original_number, percent_to_subtract):
     :return: int
     '''
     return original_number-(percent_to_subtract*original_number/100)
+with_dir = True
+dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
+listOfSetup = []
+### Parameters ###
 day_length = 525
 init_positive_agents = 1
 new_positives_after_weekends = 2
@@ -30,18 +34,17 @@ init_canteen_agents = 80
 infection_rate = (0.035/100)
 infection_rate_1_to_2_meter = calculate_percentage(infection_rate, 10.2)
 infection_rate_2plus_meter = calculate_percentage(infection_rate_1_to_2_meter,2.02)
-infection_decrease_with_mask_pct = 60
+infection_decrease_with_mask_pct = 70
 
-
+## ENFORCE RESTRICTIONS ##
 go_home_in_breaks = False
 family_groups = False
-with_mask = True
-with_dir = True
+with_mask = False
 percentages_of_vaccinated = 0 #Number 0<=x<1
+
+#For analyzing purposes only
 number_of_vaccinated = math.floor(percentages_of_vaccinated*(init_canteen_agents+3*25+2))
 
-dir = {'N':(0,1), 'S':(0,-1), 'E':(1,0), 'W':(-1,0),'NE': (1,1), 'NW': (-1,1), 'SE':(1,-1), 'SW':(-1,-1)}
-listOfSetup = []
 
 
 def truncnorm_(lower,upper,mu,sigma):

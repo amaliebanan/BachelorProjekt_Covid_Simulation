@@ -7,12 +7,6 @@ import numpy as np
 from mesa.batchrunner import BatchRunner
 import matplotlib.pyplot as plt
 
-'''
-Module responsible for visualizing the agents 
-
-Initializes a Model object with correct number of agents per classand and with correct width and height 
-of the grid
-'''
 
 agentsN = 24
 width, height = 26,38
@@ -49,14 +43,15 @@ class count_Minutes(TextElement):
     def render(self, model):
         return "Minute #: " + str(model.minute_count)
 
+def agent_portrayal(agent):
+    portrayal = {"Shape": "circle",
+                 "Color": "red",
+                 "Filled": "true",
+                 "Layer": 0,
+                 "r": 0.5}
+    return portrayal
 
 def covid_draw(agent):
-    '''
-    Responsible for visualizing the agents correctly without arrows
-
-    :param self: agent-object
-    :return: None
-    '''
     if agent is None:
         return
     portrayal = {"Shape": "circle", "r": 0.8, "Filled": "true", "Layer": 0}
@@ -167,18 +162,15 @@ def covid_draw(agent):
     return portrayal
 
 def covid_draw_arrow(agent):
-    '''
-    Responsible for visualizing the agents correctly with arrows
 
-    :param self: agent-object
-    :return: None
-    '''
     portrayal = {"Shape": "circle", "r": 0.8, "Filled": "true", "Layer": 0}
     if agent is None:
         return
     if agent.pos in agent.model.entre:
         portrayal["Shape"] = "resources/white.jpg"
         portrayal["scale"] = 0.9
+
+
     elif isinstance(agent, ac.canteen_Agent):
         if agent.off_school ==1 or agent.is_home_sick == True:
             portrayal["Shape"] = "resources/white.jpg"
@@ -286,7 +278,7 @@ def covid_draw_arrow(agent):
                     portrayal["Shape"] = "resources/pizzaSW.png"
                     portrayal["scale"] = 1.1
 
-        elif agent.sitting_in_canteen > 45:
+        elif agent.pos in[x[0] for x in agent.model.canteen_tables]:#agent.sitting_in_canteen >= 45:
             if agent.infected == True and agent.non_contageous_period > 0:
                 if agent.coords == dir['E']:
                         portrayal["Shape"] = "resources/blackpizzaexposedE.png"
@@ -447,7 +439,6 @@ def covid_draw_arrow(agent):
                 elif agent.coords == dir['SW']:
                     portrayal["Shape"] = "resources/greenarrowSW.png"
                     portrayal["scale"] = 0.9
-
     elif isinstance(agent, ac.class_Agent):
         if agent.is_home_sick == True:
             portrayal["Shape"] = "resources/white.jpg"
@@ -830,8 +821,6 @@ def covid_draw_arrow(agent):
     elif isinstance(agent,ac.toilet):
         portrayal["Shape"] = "resources/toilet2.jpg"
         portrayal["scale"] = 0.9
-
-
 
     return portrayal
 
