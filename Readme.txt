@@ -1,6 +1,6 @@
-#Covid simulation on HCØ Institute, Copenhagen University
+#Covid simulation on simplified HCØ Institute, Copenhagen University
 
-A mesa-ABM model of the spread of corona virus on HCØ Institute at Copenhagen University.
+A mesa-ABM model of the spread of corona virus on simplified HCØ Institute at Copenhagen University.
 
 It is necessary to have python3 installed to run the project.
 
