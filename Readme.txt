@@ -4,7 +4,7 @@ A mesa-ABM model of the spread of corona virus on HCØ Institute at Copenhagen U
 
 It is necessary to have python3 installed to run the project.
 
-1. Download and install an IDÉ (Fx Pycharm, Visual Studio Code, IntelliJ, etc.)
+1. Download and install your favorite IDÉ (Fx Pycharm, Visual Studio Code, IntelliJ, etc.)
 2. From your terminal or your IDÉ clone the project
 
 Needed libraries:
@@ -18,7 +18,7 @@ Needed libraries:
 
 
 Run the project:
-1. Open the project in your IDÉ
+1. Open the project in your favorite IDÉ
 2. If you want to add a restriction, do it in top of Model.py file by changing one or more of the following: 
   - Close the common area by setting go_home_in_break == True                    (Line 40)
   - Implement family groups in the classroom by setting family_groups == True    (Line 41)
